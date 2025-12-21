@@ -1,0 +1,38 @@
+{
+  "project_info": {
+    "project_number": "4418325804",
+    "project_id": "cashrapido-481800",
+    "storage_bucket": "cashrapido-481800.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:4418325804:android:ce64e7105087ab1f513089",
+        "android_client_info": {
+          "package_name": "cu.lenier.cashrapido"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "4418325804-59u1dns3nn7spa99ju4v0vfm5pepvjfa.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "cu.lenier.cashrapido",
+            "certificate_hash": "d875fbccdd477473b46d0706cae356a117112166"
+          }
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAkmuk1bv5DA82ZzDjjSyC6KUeAozjrclU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,1040 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
+import 'package:local_auth/local_auth.dart';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
+import '../models/models.dart';
+import '../services/notification_service.dart';
+import '../services/export_service.dart';
+import '../services/drive_service.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:share_plus/share_plus.dart';
+import 'dart:io';
+import 'dart:ui' as ui;
+import '../services/backup_service.dart';
+
+class AppProvider with ChangeNotifier {
+  late Box<InternalTransaction> _transactionBox;
+  late Box<Category> _categoryBox;
+  late Box<AccountCard> _cardBox;
+
+  List<InternalTransaction> _transactions = [];
+  List<Category> _categories = [];
+  List<AccountCard> _cards = [];
+
+  bool _isLoading = true;
+  bool get isLoading => _isLoading;
+
+  String _chartType = 'Pie'; // Default
+  String get chartType => _chartType;
+
+  // Biometrics
+  bool _biometricsEnabled = false;
+  bool get biometricsEnabled => _biometricsEnabled;
+  final LocalAuthentication auth = LocalAuthentication();
+
+  // PIN & Password
+  String? _appPinHash;
+  String? _appPasswordHash;
+  bool get hasPinSet => _appPinHash != null && _appPinHash!.isNotEmpty;
+  bool get hasPasswordSet =>
+      _appPasswordHash != null && _appPasswordHash!.isNotEmpty;
+
+  // Notifications
+  bool _notificationsEnabled = false;
+  bool get notificationsEnabled => _notificationsEnabled;
+  final NotificationService _notificationService = NotificationService();
+
+  // Export
+  final ExportService _exportService = ExportService();
+
+  // Localization
+  Locale? _currentLocale;
+  Locale? get currentLocale => _currentLocale;
+
+  // Currency
+  String _mainCurrency = 'CUP';
+  String get mainCurrency => _mainCurrency;
+
+  List<Currency> _customCurrencies = [];
+  List<Currency> get customCurrencies => _customCurrencies;
+
+  List<Currency> get availableCurrencies {
+    final defaults = [
+      Currency(code: 'CUP', symbol: '₱', name: 'Peso Cubano'),
+      Currency(code: 'USD', symbol: '\$', name: 'US Dollar'),
+      Currency(code: 'EUR', symbol: '€', name: 'Euro'),
+      Currency(code: 'MLC', symbol: '\$', name: 'MLC'),
+    ];
+    return [...defaults, ..._customCurrencies];
+  }
+
+  List<InternalTransaction> get transactions => _transactions;
+  List<Category> get categories => _categories;
+  List<AccountCard> get cards => _cards;
+
+  final Uuid _uuid = const Uuid();
+
+  Future<void> init() async {
+    _transactionBox = await Hive.openBox<InternalTransaction>('transactions');
+    _categoryBox = await Hive.openBox<Category>('categories');
+    _cardBox = await Hive.openBox<AccountCard>('cards');
+
+    // Ensure Default Categories exist
+    await _seedDefaultCategories();
+
+    // Initialize Default Wallet if empty (Optional, for easy start)
+    if (_cardBox.isEmpty) {
+      await _seedDefaultCards();
+    }
+
+    if (_cardBox.isEmpty) {
+      await _seedDefaultCards();
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    _chartType = prefs.getString('chart_type') ?? 'Pie';
+    _biometricsEnabled = prefs.getBool('biometrics_enabled') ?? false;
+    _appPinHash = prefs.getString('app_pin_hash');
+    _appPasswordHash = prefs.getString('app_password_hash');
+    _notificationsEnabled = prefs.getBool('notifications_enabled') ?? false;
+
+    final themeString = prefs.getString('theme_mode');
+    if (themeString != null) {
+      _themeMode = ThemeMode.values.firstWhere(
+        (e) => e.toString() == themeString,
+        orElse: () => ThemeMode.system,
+      );
+    }
+
+    // Load Locale
+    final String? langCode = prefs.getString('app_language');
+    if (langCode != null) {
+      _currentLocale = Locale(langCode);
+    } // else ... existing fallback logic
+
+    // Load Currency
+    _mainCurrency = prefs.getString('main_currency') ?? 'CUP';
+
+    final customCurrenciesJson = prefs.getStringList('custom_currencies');
+    if (customCurrenciesJson != null) {
+      _customCurrencies = customCurrenciesJson
+          .map((e) => Currency.fromJson(jsonDecode(e)))
+          .toList();
+    }
+
+    // Fallback locale logic if not set above
+    if (_currentLocale == null) {
+      final systemLoc = ui.window.locale;
+      if (['es', 'en', 'fr'].contains(systemLoc.languageCode)) {
+        _currentLocale = Locale(systemLoc.languageCode);
+      } else {
+        _currentLocale = const Locale('es');
+      }
+    }
+
+    // Load Custom Banks
+    _customBanks = prefs.getStringList('custom_banks') ?? [];
+
+    // Initialize NotificationService
+    await _notificationService.initialize();
+    if (_notificationsEnabled) {
+      await _notificationService.scheduleAllNotifications();
+    }
+
+    _fetchData();
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  void _fetchData() {
+    _transactions = _transactionBox.values.toList().cast<InternalTransaction>();
+    _categories = _categoryBox.values.toList().cast<Category>();
+    _cards = _cardBox.values.toList().cast<AccountCard>();
+
+    // Sort transactions by date desc
+    _transactions.sort((a, b) => b.date.compareTo(a.date));
+  }
+
+  // --- Transactions ---
+
+  bool validateCardForTransaction(String cardId, {String? pin}) {
+    final cardIndex = _cards.indexWhere((c) => c.id == cardId);
+    if (cardIndex == -1) return false;
+
+    final card = _cards[cardIndex];
+    if (card.isLocked) {
+      throw Exception("La tarjeta está bloqueada.");
+    }
+
+    if (card.pin != null && card.pin!.isNotEmpty) {
+      if (pin == null || pin != card.pin) {
+        throw Exception("PIN incorrecto.");
+      }
+    }
+    return true;
+  }
+
+  Future<void> addTransaction({
+    required double amount,
+    required String title,
+    required String categoryId,
+    required String currency, // 'CUP', 'USD', 'EUR'
+    String? cardId, // Optional link to card
+  }) async {
+    final transaction = InternalTransaction(
+      id: _uuid.v4(),
+      amount: amount,
+      title: title,
+      categoryId: categoryId,
+      currency: currency,
+      date: DateTime.now(),
+      cardId: cardId, // Save the link
+    );
+
+    await _transactionBox.add(transaction);
+    _transactions.insert(0, transaction);
+
+    // Update Card Balance if linked
+    if (cardId != null) {
+      final cardIndex = _cards.indexWhere((c) => c.id == cardId);
+      if (cardIndex != -1) {
+        final card = _cards[cardIndex];
+        // Logic: If Expense (amount < 0), subtract. If Income (amount > 0), add.
+        // Transaction amount usually comes in as signed?
+        // Let's assume the UI sends:
+        // - Expenses as negative? Or we handle it based on category?
+        // Usually easier if `amount` is signed.
+        // But `AddTransactionModal` usually handles logic.
+        // Let's assume `amount` is the delta to apply.
+
+        double newBalance = card.balance + amount;
+
+        final updatedCard = AccountCard(
+          id: card.id,
+          name: card.name,
+          balance: newBalance,
+          currency: card.currency,
+          cardNumber: card.cardNumber,
+          expiryDate: card.expiryDate,
+          colorValue: card.colorValue,
+          isLocked: card.isLocked,
+          pin: card.pin,
+          spendingLimit: card.spendingLimit,
+          bankName: card.bankName, // Fix: Preserve bank name
+        );
+
+        await editCard(updatedCard);
+      }
+    }
+
+    notifyListeners();
+  }
+
+  Future<void> transferBetweenCards({
+    required String fromCardId,
+    required String toCardId,
+    required double amount,
+  }) async {
+    final fromCardIndex = _cards.indexWhere((c) => c.id == fromCardId);
+    final toCardIndex = _cards.indexWhere((c) => c.id == toCardId);
+
+    if (fromCardIndex == -1 || toCardIndex == -1) return;
+
+    final fromCard = _cards[fromCardIndex];
+    final toCard = _cards[toCardIndex];
+
+    // 1. Deficit from Source
+    await addTransaction(
+      amount: -amount,
+      title:
+          "Transferencia a ${toCard.bankName} (...${toCard.cardNumber.substring(toCard.cardNumber.length - 4)})",
+      categoryId: "transfer_out", // Need a valid ID or handle this
+      currency: fromCard.currency,
+      cardId: fromCardId,
+    );
+
+    // 2. Add to Destination
+    await addTransaction(
+      amount: amount,
+      title:
+          "Recibido de ${fromCard.bankName} (...${fromCard.cardNumber.substring(fromCard.cardNumber.length - 4)})",
+      categoryId: "transfer_in",
+      currency: toCard.currency,
+      cardId: toCardId,
+    );
+  }
+
+  // --- Categories ---
+
+  Future<void> addCategory({
+    required String name,
+    required int iconCode,
+    required int colorValue,
+  }) async {
+    final category = Category(
+      id: _uuid.v4(),
+      name: name,
+      iconCode: iconCode,
+      colorValue: colorValue,
+      isCustom: true,
+    );
+    await _categoryBox.add(category);
+    _categories.add(category);
+    notifyListeners();
+  }
+
+  // --- Cards ---
+
+  Future<void> addCard(AccountCard card) async {
+    await _cardBox.add(card);
+    _cards.add(card);
+    notifyListeners();
+  }
+
+  // --- Card Management ---
+
+  Future<void> editCard(AccountCard updatedCard) async {
+    final index = _cardBox.values.toList().indexWhere(
+      (c) => c.id == updatedCard.id,
+    );
+    if (index != -1) {
+      await _cardBox.putAt(index, updatedCard);
+
+      final listIndex = _cards.indexWhere((c) => c.id == updatedCard.id);
+      if (listIndex != -1) {
+        _cards[listIndex] = updatedCard;
+      }
+      notifyListeners();
+    }
+  }
+
+  Future<void> deleteCard(String cardId) async {
+    final index = _cardBox.values.toList().indexWhere((c) => c.id == cardId);
+    if (index != -1) {
+      await _cardBox.deleteAt(index);
+      _cards.removeWhere((c) => c.id == cardId);
+      notifyListeners();
+    }
+  }
+
+  Future<void> toggleCardLock(String cardId) async {
+    final index = _cardBox.values.toList().indexWhere((c) => c.id == cardId);
+    if (index != -1) {
+      final card = _cardBox.getAt(index);
+      if (card != null) {
+        final updatedCard = AccountCard(
+          id: card.id,
+          name: card.name,
+          balance: card.balance,
+          currency: card.currency,
+          cardNumber: card.cardNumber,
+          expiryDate: card.expiryDate,
+          colorValue: card.colorValue,
+          isLocked: !card.isLocked,
+          pin: card.pin,
+          spendingLimit: card.spendingLimit,
+          bankName: card.bankName,
+        );
+        await _cardBox.putAt(index, updatedCard);
+
+        // Update local list
+        final listIndex = _cards.indexWhere((c) => c.id == cardId);
+        if (listIndex != -1) {
+          _cards[listIndex] = updatedCard;
+        }
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<void> setCardPin(String cardId, String pin) async {
+    final index = _cardBox.values.toList().indexWhere((c) => c.id == cardId);
+    if (index != -1) {
+      final card = _cardBox.getAt(index);
+      if (card != null) {
+        final updatedCard = AccountCard(
+          id: card.id,
+          name: card.name,
+          balance: card.balance,
+          currency: card.currency,
+          cardNumber: card.cardNumber,
+          expiryDate: card.expiryDate,
+          colorValue: card.colorValue,
+          isLocked: card.isLocked,
+          pin: pin,
+          spendingLimit: card.spendingLimit,
+          bankName: card.bankName,
+        );
+        await _cardBox.putAt(index, updatedCard);
+
+        final listIndex = _cards.indexWhere((c) => c.id == cardId);
+        if (listIndex != -1) {
+          _cards[listIndex] = updatedCard;
+        }
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<void> setCardLimit(String cardId, double limit) async {
+    final index = _cardBox.values.toList().indexWhere((c) => c.id == cardId);
+    if (index != -1) {
+      final card = _cardBox.getAt(index);
+      if (card != null) {
+        final updatedCard = AccountCard(
+          id: card.id,
+          name: card.name,
+          balance: card.balance,
+          currency: card.currency,
+          cardNumber: card.cardNumber,
+          expiryDate: card.expiryDate,
+          colorValue: card.colorValue,
+          isLocked: card.isLocked,
+          pin: card.pin,
+          spendingLimit: limit,
+          bankName: card.bankName,
+        );
+        await _cardBox.putAt(index, updatedCard);
+
+        final listIndex = _cards.indexWhere((c) => c.id == cardId);
+        if (listIndex != -1) {
+          _cards[listIndex] = updatedCard;
+        }
+        notifyListeners();
+      }
+    }
+  }
+
+  // --- Helpers / Seed ---
+
+  Future<void> _seedDefaultCategories() async {
+    // 1. Clean up existing duplicates first
+    await _cleanupDuplicateCategories();
+
+    final defaults = [
+      Category(
+        id: 'cat_food',
+        name: 'Comida',
+        iconCode: 0xe532,
+        colorValue: 0xFFFFA726,
+      ), // restaurant
+      Category(
+        id: 'cat_transport',
+        name: 'Transporte',
+        iconCode: 0xe1d5,
+        colorValue: 0xFF42A5F5,
+      ), // directions_car
+      Category(
+        id: 'cat_home',
+        name: 'Hogar',
+        iconCode: 0xe318,
+        colorValue: 0xFFAB47BC,
+      ), // home
+      Category(
+        id: 'cat_health',
+        name: 'Salud',
+        iconCode: 0xe00f,
+        colorValue: 0xFFEF5350,
+      ), // favorite
+      Category(
+        id: 'cat_entertainment',
+        name: 'Entretenimiento',
+        iconCode: 0xe406,
+        colorValue: 0xFFEC407A,
+      ), // movie
+      // Income Categories
+      Category(
+        id: 'cat_salary',
+        name: 'Salario',
+        iconCode: 0xe06d, // attach_money or similar work icon
+        colorValue: 0xFF4CAF50, // Green
+      ),
+      Category(
+        id: 'cat_business',
+        name: 'Negocio',
+        iconCode: 0xe0af, // business_center or similar
+        colorValue: 0xFF2196F3, // Blue
+      ),
+      Category(
+        id: 'cat_gifts',
+        name: 'Regalos',
+        iconCode: 0xe8f6, // card_giftcard
+        colorValue: 0xFF9C27B0, // Purple
+      ),
+      Category(
+        id: 'cat_rent',
+        name: 'Alquiler',
+        iconCode: 0xe88a, // home
+        colorValue: 0xFFFF9800, // Orange
+      ),
+      Category(
+        id: 'cat_investment',
+        name: 'Inversiones',
+        iconCode: 0xe6e1, // show_chart
+        colorValue: 0xFF009688, // Teal
+      ),
+      Category(
+        id: 'cat_other_income',
+        name: 'Otros Ingresos',
+        iconCode: 0xe227, // attach_money usually
+        colorValue: 0xFF607D8B, // BlueGrey
+      ),
+    ];
+
+    for (var cat in defaults) {
+      // Check by ID first, then by Name to prevent re-adding with new ID if we changed schema
+      final bool existsById = _categoryBox.values.any((c) => c.id == cat.id);
+      final bool existsByName = _categoryBox.values.any(
+        (c) => c.name == cat.name,
+      );
+
+      if (!existsById && !existsByName) {
+        await _categoryBox.add(cat);
+        _categories.add(cat);
+      } else if (!existsById && existsByName) {
+        // If exists by name but has different ID (old format), we keep the old one
+        // OR we could migrate it. For now, let's just NOT add a duplicate.
+        // Ideally, we'd want to migrate to fixed IDs, but that's complex since we just cleaned up.
+        // The cleanup logic below handles merging by name, so we should be good.
+      }
+    }
+  }
+
+  Future<void> _cleanupDuplicateCategories() async {
+    final allCategories = _categoryBox.values.toList();
+    final Map<String, List<Category>> byName = {};
+
+    for (var cat in allCategories) {
+      byName.putIfAbsent(cat.name, () => []).add(cat);
+    }
+
+    for (var entry in byName.entries) {
+      if (entry.value.length > 1) {
+        // We have duplicates!
+        final duplicates = entry.value;
+
+        // Pick a survivor.
+        // Preference:
+        // 1. One with a "fixed" ID (starts with 'cat_' or 'transfer_')
+        // 2. The first one found
+        final survivor = duplicates.firstWhere(
+          (c) => c.id.startsWith('cat_') || c.id.startsWith('transfer_'),
+          orElse: () => duplicates.first,
+        );
+
+        final toDelete = duplicates.where((c) => c.id != survivor.id).toList();
+
+        for (var victim in toDelete) {
+          // 1. Reassign Transactions
+          final victimTransactions = _transactionBox.values
+              .where((t) => t.categoryId == victim.id)
+              .toList();
+
+          for (var tx in victimTransactions) {
+            // Create a copy with new category ID
+            final updatedTx = InternalTransaction(
+              id: tx.id,
+              amount: tx.amount,
+              title: tx.title,
+              date: tx.date,
+              categoryId: survivor.id, // Reassign
+              currency: tx.currency,
+              cardId: tx.cardId,
+            );
+            // Find key to update in Hive (assuming auto-increment keys or similar, but we iterate values)
+            // We need the key. Hive 'values' doesn't give keys directly.
+            // We have to find key by object or ID.
+            // Since we don't have the key easily, valid approach:
+            // Map keys to values.
+            final key = _transactionBox.keys.firstWhere(
+              (k) => _transactionBox.get(k)?.id == tx.id,
+              orElse: () => null,
+            );
+            if (key != null) {
+              await _transactionBox.put(key, updatedTx);
+            }
+          }
+
+          // 2. Delete Category
+          final catKey = _categoryBox.keys.firstWhere(
+            (k) => _categoryBox.get(k)?.id == victim.id,
+            orElse: () => null,
+          );
+          if (catKey != null) {
+            await _categoryBox.delete(catKey);
+          }
+        }
+      }
+    }
+
+    // Refresh local list
+    _categories = _categoryBox.values.toList().cast<Category>();
+  }
+
+  Future<void> _seedDefaultCards() async {
+    // Add a default CUP card
+    final card = AccountCard(
+      id: _uuid.v4(),
+      name: 'Efectivo',
+      balance: 0.0,
+      currency: 'CUP',
+      cardNumber: '0000',
+      expiryDate: 'N/A',
+      colorValue: 0xFF4CAF50,
+    );
+    await _cardBox.add(card);
+  }
+
+  // --- Getters ---
+
+  double getTotalBalance(String currency) {
+    // Sum of all cards of that currency
+    return _cards
+        .where((c) => c.currency == currency)
+        .fold(0.0, (sum, item) => sum + item.balance);
+  }
+
+  double getSpentThisMonth(String currency, {String? cardId}) {
+    final now = DateTime.now();
+    return _transactions
+        .where(
+          (t) =>
+              t.currency == currency &&
+              (cardId == null ||
+                  t.cardId == cardId) && // Filter by card if provided
+              t.amount < 0 &&
+              t.date.month == now.month &&
+              t.date.year == now.year,
+        )
+        .fold(0.0, (sum, item) => sum + item.amount.abs());
+  }
+
+  double getIncomeThisMonth(String currency, {String? cardId}) {
+    final now = DateTime.now();
+    return _transactions
+        .where(
+          (t) =>
+              t.currency == currency &&
+              (cardId == null ||
+                  t.cardId == cardId) && // Filter by card if provided
+              t.amount > 0 &&
+              t.date.month == now.month &&
+              t.date.year == now.year,
+        )
+        .fold(0.0, (sum, item) => sum + item.amount);
+  }
+
+  Future<void> setChartType(String type) async {
+    _chartType = type;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('chart_type', type);
+  }
+
+  // --- Currency ---
+
+  Future<void> setMainCurrency(String code) async {
+    _mainCurrency = code;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('main_currency', code);
+  }
+
+  Future<void> addCustomCurrency(Currency currency) async {
+    // Check if code exists
+    if (_customCurrencies.any((c) => c.code == currency.code) ||
+        ['CUP', 'USD', 'EUR', 'MLC'].contains(currency.code)) {
+      throw 'Currency already exists';
+    }
+
+    _customCurrencies.add(currency);
+    await _saveCustomCurrencies();
+    notifyListeners();
+  }
+
+  bool isCurrencyInUse(String currencyCode) {
+    return _cards.any((card) => card.currency == currencyCode);
+  }
+
+  Future<void> deleteCustomCurrency(String code) async {
+    if (isCurrencyInUse(code)) {
+      throw 'Currency In Use';
+    }
+
+    _customCurrencies.removeWhere((c) => c.code == code);
+
+    // If deleted currency was selected as main, revert to CUP
+    if (_mainCurrency == code) {
+      _mainCurrency = 'CUP';
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('main_currency', 'CUP');
+    }
+
+    await _saveCustomCurrencies();
+    notifyListeners();
+  }
+
+  Future<void> editCustomCurrency(String oldCode, Currency newCurrency) async {
+    // If code is changing, check for conflict with existing
+    if (oldCode != newCurrency.code) {
+      if (_customCurrencies.any((c) => c.code == newCurrency.code) ||
+          ['CUP', 'USD', 'EUR', 'MLC'].contains(newCurrency.code)) {
+        throw 'Currency Code Exists';
+      }
+
+      // Also check if old code is in use (prevent code change if in use)
+      // Or technically we could update all cards, but user requested restriction.
+      if (isCurrencyInUse(oldCode)) {
+        throw 'Currency In Use';
+      }
+    }
+
+    final index = _customCurrencies.indexWhere((c) => c.code == oldCode);
+    if (index != -1) {
+      _customCurrencies[index] = newCurrency;
+      await _saveCustomCurrencies();
+      notifyListeners();
+    }
+  }
+
+  Future<void> _saveCustomCurrencies() async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String> jsonList = _customCurrencies
+        .map((c) => jsonEncode(c.toJson()))
+        .toList();
+    await prefs.setStringList('custom_currencies', jsonList);
+  }
+
+  // --- Banks ---
+
+  List<String> _customBanks = [];
+  List<String> get customBanks => _customBanks;
+
+  List<String> get availableBanks {
+    final defaults = [
+      'VISA',
+      'MasterCard',
+      'Metropolitano',
+      'BPA',
+      'BANDEC',
+      'American Express',
+    ];
+    return [...defaults, ..._customBanks];
+  }
+
+  Future<void> addCustomBank(String name) async {
+    if (availableBanks.contains(name)) {
+      throw 'Bank already exists';
+    }
+    _customBanks.add(name);
+    await _saveCustomBanks();
+    notifyListeners();
+  }
+
+  bool isBankInUse(String name) {
+    return _cards.any((card) => card.bankName == name);
+  }
+
+  Future<void> deleteCustomBank(String name) async {
+    if (isBankInUse(name)) {
+      throw 'Bank In Use';
+    }
+    _customBanks.remove(name);
+    await _saveCustomBanks();
+    notifyListeners();
+  }
+
+  Future<void> editCustomBank(String oldName, String newName) async {
+    if (oldName != newName) {
+      if (availableBanks.contains(newName)) {
+        throw 'Bank Name Exists';
+      }
+      if (isBankInUse(oldName)) {
+        throw 'Bank In Use';
+      }
+    }
+
+    final index = _customBanks.indexOf(oldName);
+    if (index != -1) {
+      _customBanks[index] = newName;
+      await _saveCustomBanks();
+      notifyListeners();
+    }
+  }
+
+  Future<void> _saveCustomBanks() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('custom_banks', _customBanks);
+  }
+
+  // --- Theme ---
+  ThemeMode _themeMode = ThemeMode.system;
+  ThemeMode get themeMode => _themeMode;
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    _themeMode = mode;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('theme_mode', mode.toString());
+  }
+
+  // --- Biometrics ---
+
+  Future<bool> authenticate() async {
+    try {
+      final bool didAuthenticate = await auth.authenticate(
+        localizedReason: 'Por favor autentícate para acceder a CashRapido',
+      );
+      return didAuthenticate;
+    } catch (e) {
+      if (kDebugMode) {
+        print("Auth Error: $e");
+      }
+      return false;
+    }
+  }
+
+  Future<void> setBiometricsEnabled(bool enabled) async {
+    _biometricsEnabled = enabled;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('biometrics_enabled', enabled);
+  }
+
+  // --- PIN & Password ---
+
+  String _hashString(String input) {
+    final bytes = utf8.encode(input);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
+  }
+
+  Future<void> setAppPin(String pin) async {
+    _appPinHash = _hashString(pin);
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('app_pin_hash', _appPinHash!);
+  }
+
+  Future<void> clearAppPin() async {
+    _appPinHash = null;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('app_pin_hash');
+  }
+
+  bool validatePin(String pin) {
+    if (_appPinHash == null) return true; // No PIN set
+    return _hashString(pin) == _appPinHash;
+  }
+
+  Future<void> setAppPassword(String password) async {
+    _appPasswordHash = _hashString(password);
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('app_password_hash', _appPasswordHash!);
+  }
+
+  Future<void> clearAppPassword() async {
+    _appPasswordHash = null;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('app_password_hash');
+  }
+
+  bool validatePassword(String password) {
+    if (_appPasswordHash == null) return true; // No password set
+    return _hashString(password) == _appPasswordHash;
+  }
+
+  // --- Notifications ---
+
+  Future<void> setNotificationsEnabled(bool enabled) async {
+    // Request permissions if enabling
+    if (enabled) {
+      final granted = await _notificationService.requestPermissions();
+      if (!granted) {
+        // Permission denied, don't enable
+        return;
+      }
+      await _notificationService.scheduleAllNotifications();
+    } else {
+      await _notificationService.cancelAllNotifications();
+    }
+
+    _notificationsEnabled = enabled;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('notifications_enabled', enabled);
+  }
+
+  // --- Export ---
+
+  Future<String> exportToExcel() async {
+    return await _exportService.exportToExcel(
+      transactions: _transactions,
+      categories: _categories,
+      cards: _cards,
+    );
+  }
+
+  Future<String> exportToPDF() async {
+    return await _exportService.exportToPDF(
+      transactions: _transactions,
+      categories: _categories,
+      cards: _cards,
+    );
+  }
+
+  Future<void> shareFile(String filePath) async {
+    await _exportService.shareFile(filePath);
+  }
+
+  // --- Google Drive Backup ---
+  final DriveService _driveService = DriveService();
+  bool _isSyncing = false;
+  bool get isSyncing => _isSyncing;
+
+  GoogleSignInAccount? get currentUser => _driveService.currentUser;
+  DateTime? _lastBackupDate;
+  DateTime? get lastBackupDate => _lastBackupDate;
+
+  Future<void> signInToGoogle() async {
+    try {
+      if (kIsWeb) return; // Not supported properly in this flow yet
+      final user = await _driveService.signInToGoogle();
+      if (user != null) {
+        await _checkLastBackup();
+      }
+      notifyListeners();
+    } catch (e) {
+      print('Sign In Error: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> signOutFromGoogle() async {
+    await _driveService.signOut();
+    _lastBackupDate = null;
+    notifyListeners();
+  }
+
+  Future<void> _checkLastBackup() async {
+    _lastBackupDate = await _driveService.getLastBackupDate();
+    notifyListeners();
+  }
+
+  Future<void> backupToCloud() async {
+    _isSyncing = true;
+    notifyListeners();
+    try {
+      await _driveService.backupData();
+      await _checkLastBackup();
+    } finally {
+      _isSyncing = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> restoreFromCloud() async {
+    _isSyncing = true;
+    notifyListeners();
+    try {
+      // 1. Close boxes to release file locks
+      // But wait! verification showed we need paths BEFORE closing?
+      // Actually, .path property might rely on box being open?
+      // Yes. So we must get paths, THEN close boxes?
+
+      await _closeBoxes();
+
+      // 2. Overwrite files
+      await _driveService.restoreData();
+
+      // 3. Reopen and reload
+      await _openBoxes();
+    } catch (e) {
+      // Try to recover if something blew up
+      if (!_transactionBox.isOpen) await _openBoxes();
+      rethrow;
+    } finally {
+      _isSyncing = false;
+      notifyListeners();
+    }
+  }
+
+  // --- Local Backup & Restore ---
+  final BackupService _backupService = BackupService();
+
+  Future<void> backupToLocal() async {
+    try {
+      final file = await _backupService.createBackup();
+      await Share.shareXFiles([
+        XFile(file.path),
+      ], text: 'Copia de Seguridad CashRapido');
+    } catch (e) {
+      print("Local Backup Error: $e");
+      rethrow;
+    }
+  }
+
+  Future<void> restoreFromLocal() async {
+    try {
+      // Pick file
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['zip'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        _isSyncing = true;
+        notifyListeners();
+
+        try {
+          final file = File(result.files.single.path!);
+
+          await _closeBoxes();
+          await _backupService.restoreBackup(file);
+          await _openBoxes();
+        } catch (e) {
+          if (!_transactionBox.isOpen) await _openBoxes();
+          rethrow;
+        }
+
+        _isSyncing = false;
+        notifyListeners();
+      }
+    } catch (e) {
+      _isSyncing = false;
+      notifyListeners();
+      print("Local Restore Error: $e");
+      rethrow;
+    }
+  }
+
+  Future<void> _closeBoxes() async {
+    await _transactionBox.close();
+    await _categoryBox.close();
+    await _cardBox.close();
+  }
+
+  Future<void> _openBoxes() async {
+    _transactionBox = await Hive.openBox<InternalTransaction>('transactions');
+    _categoryBox = await Hive.openBox<Category>('categories');
+    _cardBox = await Hive.openBox<AccountCard>('cards');
+    _fetchData();
+  }
+
+  Future<void> setLanguage(String languageCode) async {
+    if (!['es', 'en', 'fr'].contains(languageCode)) return;
+
+    _currentLocale = Locale(languageCode);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('app_language', languageCode);
+    notifyListeners();
+  }
+}

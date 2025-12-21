@@ -1,0 +1,975 @@
+import 'package:flutter/material.dart';
+
+class AppLocalizations {
+  final Locale locale;
+
+  AppLocalizations(this.locale);
+
+  static AppLocalizations of(BuildContext context) {
+    return Localizations.of<AppLocalizations>(context, AppLocalizations) ??
+        AppLocalizations(const Locale('es'));
+  }
+
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
+
+  static final Map<String, Map<String, String>> _localizedValues = {
+    'es': {
+      // General
+      'app_name': 'CashRapido',
+      'cancel': 'Cancelar',
+      'confirm': 'Confirmar',
+      'save': 'Guardar',
+      'close': 'Cerrar',
+      'delete': 'Eliminar',
+      'edit': 'Editar',
+      'error': 'Error',
+      'success': 'Éxito',
+      'loading': 'Cargando...',
+      'search': 'Buscar',
+      'nav_home': 'Inicio',
+      'nav_wallet': 'Billetera',
+      'category_label': 'Categoría',
+      'import': 'Importar',
+
+      // Onboarding
+      'onboarding_title_1': 'Control Total',
+      'onboarding_desc_1':
+          'Maneja todo tu dinero desde tu móvil, sin necesidad de conexión a internet.',
+      'onboarding_title_2': 'Sin Complicaciones',
+      'onboarding_desc_2':
+          'Interfaz intuitiva y rápida para registrar tus gastos e ingresos al instante.',
+      'onboarding_title_3': 'Tu Libertad Financiera',
+      'onboarding_desc_3':
+          'Visualiza tus metas y alcanza la estabilidad que siempre has deseado.',
+
+      // Scanner
+      'scan_card_instruction': 'Encuadra la tarjeta',
+      'align_card_instruction': 'Alinea la tarjeta con el marco',
+
+      // Category
+      'category_name_placeholder': 'Nombre Categoría',
+
+      // Settings Extended
+      'sync_drive_title': 'Sincronizar con Google Drive',
+      'sync_drive_desc': 'Conectar cuenta para respaldos',
+      'error_connecting': 'Error al conectar',
+      'user_default': 'Usuario',
+      'backup_action': 'Respaldar',
+      'restore_action': 'Restaurar',
+      'restore_dialog_title': '¿Restaurar datos?',
+      'restore_dialog_desc':
+          'Esto sobrescribirá todos los datos actuales con la copia de la nube. Esta acción no se puede deshacer.',
+      'restore_success_msg': 'Datos restaurados exitosamente',
+      'backup_success_msg': 'Respaldo completado',
+      'developed_by': 'Desarrollado por',
+      'developer_name': 'Lenier Cruz Perez',
+      'app_desc':
+          'CashRapido es una herramienta moderna de gestión financiera diseñada para la simplicidad y rapidez.',
+
+      // Auth
+      'locked_title': 'CashRapido Bloqueado',
+      'enter_pin': 'Ingresa tu PIN',
+      'enter_password': 'Ingresa tu Contraseña',
+      'unlock': 'Desbloquear',
+      'use_biometrics': 'Usar Biometría',
+      'pin_incorrect': 'PIN incorrecto',
+      'password_incorrect': 'Contraseña incorrecta',
+
+      // Home
+      'hello_user': 'Hola, Usuario 👋',
+      'daily_summary': 'Resumen Diario',
+      'total_balance': 'Balance Total',
+      'income_month': 'Ingresos (Mes)',
+      'expense_month': 'Gastos (Mes)',
+      'recent_transactions': 'Recientes',
+      'view_all': 'Ver todo',
+      'no_recent_transactions': 'No hay transacciones recientes',
+      'select_card': 'Seleccionar',
+
+      // Quick Actions
+      'action_transfer': 'Transferir',
+      'action_recharge': 'Recargar',
+      'action_request': 'Pedir',
+      'action_more': 'Más',
+      'action_scan': 'Escanear',
+      'action_history': 'Historial',
+      'action_balances': 'Balances',
+      'action_help': 'Ayuda',
+
+      // Action Dialogs
+      'from': 'Desde',
+      'to_card': 'Transferir a otra tarjeta',
+      'select_dest': 'Seleccionar Destino',
+      'amount': 'Monto',
+      'balance': 'Saldo',
+      'insufficient_funds': 'Fondos insuficientes',
+      'card_locked': 'Tarjeta Bloqueada 🔒',
+      'transfer_sent': 'Transferencia enviada',
+      'recharge_success': 'Recarga de saldo',
+      'request_received': 'Solicitud recibida',
+      'success_action': 'exitoso',
+      'select_destination_error': 'Selecciona destino',
+
+      // Stats
+      'statistics': 'Estadísticas',
+      'income': 'Ingresos',
+      'expense': 'Gastos',
+      'week': 'Semana',
+      'month': 'Mes',
+      'year': 'Año',
+      'cat_general': 'General',
+      'cat_recharge': 'Recargas',
+      'cat_transfer': 'Transferencias',
+      'cat_request': 'Solicitudes',
+      'cat_unknown': 'Desconocido',
+      'cat_food': 'Comida',
+      'cat_transport': 'Transporte',
+      'cat_home': 'Hogar',
+      'cat_health': 'Salud',
+      'cat_entertainment': 'Entretenimiento',
+      'cat_bills': 'Facturas',
+      'cat_shopping': 'Compras',
+
+      // Add Category
+      'new_category': 'Nueva Categoría',
+      'cat_name_label': 'Nombre',
+      'cat_name_hint': 'Ej. Gimnasio, Freelance',
+      'cat_icon_label': 'Icono',
+      'cat_color_label': 'Color',
+      'save_category': 'Guardar Categoría',
+      'enter_name_error': 'Por favor ingresa un nombre',
+      'no_data': 'Sin datos',
+      'of_total': 'del total',
+      'by_category': 'por Categoría',
+      'day': 'Día',
+      'range': 'Rango',
+
+      // Wallet
+      'wallet': 'Billetera',
+      'no_cards': 'No tienes tarjetas',
+      'add_now': 'Agregar Ahora',
+      'my_cards': 'Mis Tarjetas',
+      'of': 'de',
+      'card_settings': 'Configuración de Tarjeta',
+      'edit_card': 'Editar Tarjeta',
+      'edit_card_subtitle': 'Modificar detalles o diseño',
+      'unlock_card': 'Desbloquear Tarjeta',
+      'lock_card': 'Bloquear Tarjeta',
+      'enable_use': 'Habilitar uso',
+      'disable_temporarily': 'Inhabilitar temporalmente',
+      'change_pin': 'Cambiar PIN',
+      'transaction_security': 'Seguridad de transacciones',
+      'spending_limit': 'Límite de Gasto',
+      'no_limit_set': 'Sin límite definido',
+      'delete_card': 'Eliminar Tarjeta',
+      'action_cannot_undone': 'Esta acción no se puede deshacer',
+      'set_pin': 'Establecer PIN',
+      'enter_4_digits': 'Ingrese 4 dígitos',
+      'pin_updated': 'PIN actualizado',
+      'monthly_amount': 'Monto mensual',
+      'limit_updated': 'Límite actualizado',
+      'delete_card_question': '¿Eliminar Tarjeta?',
+      'delete_card_confirmation':
+          '¿Estás seguro de que quieres eliminar esta tarjeta? Perderás el historial de saldo asociado a ella.',
+
+      // Card Management
+      'new_card': 'Nueva Tarjeta',
+      'edit_card_title': 'Editar Tarjeta',
+      'scan_card': 'Escanear Tarjeta',
+      'card_scanned': '¡Tarjeta escaneada con éxito! 📸',
+      'complete_data_error': 'Por favor completa los datos correctamente',
+      'invalid_date_format': 'Formato de fecha inválido (MM/YY)',
+      'bank_label': 'Banco',
+      'select_bank': 'Selecciona un banco',
+      'card_holder': 'Titular',
+      'full_name': 'Nombre Completo',
+      'card_number': 'Número de Tarjeta',
+      'expiration': 'Expiración',
+      'initial_balance': 'Saldo Inicial',
+      'currency_label': 'Moneda',
+      'color_label': 'Color',
+      'save_card': 'Guardar Tarjeta',
+      'card_holder_placeholder': 'NOMBRE TITULAR',
+      'add_card_first': 'Por favor agrega una tarjeta primero',
+      'card_cash': 'Efectivo',
+
+      // Settings
+      'settings_title': 'Configuración',
+      'account_security': 'Cuenta y Seguridad',
+      'biometrics': 'Biometría',
+      'change_password': 'Cambiar Contraseña',
+      'notifications': 'Notificaciones',
+      'preferences': 'Preferencias',
+      'language': 'Idioma',
+
+      'dark_mode': 'Modo Oscuro',
+      'chart_type': 'Tipo de Gráfico',
+      'backup_title': 'Copia de Seguridad',
+      'backup_local': 'Respaldar Datos (Local)',
+      'backup_local_sub': 'Guardar copia en el dispositivo',
+      'restore_local': 'Importar Datos',
+      'restore_local_sub': 'Restaurar desde archivo',
+      'export_excel': 'Exportar a Excel',
+      'export_excel_sub': 'Generar reporte .xlsx',
+      'export_pdf': 'Exportar a PDF',
+      'export_pdf_sub': 'Generar reporte .pdf',
+      'support_legal': 'Soporte & Legal',
+      'terms': 'Términos y Condiciones',
+      'open_source': 'Licencias de Código Abierto',
+      'paid_licenses': 'Licencias de Pago',
+      'help_center': 'Centro de Ayuda',
+      'about': 'Acerca de CashRapido',
+      'biometrics_enabled': 'Biometría activada',
+      'biometrics_disabled': 'Biometría desactivada',
+      'auth_failed': 'Fallo en autenticación',
+      'notif_enabled': 'Notificaciones activadas',
+      'notif_disabled': 'Notificaciones desactivadas',
+      'dark_mode_sim': 'Modo oscuro simulado',
+      'no_licenses': 'No hay licencias activas',
+      'generating_excel': 'Generando Excel...',
+      'generating_pdf': 'Generando PDF...',
+      'success_backup': 'Respaldo completado',
+      'success_restore': 'Datos importados correctamente',
+      'confirm_import': 'Confirmar Importación',
+      'import_warning':
+          'Importar datos sobrescribirá toda la información actual. Esta acción no se puede deshacer.\n\n¿Deseas continuar?',
+      'share_save': 'Compartir / Guardar',
+      'sync_drive': 'Sincronizar con Google Drive',
+      'sync_drive_sub': 'Conectar cuenta para respaldos',
+      'last_copy': 'Última Copia:',
+      'never': 'Nunca',
+      'restore_cloud_title': '¿Restaurar datos?',
+      'restore_cloud_warning':
+          'Esto sobrescribirá todos los datos actuales con la copia de la nube.',
+      'file_saved': 'Archivo guardado en',
+      'enter_amount_category_error': 'Por favor ingrese monto y categoría',
+      'incorrect_pin': 'PIN Incorrecto 🚫',
+      'new_transaction': 'Nueva Transacción',
+      'card_default_name': 'Tarjeta',
+      'description_hint': 'Descripción (Opcional)',
+      'create': 'Crear',
+      'save_transaction': 'Guardar Transacción',
+      'chart_type_pie': 'Circular',
+      'chart_type_bar': 'Barras',
+      'chart_type_line': 'Tendencia',
+      'backup_success': 'Respaldo creado exitosamente',
+
+      // Security Dialogs
+      'set_pin_title': 'Establecer PIN',
+      'current_pin_label': 'PIN Actual',
+      'new_pin_label': 'Nuevo PIN (4-6 dígitos)',
+      'confirm_pin_label': 'Confirmar PIN',
+      'delete_pin_action': 'Eliminar PIN',
+      'pin_deleted': 'PIN eliminado',
+      'current_pin_incorrect': 'PIN actual incorrecto',
+      'pin_length_error': 'El PIN debe tener 4-6 dígitos',
+      'pin_mismatch': 'Los PINs no coinciden',
+      'pin_saved': 'PIN guardado exitosamente',
+
+      'set_password_title': 'Establecer Contraseña',
+      'current_password_label': 'Contraseña Actual',
+      'new_password_label': 'Nueva Contraseña (mín. 6 caracteres)',
+      'confirm_password_label': 'Confirmar Contraseña',
+      'delete_password_action': 'Eliminar Contraseña',
+      'password_deleted': 'Contraseña eliminada',
+      'current_password_incorrect': 'Contraseña actual incorrecta',
+      'password_length_error': 'La contraseña debe tener al menos 6 caracteres',
+      'password_mismatch': 'Las contraseñas no coinciden',
+      'password_saved': 'Contraseña guardada exitosamente',
+
+      // Main Currency
+      'main_currency': 'Moneda Principal',
+      'main_currency_desc': 'Selecciona la moneda por defecto',
+      'select_currency': 'Seleccionar Moneda',
+      'add_currency': 'Agregar Moneda',
+      'currency_code': 'Código (ej. USD)',
+      'currency_symbol': 'Símbolo (ej. \$)',
+      'currency_added': 'Moneda agregada exitosamente',
+      'enter_currency_details': 'Ingrese los detalles de la moneda',
+      'custom_currency': 'Moneda Personalizada',
+      'currency_exists': 'Esta moneda ya existe',
+
+      // Income/Expense Toggle
+      'transaction_type': 'Tipo de Transacción',
+      'type_expense': 'Gasto',
+      'type_income': 'Ingreso',
+
+      // New Income Categories
+      'cat_salary': 'Salario',
+      'cat_business': 'Negocio',
+      'cat_gifts': 'Regalos',
+      'cat_other_income': 'Otros Ingresos',
+      'cat_rent': 'Alquiler',
+      'cat_investment': 'Inversiones',
+
+      'cards': 'Tarjetas',
+      // View All
+      'history_title': 'Historial de Transacciones',
+      'all_cards': 'Todas las Tarjetas',
+      // Currency Management
+      'currency_in_use_error': 'Esta moneda está en uso por una tarjeta',
+      'edit_currency': 'Editar Moneda',
+      'delete_currency': 'Eliminar Moneda',
+      'confirm_delete_currency': '¿Estás seguro de eliminar esta moneda?',
+      // Bank Management
+      'manage_banks': 'Bancos',
+      'add_bank': 'Agregar Banco',
+      'edit_bank': 'Editar Banco',
+      'delete_bank': 'Eliminar Banco',
+      'bank_name': 'Nombre del Banco',
+      'bank_in_use_error': 'Este banco está en uso por una tarjeta',
+      'bank_exists': 'El banco ya existe',
+      'confirm_delete_bank': '¿Estás seguro de eliminar este banco?',
+      'bank_added': 'Banco agregado exitosamente',
+    },
+    'en': {
+      // General
+      'app_name': 'CashRapido',
+      'cancel': 'Cancel',
+      'confirm': 'Confirm',
+      'save': 'Save',
+      'close': 'Close',
+      'delete': 'Delete',
+      'edit': 'Edit',
+      'error': 'Error',
+      'success': 'Success',
+      'loading': 'Loading...',
+      'search': 'Search',
+      'nav_home': 'Home',
+      'nav_wallet': 'Wallet',
+      'category_label': 'Category',
+      'import': 'Import',
+
+      // Onboarding
+      'onboarding_title_1': 'Total Control',
+      'onboarding_desc_1':
+          'Manage all your money from your mobile, without internet connection.',
+      'onboarding_title_2': 'Hassle Free',
+      'onboarding_desc_2':
+          'Intuitive and fast interface to record your expenses and income instantly.',
+      'onboarding_title_3': 'Your Financial Freedom',
+      'onboarding_desc_3':
+          'Visualize your goals and achieve the stability you\'ve always desired.',
+
+      // Scanner
+      'scan_card_instruction': 'Frame the card',
+      'align_card_instruction': 'Align card with frame',
+
+      // Category
+      'category_name_placeholder': 'Category Name',
+
+      // Settings Extended
+      'sync_drive_title': 'Sync with Google Drive',
+      'sync_drive_desc': 'Connect account for backups',
+      'error_connecting': 'Error connecting',
+      'user_default': 'User',
+      'backup_action': 'Backup',
+      'restore_action': 'Restore',
+      'restore_dialog_title': 'Restore data?',
+      'restore_dialog_desc':
+          'This will overwrite all current data with the cloud backup. This action cannot be undone.',
+      'restore_success_msg': 'Data restored successfully',
+      'backup_success_msg': 'Backup completed',
+      'developed_by': 'Developed by',
+      'developer_name': 'Lenier Cruz Perez',
+      'app_desc':
+          'CashRapido is a modern financial management tool designed for simplicity and speed.',
+
+      // Auth
+      'locked_title': 'CashRapido Locked',
+      'enter_pin': 'Enter PIN',
+      'enter_password': 'Enter your Password',
+      'unlock': 'Unlock',
+      'use_biometrics': 'Use Biometrics',
+      'pin_incorrect': 'Incorrect PIN',
+      'password_incorrect': 'Incorrect Password',
+
+      // Home
+      'hello_user': 'Hello, User 👋',
+      'daily_summary': 'Daily Summary',
+      'total_balance': 'Total Balance',
+      'income_month': 'Income (Month)',
+      'expense_month': 'Expense (Month)',
+      'recent_transactions': 'Recent',
+      'view_all': 'View All',
+      'no_recent_transactions': 'No recent transactions',
+      'select_card': 'Select Card',
+
+      // Quick Actions
+      'action_transfer': 'Transfer',
+      'action_recharge': 'Top Up',
+      'action_request': 'Request',
+      'action_more': 'More',
+      'action_scan': 'Scan',
+      'action_history': 'History',
+      'action_balances': 'Balances',
+      'action_help': 'Help',
+
+      // Action Dialogs
+      'from': 'From',
+      'to_card': 'Transfer to another card',
+      'select_dest': 'Select Destination',
+      'amount': 'Amount',
+      'balance': 'Balance',
+      'insufficient_funds': 'Insufficient funds 💸',
+      'card_locked': 'This card is locked 🔒',
+      'transfer_sent': 'Transfer sent',
+      'recharge_success': 'Balance top up',
+      'request_received': 'Request received',
+      'success_action': 'successful',
+      'select_destination_error': 'Select destination',
+
+      // Stats
+      'statistics': 'Statistics',
+      'income': 'Income',
+      'expense': 'Expense',
+      'week': 'Week',
+      'month': 'Month',
+      'year': 'Year',
+      'cat_general': 'General',
+      'cat_recharge': 'Recharges',
+      'cat_transfer': 'Transfers',
+      'cat_request': 'Requests',
+      'cat_unknown': 'Unknown',
+      'cat_food': 'Food',
+      'cat_transport': 'Transport',
+      'cat_home': 'Home',
+      'cat_health': 'Health',
+      'cat_entertainment': 'Entertainment',
+      'cat_bills': 'Bills',
+      'cat_shopping': 'Shopping',
+
+      // Add Category
+      'new_category': 'New Category',
+      'cat_name_label': 'Name',
+      'cat_name_hint': 'Ex. Gym, Freelance',
+      'cat_icon_label': 'Icon',
+      'cat_color_label': 'Color',
+      'save_category': 'Save Category',
+      'enter_name_error': 'Please enter a name',
+      'no_data': 'No data',
+      'of_total': 'of total',
+      'by_category': 'by Category',
+      'day': 'Day',
+      'range': 'Range',
+
+      // Wallet
+      'wallet': 'Wallet',
+      'no_cards': 'You don\'t have any cards',
+      'add_now': 'Add Now',
+      'my_cards': 'My Cards',
+      'of': 'of',
+      'card_settings': 'Card Settings',
+      'edit_card': 'Edit Card',
+      'edit_card_subtitle': 'Modify details or design',
+      'unlock_card': 'Unlock Card',
+      'lock_card': 'Lock Card',
+      'enable_use': 'Enable use',
+      'disable_temporarily': 'Disable temporarily',
+      'change_pin': 'Change PIN',
+      'transaction_security': 'Transaction security',
+      'spending_limit': 'Spending Limit',
+      'no_limit_set': 'No limit set',
+      'delete_card': 'Delete Card',
+      'action_cannot_undone': 'This action cannot be undone',
+      'set_pin': 'Set PIN',
+      'enter_4_digits': 'Enter 4 digits',
+      'pin_updated': 'PIN updated',
+      'monthly_amount': 'Monthly amount',
+      'limit_updated': 'Limit updated',
+      'delete_card_question': 'Delete Card?',
+      'delete_card_confirmation':
+          'Are you sure you want to delete this card? You will lose the balance history associated with it.',
+
+      // Card Management
+      'new_card': 'New Card',
+      'edit_card_title': 'Edit Card',
+      'scan_card': 'Scan Card',
+      'card_scanned': 'Card scanned successfully! 📸',
+      'complete_data_error': 'Please complete the data correctly',
+      'invalid_date_format': 'Invalid date format (MM/YY)',
+      'bank_label': 'Bank',
+      'select_bank': 'Select a bank',
+      'card_holder': 'Card Holder',
+      'full_name': 'Full Name',
+      'card_number': 'Card Number',
+      'expiration': 'Expiration',
+      'initial_balance': 'Initial Balance',
+      'currency_label': 'Currency',
+      'color_label': 'Color',
+      'save_card': 'Save Card',
+      'card_holder_placeholder': 'CARD HOLDER NAME',
+      'add_card_first': 'Please add a card first',
+      'card_cash': 'Cash',
+
+      // Settings
+      'settings_title': 'Settings',
+      'account_security': 'Account & Security',
+      'biometrics': 'Biometrics',
+      'change_password': 'Change Password',
+      'notifications': 'Notifications',
+      'preferences': 'Preferences',
+      'language': 'Language',
+
+      'dark_mode': 'Dark Mode',
+      'chart_type': 'Chart Type',
+      'backup_title': 'Backup & Restore',
+      'backup_local': 'Backup Data (Local)',
+      'backup_local_sub': 'Save copy to device',
+      'restore_local': 'Import Data',
+      'restore_local_sub': 'Restore from file',
+      'export_excel': 'Export to Excel',
+      'export_excel_sub': 'Generate .xlsx report',
+      'export_pdf': 'Export to PDF',
+      'export_pdf_sub': 'Generate .pdf report',
+      'support_legal': 'Support & Legal',
+      'terms': 'Terms & Conditions',
+      'open_source': 'Open Source Licenses',
+      'paid_licenses': 'Paid Licenses',
+      'help_center': 'Help Center',
+      'about': 'About CashRapido',
+      'biometrics_enabled': 'Biometrics enabled',
+      'biometrics_disabled': 'Biometrics disabled',
+      'auth_failed': 'Authentication failed',
+      'notif_enabled': 'Notifications enabled',
+      'notif_disabled': 'Notifications disabled',
+      'dark_mode_sim': 'Simulated Dark Mode',
+      'no_licenses': 'No active licenses',
+      'generating_excel': 'Generating Excel...',
+      'generating_pdf': 'Generating PDF...',
+      'success_backup': 'Backup completed',
+      'success_restore': 'Data imported successfully',
+      'confirm_import': 'Confirm Import',
+      'import_warning':
+          'Importing data will overwrite all current information. This action cannot be undone.\n\nDo you wish to continue?',
+      'share_save': 'Share / Save',
+      'sync_drive': 'Sync with Google Drive',
+      'sync_drive_sub': 'Connect account for backups',
+      'last_copy': 'Last Copy:',
+      'never': 'Never',
+      'restore_cloud_title': 'Restore data?',
+      'restore_cloud_warning':
+          'This will overwrite all current data with the cloud backup.',
+      'file_saved': 'File saved at',
+      'enter_amount_category_error': 'Please enter amount and category',
+      'incorrect_pin': 'Incorrect PIN 🚫',
+      'new_transaction': 'New Transaction',
+      'card_default_name': 'Card',
+      'description_hint': 'Description (Optional)',
+      'create': 'Create',
+      'save_transaction': 'Save Transaction',
+      'chart_type_pie': 'Pie',
+      'chart_type_bar': 'Bar',
+      'chart_type_line': 'Trend',
+      'backup_success': 'Backup created successfully',
+
+      // Security Dialogs
+      'set_pin_title': 'Set PIN',
+      'current_pin_label': 'Current PIN',
+      'new_pin_label': 'New PIN (4-6 digits)',
+      'confirm_pin_label': 'Confirm PIN',
+      'delete_pin_action': 'Delete PIN',
+      'pin_deleted': 'PIN deleted',
+      'current_pin_incorrect': 'Incorrect current PIN',
+      'pin_length_error': 'PIN must be 4-6 digits',
+      'pin_mismatch': 'PINs do not match',
+      'pin_saved': 'PIN saved successfully',
+
+      'set_password_title': 'Set Password',
+      'current_password_label': 'Current Password',
+      'new_password_label': 'New Password (min. 6 chars)',
+      'confirm_password_label': 'Confirm Password',
+      'delete_password_action': 'Delete Password',
+      'password_deleted': 'Password deleted',
+      'current_password_incorrect': 'Incorrect current password',
+      'password_length_error': 'Password must be at least 6 characters',
+      'password_mismatch': 'Passwords do not match',
+      'password_saved': 'Password saved successfully',
+
+      // Main Currency
+      'main_currency': 'Main Currency',
+      'main_currency_desc': 'Select default currency',
+      'select_currency': 'Select Currency',
+      'add_currency': 'Add Currency',
+      'currency_code': 'Code (e.g. USD)',
+      'currency_symbol': 'Symbol (e.g. \$)',
+      'currency_added': 'Currency added successfully',
+      'enter_currency_details': 'Enter currency details',
+      'custom_currency': 'Custom Currency',
+      'currency_exists': 'This currency already exists',
+
+      // Income/Expense Toggle
+      'transaction_type': 'Transaction Type',
+      'type_expense': 'Expense',
+      'type_income': 'Income',
+
+      // New Income Categories
+      'cat_salary': 'Salary',
+      'cat_business': 'Business',
+      'cat_gifts': 'Gifts',
+      'cat_other_income': 'Other Income',
+      'cat_rent': 'Rent',
+      'cat_investment': 'Investment',
+
+      'cards': 'Cards',
+      'history_title': 'Transaction History',
+      'all_cards': 'All Cards',
+      // Currency Management
+      'currency_in_use_error': 'Currency is in use by a card',
+      'edit_currency': 'Edit Currency',
+      'delete_currency': 'Delete Currency',
+      'confirm_delete_currency':
+          'Are you sure you want to delete this currency?',
+      // Bank Management
+      'manage_banks': 'Banks',
+      'add_bank': 'Add Bank',
+      'edit_bank': 'Edit Bank',
+      'delete_bank': 'Delete Bank',
+      'bank_name': 'Bank Name',
+      'bank_in_use_error': 'Bank is in use by a card',
+      'bank_exists': 'Bank already exists',
+      'confirm_delete_bank': 'Are you sure you want to delete this bank?',
+      'bank_added': 'Bank added successfully',
+    },
+    'fr': {
+      // General
+      'app_name': 'CashRapido',
+      'cancel': 'Annuler',
+      'confirm': 'Confirmer',
+      'save': 'Enregistrer',
+      'close': 'Fermer',
+      'delete': 'Supprimer',
+      'edit': 'Modifier',
+      'error': 'Erreur',
+      'success': 'Succès',
+      'loading': 'Chargement...',
+      'search': 'Rechercher',
+      'nav_home': 'Accueil',
+      'nav_wallet': 'Portefeuille',
+      'category_label': 'Catégorie',
+      'import': 'Importer',
+
+      // Onboarding
+      'onboarding_title_1': 'Contrôle Total',
+      'onboarding_desc_1':
+          'Gérez tout votre argent depuis votre mobile, sans connexion internet.',
+      'onboarding_title_2': 'Sans Tracas',
+      'onboarding_desc_2':
+          'Interface intuitive et rapide pour enregistrer vos dépenses et revenus instantanément.',
+      'onboarding_title_3': 'Votre Liberté Financière',
+      'onboarding_desc_3':
+          'Visualisez vos objectifs et atteignez la stabilité que vous avez toujours désirée.',
+
+      // Scanner
+      'scan_card_instruction': 'Encadrer la carte',
+      'align_card_instruction': 'Aligner la carte avec le cadre',
+
+      // Category
+      'category_name_placeholder': 'Nom de la Catégorie',
+
+      // Settings Extended
+      'sync_drive_title': 'Sync avec Google Drive',
+      'sync_drive_desc': 'Connecter compte pour sauvegardes',
+      'error_connecting': 'Erreur de connexion',
+      'user_default': 'Utilisateur',
+      'backup_action': 'Sauvegarder',
+      'restore_action': 'Restaurer',
+      'restore_dialog_title': 'Restaurer les données ?',
+      'restore_dialog_desc':
+          'Cela écrasera toutes les données actuelles avec la sauvegarde cloud. Cette action est irréversible.',
+      'restore_success_msg': 'Données restaurées avec succès',
+      'backup_success_msg': 'Sauvegarde terminée',
+      'developed_by': 'Développé par',
+      'developer_name': 'Lenier Cruz Perez',
+      'app_desc':
+          'CashRapido est un outil de gestion financière moderne conçu pour la simplicité et la rapidité.',
+
+      // Auth
+      'locked_title': 'CashRapido Verrouillé',
+      'enter_pin': 'Entrez le PIN',
+      'enter_password': 'Entrez votre mot de passe',
+      'unlock': 'Déverrouiller',
+      'use_biometrics': 'Utiliser Biométrie',
+      'pin_incorrect': 'PIN incorrect',
+      'password_incorrect': 'Mot de passe incorrect',
+
+      // Home
+      'hello_user': 'Bonjour, Utilisateur 👋',
+      'daily_summary': 'Résumé Quotidien',
+      'total_balance': 'Solde Total',
+      'income_month': 'Revenus (Mois)',
+      'expense_month': 'Dépenses (Mois)',
+      'recent_transactions': 'Récents',
+      'view_all': 'Voir tout',
+      'no_recent_transactions': 'Aucune transaction récente',
+      'select_card': 'Sélectionner une carte',
+
+      // Quick Actions
+      'action_transfer': 'Transférer',
+      'action_recharge': 'Recharger',
+      'action_request': 'Demander',
+      'action_more': 'Plus',
+      'action_scan': 'Scanner',
+      'action_history': 'Historique',
+      'action_balances': 'Soldes',
+      'action_help': 'Aide',
+
+      // Action Dialogs
+      'from': 'De',
+      'to_card': 'Transférer vers une autre carte',
+      'select_dest': 'Sélectionner la destination',
+      'amount': 'Montant',
+      'balance': 'Solde',
+      'insufficient_funds': 'Fonds insuffisants 💸',
+      'card_locked': 'Cette carte est verrouillée 🔒',
+      'transfer_sent': 'Virement envoyé',
+      'recharge_success': 'Recharge de solde',
+      'request_received': 'Demande reçue',
+      'success_action': 'réussi',
+      'select_destination_error': 'Sélectionner la destination',
+
+      // Stats
+      'statistics': 'Statistiques',
+      'income': 'Revenus',
+      'expense': 'Dépenses',
+      'week': 'Semaine',
+      'month': 'Mois',
+      'year': 'Année',
+      'cat_general': 'Général',
+      'cat_recharge': 'Recharges',
+      'cat_transfer': 'Transferts',
+      'cat_request': 'Demandes',
+      'cat_unknown': 'Inconnu',
+      'cat_food': 'Nourriture',
+      'cat_transport': 'Transport',
+      'cat_home': 'Maison',
+      'cat_health': 'Santé',
+      'cat_entertainment': 'Divertissement',
+      'cat_bills': 'Factures',
+      'cat_shopping': 'Achats',
+
+      // Add Category
+      'new_category': 'Nouvelle Catégorie',
+      'cat_name_label': 'Nom',
+      'cat_name_hint': 'Ex. Gym, Freelance',
+      'cat_icon_label': 'Icône',
+      'cat_color_label': 'Couleur',
+      'save_category': 'Enregistrer la catégorie',
+      'enter_name_error': 'Veuillez saisir un nom',
+      'no_data': 'Aucune donnée',
+      'of_total': 'du total',
+      'by_category': 'par Catégorie',
+      'day': 'Jour',
+      'range': 'Gamme',
+
+      // Wallet
+      'wallet': 'Portefeuille',
+      'no_cards': 'Vous n\'avez pas de cartes',
+      'add_now': 'Ajouter maintenant',
+      'my_cards': 'Mes Cartes',
+      'of': 'de',
+      'card_settings': 'Paramètres de la carte',
+      'edit_card': 'Modifier la carte',
+      'edit_card_subtitle': 'Modifier les détails ou le design',
+      'unlock_card': 'Déverrouiller la carte',
+      'lock_card': 'Verrouiller la carte',
+      'enable_use': 'Activer l\'utilisation',
+      'disable_temporarily': 'Désactiver temporairement',
+      'change_pin': 'Changer le PIN',
+      'transaction_security': 'Sécurité des transactions',
+      'spending_limit': 'Limite de dépenses',
+      'no_limit_set': 'Aucune limite définie',
+      'delete_card': 'Supprimer la carte',
+      'action_cannot_undone': 'Cette action ne peut pas être annulée',
+      'set_pin': 'Établir un PIN',
+      'enter_4_digits': 'Entrez 4 chiffres',
+      'pin_updated': 'PIN mis à jour',
+      'monthly_amount': 'Montant mensuel',
+      'limit_updated': 'Limite mise à jour',
+      'delete_card_question': 'Supprimer la carte?',
+      'delete_card_confirmation':
+          'Êtes-vous sûr de vouloir supprimer cette carte? Vous perdrez l\'historique du solde qui lui est associé.',
+
+      // Card Management
+      'new_card': 'Nouvelle Carte',
+      'edit_card_title': 'Modifier la Carte',
+      'scan_card': 'Scanner la Carte',
+      'card_scanned': 'Carte scannée avec succès! 📸',
+      'complete_data_error': 'Veuillez compléter les données correctement',
+      'invalid_date_format': 'Format de date invalide (MM/AA)',
+      'bank_label': 'Banque',
+      'select_bank': 'Sélectionnez une banque',
+      'card_holder': 'Titulaire',
+      'full_name': 'Nom Complet',
+      'card_number': 'Numéro de Carte',
+      'expiration': 'Expiration',
+      'initial_balance': 'Solde Initial',
+      'currency_label': 'Devise',
+      'color_label': 'Couleur',
+      'save_card': 'Enregistrer la Carte',
+      'card_holder_placeholder': 'NOM DU TITULAIRE',
+      'add_card_first': 'Veuillez d\'abord ajouter une carte',
+      'card_cash': 'Espèces',
+
+      // Settings
+      'settings_title': 'Paramètres',
+      'account_security': 'Compte et Sécurité',
+      'biometrics': 'Biométrie',
+      'change_password': 'Changer le mot de passe',
+      'notifications': 'Notifications',
+      'preferences': 'Préférences',
+      'language': 'Langue',
+
+      'dark_mode': 'Mode Sombre',
+      'chart_type': 'Type de Graphique',
+      'backup_title': 'Sauvegarde et Restauration',
+      'backup_local': 'Sauvegarder (Local)',
+      'backup_local_sub': 'Enregistrer sur l\'appareil',
+      'restore_local': 'Importer des Données',
+      'restore_local_sub': 'Restaurer depuis un fichier',
+      'export_excel': 'Exporter vers Excel',
+      'export_excel_sub': 'Générer rapport .xlsx',
+      'export_pdf': 'Exporter vers PDF',
+      'export_pdf_sub': 'Générer rapport .pdf',
+      'support_legal': 'Support et Juridique',
+      'terms': 'Termes et Conditions',
+      'open_source': 'Licences Open Source',
+      'paid_licenses': 'Licences Payantes',
+      'help_center': 'Centre d\'Aide',
+      'about': 'À propos de CashRapido',
+      'biometrics_enabled': 'Biométrie activée',
+      'biometrics_disabled': 'Biométrie désactivée',
+      'auth_failed': 'Authentification échouée',
+      'notif_enabled': 'Notifications activées',
+      'notif_disabled': 'Notifications désactivées',
+      'dark_mode_sim': 'Mode sombre simulé',
+      'no_licenses': 'Aucune licence active',
+      'generating_excel': 'Génération Excel...',
+      'generating_pdf': 'Génération PDF...',
+      'success_backup': 'Sauvegarde terminée',
+      'success_restore': 'Données importées avec succès',
+      'confirm_import': 'Confirmer l\'importation',
+      'import_warning':
+          'L\'importation écrasera toutes les données actuelles. Cette action est irréversible.\n\nVoulez-vous continuer ?',
+      'share_save': 'Partager / Enregistrer',
+      'sync_drive': 'Sync avec Google Drive',
+      'sync_drive_sub': 'Connecter compte pour sauvegardes',
+      'last_copy': 'Dernière Copie :',
+      'never': 'Jamais',
+      'restore_cloud_title': 'Restaurer les données ?',
+      'restore_cloud_warning':
+          'Cela écrasera toutes les données actuelles avec la sauvegarde cloud.',
+      'file_saved': 'Fichier enregistré sous',
+      'enter_amount_category_error':
+          'Veuillez saisir le montant et la catégorie',
+      // Income/Expense Toggle
+      'transaction_type': 'Type de Transaction',
+      'type_expense': 'Dépense',
+      'type_income': 'Revenu',
+
+      // New Income Categories
+      'cat_salary': 'Salaire',
+      'cat_business': 'Affaires',
+      'cat_gifts': 'Cadeaux',
+      'cat_other_income': 'Autres Revenus',
+      'cat_rent': 'Loyer',
+      'cat_investment': 'Investissement',
+
+      'cards': 'Cartes',
+      // View All
+      'history_title': 'Historique des transactions',
+      'all_cards': 'Toutes les cartes',
+      // Currency Management
+      'currency_in_use_error': 'Cette devise est utilisée par une carte',
+      'edit_currency': 'Modifier la devise',
+      'delete_currency': 'Supprimer la devise',
+      'confirm_delete_currency':
+          'Voulez-vous vraiment supprimer cette devise ?',
+      // Bank Management
+      'manage_banks': 'Banques',
+      'add_bank': 'Ajouter une banque',
+      'edit_bank': 'Modifier la banque',
+      'delete_bank': 'Supprimer la banque',
+      'bank_name': 'Nom de la banque',
+      'bank_in_use_error': 'Cette banque est utilisée par une carte',
+      'bank_exists': 'La banque existe déjà',
+      'confirm_delete_bank': 'Voulez-vous vraiment supprimer cette banque ?',
+      'bank_added': 'Banque ajoutée avec succès',
+      'incorrect_pin': 'PIN incorrect 🚫',
+      'new_transaction': 'Nouvelle Transaction',
+      'card_default_name': 'Carte',
+      'description_hint': 'Description (Optionnel)',
+      'create': 'Créer',
+      'save_transaction': 'Enregistrer la transaction',
+      'chart_type_pie': 'Circulaire',
+      'chart_type_bar': 'Barres',
+      'chart_type_line': 'Tendance',
+      'backup_success': 'Sauvegarde créée avec succès',
+
+      // Security Dialogs
+      'set_pin_title': 'Définir PIN',
+      'current_pin_label': 'PIN Actuel',
+      'new_pin_label': 'Nouveau PIN (4-6 chiffres)',
+      'confirm_pin_label': 'Confirmer PIN',
+      'delete_pin_action': 'Supprimer PIN',
+      'pin_deleted': 'PIN supprimé',
+      'current_pin_incorrect': 'PIN actuel incorrect',
+      'pin_length_error': 'Le PIN doit avoir 4-6 chiffres',
+      'pin_mismatch': 'Les PINs ne correspondent pas',
+      'pin_saved': 'PIN enregistré avec succès',
+
+      'set_password_title': 'Définir Mot de Passe',
+      'current_password_label': 'Mot de Passe Actuel',
+      'new_password_label': 'Nouveau Mot de Passe (min. 6 car.)',
+      'confirm_password_label': 'Confirmer Mot de Passe',
+      'delete_password_action': 'Supprimer Mot de Passe',
+      'password_deleted': 'Mot de Passe supprimé',
+      'current_password_incorrect': 'Mot de passe actuel incorrect',
+      'password_length_error':
+          'Le mot de passe doit avoir au moins 6 caractères',
+      'password_mismatch': 'Les mots de passe ne correspondent pas',
+      'password_saved': 'Mot de passe enregistré avec succès',
+
+      // Main Currency
+      'main_currency': 'Devise Principale',
+      'main_currency_desc': 'Sélectionner la devise par défaut',
+      'select_currency': 'Sélectionner Devise',
+      'add_currency': 'Ajouter Devise',
+      'currency_code': 'Code (ex. USD)',
+      'currency_symbol': 'Symbole (ex. \$)',
+      'currency_added': 'Devise ajoutée avec succès',
+      'enter_currency_details': 'Entrez les détails de la devise',
+      'custom_currency': 'Devise Personnalisée',
+      'currency_exists': 'Cette devise existe déjà',
+    },
+  };
+
+  String translate(String key) {
+    return _localizedValues[locale.languageCode]?[key] ?? key;
+  }
+}
+
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
+  const _AppLocalizationsDelegate();
+
+  @override
+  bool isSupported(Locale locale) {
+    return ['es', 'en', 'fr'].contains(locale.languageCode);
+  }
+
+  @override
+  Future<AppLocalizations> load(Locale locale) {
+    return Future.value(AppLocalizations(locale));
+  }
+
+  @override
+  bool shouldReload(_AppLocalizationsDelegate old) => false;
+}
+
+// Extension for easier access
+extension AppLocalizationsExtension on BuildContext {
+  AppLocalizations get loc => AppLocalizations.of(this);
+  String t(String key) => AppLocalizations.of(this).translate(key);
+}
