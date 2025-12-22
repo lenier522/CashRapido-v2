@@ -65,53 +65,192 @@ class HelpCenterScreen extends StatelessWidget {
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         children: [
+          // Getting Started
+          _buildSectionHeader(context, '🚀 Primeros Pasos'),
           _buildHelpItem(
             context,
-            "¿Cómo agrego una tarjeta?",
+            "¿Cómo agregar mi primera tarjeta?",
             "Ve a la pantalla de Billetera (icono inferior), toca el botón '+' y rellena los datos de tu tarjeta o efectivo.",
           ),
           _buildHelpItem(
             context,
-            "¿Cómo uso la IA?",
-            "Activa la IA en Configuración. Luego, toca el icono del robot en la pantalla principal para preguntar sobre tus gastos.",
+            "¿Cómo registrar una transacción?",
+            "Toca el botón '+' flotante. Selecciona gasto/ingreso, categoría, monto y descripción.",
+          ),
+          _buildHelpItem(
+            context,
+            "¿Cómo usar el escáner?",
+            "Toca 'Más' en acciones rápidas → 'Escanear Tarjeta'. Alinea tu tarjeta con el marco.",
+          ),
+          const SizedBox(height: 20),
+
+          // Transactions
+          _buildSectionHeader(context, '💰 Transacciones'),
+          _buildHelpItem(
+            context,
+            "¿Cómo editar una transacción?",
+            "Toca cualquier transacción en la lista para ver detalles y editarla o eliminarla.",
+          ),
+          _buildHelpItem(
+            context,
+            "¿Cómo transferir entre tarjetas?",
+            "Usa 'Transferir' en acciones rápidas. Selecciona origen, destino y monto.",
+          ),
+          _buildHelpItem(
+            context,
+            "¿Puedo crear categorías personalizadas?",
+            "Las categorías son predefinidas (Comida, Transporte, etc.) para simplicidad.",
+          ),
+          const SizedBox(height: 20),
+
+          // Cards & Accounts
+          _buildSectionHeader(context, '💳 Tarjetas'),
+          _buildHelpItem(
+            context,
+            "¿Cuántas tarjetas puedo tener?",
+            "Ilimitadas: efectivo, bancos, tarjetas de crédito, etc.",
+          ),
+          _buildHelpItem(
+            context,
+            "¿Cómo cambiar el balance?",
+            "Ve a Billetera → Toca la tarjeta → Editar → Ajusta el balance.",
+          ),
+          _buildHelpItem(
+            context,
+            "¿Qué es el Contador de Dinero?",
+            "Herramienta para contar billetes/monedas. Solo para cuentas de Efectivo.",
+          ),
+          const SizedBox(height: 20),
+
+          // Statistics
+          _buildSectionHeader(context, '📊 Estadísticas'),
+          _buildHelpItem(
+            context,
+            "¿Cómo ver gastos por categoría?",
+            "Pestaña Estadísticas muestra gráficos circulares organizados por categoría.",
+          ),
+          _buildHelpItem(
+            context,
+            "¿Puedo exportar datos?",
+            "Sí, en Configuración → Exportar Datos (Excel o PDF).",
+          ),
+          _buildHelpItem(
+            context,
+            "¿Cómo cambiar el período?",
+            "En Estadísticas, toca el selector: Mes, Año o Rango personalizado.",
+          ),
+          const SizedBox(height: 20),
+
+          // AI Assistant
+          _buildSectionHeader(context, '🤖 Asistente IA'),
+          _buildHelpItem(
+            context,
+            "¿Qué hace la IA?",
+            "Analiza gastos, da consejos financieros y responde preguntas sobre tus finanzas.",
+          ),
+          _buildHelpItem(
+            context,
+            "¿Cómo activar la IA?",
+            "Configuración → Asistente IA → Activar. El botón aparecerá en inicio.",
           ),
           _buildHelpItem(
             context,
             "¿Mis datos están seguros?",
             "Sí, todos los datos se guardan en tu teléfono. Si activas la biometría, nadie podrá entrar sin tu huella o rostro.",
           ),
+          const SizedBox(height: 20),
+
+          // Settings
+          _buildSectionHeader(context, '⚙️ Configuración'),
           _buildHelpItem(
             context,
-            "¿Cómo transfiero dinero?",
-            "Usa el botón 'Transferir' en la pantalla de inicio. Si es entre tus propias tarjetas, marca la casilla 'Transferencia Interna'.",
+            "¿Cómo cambiar idioma?",
+            "Configuración → Idioma → Español/English/Français.",
+          ),
+          _buildHelpItem(
+            context,
+            "¿Cómo activar biometría?",
+            "Configuración → Seguridad → Bloqueo Biométrico.",
+          ),
+          _buildHelpItem(
+            context,
+            "¿Cómo cambiar moneda?",
+            "Configuración → Moneda Principal → Selecciona o crea una.",
+          ),
+          const SizedBox(height: 20),
+
+          // Troubleshooting
+          _buildSectionHeader(context, '🔧 Problemas'),
+          _buildHelpItem(
+            context,
+            "No guarda mis cambios",
+            "Verifica permisos de almacenamiento. Reinicia la app si persiste.",
+          ),
+          _buildHelpItem(
+            context,
+            "Escáner no detecta tarjeta",
+            "Asegura buena iluminación y alineación. Algunos diseños no son detectables.",
           ),
           _buildHelpItem(
             context,
             "¿Qué hago si olvido mi PIN?",
             "Por seguridad, no guardamos tu PIN. Si lo olvidas, tendrás que reinstalar la aplicación, pero podrás restaurar tu copia de seguridad si hiciste una previamente.",
           ),
+          const SizedBox(height: 20),
+
+          // Contact
+          _buildSectionHeader(context, '📧 Contacto'),
+          _buildHelpItem(
+            context,
+            "¿Cómo reportar un error?",
+            "Contacta al desarrollador con descripción detallada del problema.",
+          ),
+          _buildHelpItem(
+            context,
+            "¿Hay versión web?",
+            "Actualmente solo disponible como app móvil (Android/iOS).",
+          ),
+          const SizedBox(height: 32),
         ],
       ),
     );
   }
 
-  Widget _buildHelpItem(BuildContext context, String question, String answer) {
-    return ExpansionTile(
-      title: Text(
-        question,
-        style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-      ),
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(
-            answer,
-            style: GoogleFonts.outfit(color: Colors.grey[600]),
-          ),
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8, top: 4),
+      child: Text(
+        title,
+        style: GoogleFonts.outfit(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).colorScheme.primary,
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildHelpItem(BuildContext context, String question, String answer) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        title: Text(
+          question,
+          style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13),
+        ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Text(
+              answer,
+              style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[600]),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
