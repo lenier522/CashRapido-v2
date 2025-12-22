@@ -39,10 +39,38 @@ class AppLocalizations {
       'onboarding_title_2': 'Sin Complicaciones',
       'onboarding_desc_2':
           'Interfaz intuitiva y rápida para registrar tus gastos e ingresos al instante.',
-      'onboarding_title_3': 'Tu Libertad Financiera',
+      'onboarding_title_3': 'Asistente IA Experto',
       'onboarding_desc_3':
-          'Visualiza tus metas y alcanza la estabilidad que siempre has deseado.',
-
+          'Tu asesor financiero personal. Pregunta sobre tus gastos y consejos las 24/7.',
+      'tour_wallet_title': 'Tu Billetera',
+      'tour_wallet_desc': 'Aquí ves tu saldo. Toca para cambiar de tarjeta.',
+      'tour_scan_title': 'Escáner Rápido',
+      'tour_scan_desc': 'Escanea tarjetas físicas para agregarlas al instante.',
+      'tour_ai_title': 'Asistente IA',
+      'tour_ai_desc': 'Tu asesor personal. Toca para recibir consejos.',
+      'tour_transfer_title': 'Transferencias',
+      'tour_transfer_desc': 'Mueve dinero o envía pagos rápidamente.',
+      'tour_fab_title': 'Agregar Transacción',
+      'tour_fab_desc':
+          'Toca aquí para registrar un nuevo gasto o ingreso rápidamente.',
+      'tour_navbar_title': 'Navegación Principal',
+      'tour_navbar_desc':
+          'Accede a Inicio, Billetera, Estadísticas y Configuración desde aquí.',
+      'tour_card_selector_title': 'Selector de Tarjetas',
+      'tour_card_selector_desc':
+          'Toca el nombre de la tarjeta para cambiar entre tus cuentas.',
+      'tour_transactions_title': 'Transacciones Recientes',
+      'tour_transactions_desc':
+          'Aquí verás tus últimos movimientos. Toca para ver detalles.',
+      'tour_wallet_nav_title': 'Pestaña Billetera',
+      'tour_wallet_nav_desc':
+          'Ve todas tus tarjetas, edítalas o agrega nuevas.',
+      'tour_stats_nav_title': 'Pestaña Estadísticas',
+      'tour_stats_nav_desc':
+          'Analiza tus gastos e ingresos con gráficos detallados.',
+      'tour_settings_nav_title': 'Pestaña Configuración',
+      'tour_settings_nav_desc':
+          'Personaliza la app, gestiona seguridad y exporta datos.',
       // Scanner
       'scan_card_instruction': 'Encuadra la tarjeta',
       'align_card_instruction': 'Alinea la tarjeta con el marco',
@@ -193,6 +221,9 @@ class AppLocalizations {
       'card_holder_placeholder': 'NOMBRE TITULAR',
       'add_card_first': 'Por favor agrega una tarjeta primero',
       'card_cash': 'Efectivo',
+      'account_type': 'Tipo de Cuenta',
+      'bank_card': 'Tarjeta Bancaria',
+      'wallet_name': 'Nombre de la Billetera',
 
       // Settings
       'settings_title': 'Configuración',
@@ -322,6 +353,19 @@ class AppLocalizations {
       'bank_exists': 'El banco ya existe',
       'confirm_delete_bank': '¿Estás seguro de eliminar este banco?',
       'bank_added': 'Banco agregado exitosamente',
+      'all_accounts': 'Todas las Cuentas',
+      'bank_cards_only': 'Solo Tarjetas',
+      'cash_only': 'Solo Efectivo',
+      'count_money': 'Contar Dinero',
+      'bill_value': 'Valor',
+      'quantity': 'Cantidad',
+      'total': 'Total',
+      'clear_all': 'Limpiar Todo',
+      'money_counter_title': 'Contador de Dinero',
+      'enable_ai': 'Habilitar Asistente IA',
+      'ai_chat_title': 'Asistente Financiero',
+      'ask_ai_hint': 'Pide consejos, análisis...',
+      'ai_welcome_message': '¡Hola! Soy tu asistente financiero personal.',
     },
     'en': {
       // General
@@ -348,9 +392,37 @@ class AppLocalizations {
       'onboarding_title_2': 'Hassle Free',
       'onboarding_desc_2':
           'Intuitive and fast interface to record your expenses and income instantly.',
-      'onboarding_title_3': 'Your Financial Freedom',
+      'onboarding_title_3': 'Expert AI Assistant',
       'onboarding_desc_3':
-          'Visualize your goals and achieve the stability you\'ve always desired.',
+          'Your personal financial advisor. Ask about your spending and get advice 24/7.',
+      'tour_wallet_title': 'Your Wallet',
+      'tour_wallet_desc': 'Here is your balance. Tap to switch cards.',
+      'tour_scan_title': 'Quick Scanner',
+      'tour_scan_desc': 'Scan physical cards to add them instantly.',
+      'tour_ai_title': 'AI Assistant',
+      'tour_ai_desc': 'Your personal advisor. Tap for advice.',
+      'tour_transfer_title': 'Transfers',
+      'tour_transfer_desc': 'Move money or send payments quickly.',
+      'tour_fab_title': 'Add Transaction',
+      'tour_fab_desc': 'Tap here to quickly record a new expense or income.',
+      'tour_navbar_title': 'Main Navigation',
+      'tour_navbar_desc':
+          'Access Home, Wallet, Statistics, and Settings from here.',
+      'tour_card_selector_title': 'Card Selector',
+      'tour_card_selector_desc':
+          'Tap the card name to switch between your accounts.',
+      'tour_transactions_title': 'Recent Transactions',
+      'tour_transactions_desc':
+          'See your latest movements here. Tap for details.',
+      'tour_wallet_nav_title': 'Wallet Tab',
+      'tour_wallet_nav_desc':
+          'View all your cards, edit them, or add new ones.',
+      'tour_stats_nav_title': 'Statistics Tab',
+      'tour_stats_nav_desc':
+          'Analyze your spending and income with detailed charts.',
+      'tour_settings_nav_title': 'Settings Tab',
+      'tour_settings_nav_desc':
+          'Customize the app, manage security, and export data.',
 
       // Scanner
       'scan_card_instruction': 'Frame the card',
@@ -502,6 +574,9 @@ class AppLocalizations {
       'card_holder_placeholder': 'CARD HOLDER NAME',
       'add_card_first': 'Please add a card first',
       'card_cash': 'Cash',
+      'account_type': 'Account Type',
+      'bank_card': 'Bank Card',
+      'wallet_name': 'Wallet Name',
 
       // Settings
       'settings_title': 'Settings',
@@ -631,6 +706,19 @@ class AppLocalizations {
       'bank_exists': 'Bank already exists',
       'confirm_delete_bank': 'Are you sure you want to delete this bank?',
       'bank_added': 'Bank added successfully',
+      'all_accounts': 'All Accounts',
+      'bank_cards_only': 'Cards Only',
+      'cash_only': 'Cash Only',
+      'count_money': 'Count Money',
+      'bill_value': 'Value',
+      'quantity': 'Count',
+      'total': 'Total',
+      'clear_all': 'Clear All',
+      'money_counter_title': 'Money Counter',
+      'enable_ai': 'Enable AI Assistant',
+      'ai_chat_title': 'Financial Assistant',
+      'ask_ai_hint': 'Ask for advice, analysis...',
+      'ai_welcome_message': 'Hello! I am your personal financial assistant.',
     },
     'fr': {
       // General
@@ -657,9 +745,40 @@ class AppLocalizations {
       'onboarding_title_2': 'Sans Tracas',
       'onboarding_desc_2':
           'Interface intuitive et rapide pour enregistrer vos dépenses et revenus instantanément.',
-      'onboarding_title_3': 'Votre Liberté Financière',
+      'onboarding_title_3': 'Assistant IA Expert',
       'onboarding_desc_3':
-          'Visualisez vos objectifs et atteignez la stabilité que vous avez toujours désirée.',
+          'Votre conseiller financier personnel. Posez des questions sur vos dépenses 24/7.',
+      'tour_wallet_title': 'Votre Portefeuille',
+      'tour_wallet_desc': 'Voici votre solde. Appuyez pour changer de carte.',
+      'tour_scan_title': 'Scanner Rapide',
+      'tour_scan_desc':
+          'Scannez des cartes physiques pour les ajouter instantanément.',
+      'tour_ai_title': 'Assistant IA',
+      'tour_ai_desc': 'Votre conseiller personnel. Appuyez pour des conseils.',
+      'tour_transfer_title': 'Transferts',
+      'tour_transfer_desc':
+          'Déplacez de l\'argent ou envoyez des paiements rapidement.',
+      'tour_fab_title': 'Ajouter Transaction',
+      'tour_fab_desc':
+          'Appuyez ici pour enregistrer rapidement une dépense ou un revenu.',
+      'tour_navbar_title': 'Navigation Principale',
+      'tour_navbar_desc':
+          'Accédez à Accueil, Portefeuille, Statistiques et Paramètres d\'ici.',
+      'tour_card_selector_title': 'Sélecteur de Cartes',
+      'tour_card_selector_desc':
+          'Appuyez sur le nom de la carte pour changer de compte.',
+      'tour_transactions_title': 'Transactions Récentes',
+      'tour_transactions_desc':
+          'Voyez vos derniers mouvements ici. Appuyez pour les détails.',
+      'tour_wallet_nav_title': 'Onglet Portefeuille',
+      'tour_wallet_nav_desc':
+          'Consultez toutes vos cartes, modifiez-les ou ajoutez-en de nouvelles.',
+      'tour_stats_nav_title': 'Onglet Statistiques',
+      'tour_stats_nav_desc':
+          'Analysez vos dépenses et revenus avec des graphiques détaillés.',
+      'tour_settings_nav_title': 'Onglet Paramètres',
+      'tour_settings_nav_desc':
+          'Personnalisez l\'application, gérez la sécurité et exportez les données.',
 
       // Scanner
       'scan_card_instruction': 'Encadrer la carte',
@@ -811,6 +930,9 @@ class AppLocalizations {
       'card_holder_placeholder': 'NOM DU TITULAIRE',
       'add_card_first': 'Veuillez d\'abord ajouter une carte',
       'card_cash': 'Espèces',
+      'account_type': 'Type de Compte',
+      'bank_card': 'Carte Bancaire',
+      'wallet_name': 'Nom du Portefeuille',
 
       // Settings
       'settings_title': 'Paramètres',
@@ -942,6 +1064,20 @@ class AppLocalizations {
       'enter_currency_details': 'Entrez les détails de la devise',
       'custom_currency': 'Devise Personnalisée',
       'currency_exists': 'Cette devise existe déjà',
+      'all_accounts': 'Tous les Comptes',
+      'bank_cards_only': 'Cartes Uniquement',
+      'cash_only': 'Espèces Uniquement',
+      'count_money': 'Compter l\'argent',
+      'bill_value': 'Valeur',
+      'quantity': 'Quantité',
+      'total': 'Total',
+      'clear_all': 'Tout Effacer',
+      'money_counter_title': 'Compteur d\'Argent',
+      'enable_ai': 'Activer l\'Assistant IA',
+      'ai_chat_title': 'Assistant Financier',
+      'ask_ai_hint': 'Demandez des conseils...',
+      'ai_welcome_message':
+          'Bonjour ! Je suis votre assistant financier personnel.',
     },
   };
 

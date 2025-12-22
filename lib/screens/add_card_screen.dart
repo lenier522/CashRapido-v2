@@ -24,6 +24,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
   String _selectedCurrency = 'USD';
   String _selectedBank = 'VISA';
   int _selectedColorValue = 0xFF42A5F5;
+  bool _isCash = false;
 
   @override
   void initState() {
@@ -40,7 +41,39 @@ class _AddCardScreenState extends State<AddCardScreen> {
     if (card != null) {
       _selectedCurrency = card.currency;
       _selectedBank = card.bankName ?? 'VISA';
+      _isCash = card.isCash;
       _selectedColorValue = card.colorValue;
+    }
+
+    // Defer the safety check to next frame or use didChangeDependencies
+    // However, we can access Provider with listen: false here safely for initial values.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _validateState();
+    });
+  }
+
+  void _validateState() {
+    final provider = Provider.of<AppProvider>(context, listen: false);
+
+    // CRASH FIX: Recover lost "Cash" status
+    if (!_isCash &&
+        (_selectedBank == 'Efectivo' ||
+            _selectedBank == 'Cash' ||
+            _selectedBank == 'Espèces')) {
+      setState(() {
+        _isCash = true;
+      });
+    }
+
+    // CRASH FIX: Ensure selected bank exists in dropdown if not cash
+    if (!_isCash) {
+      if (!provider.availableBanks.contains(_selectedBank)) {
+        setState(() {
+          _selectedBank = provider.availableBanks.isNotEmpty
+              ? provider.availableBanks.first
+              : 'VISA';
+        });
+      }
     }
   }
 
@@ -54,19 +87,30 @@ class _AddCardScreenState extends State<AddCardScreen> {
   ];
 
   void _saveCard() {
-    if (_holderController.text.isEmpty || _numberController.text.length < 19) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(context.t('complete_data_error'))));
-      return;
-    }
+    if (!_isCash) {
+      if (_holderController.text.isEmpty ||
+          _numberController.text.length < 19) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.t('complete_data_error'))),
+        );
+        return;
+      }
 
-    if (_expiryController.text.length != 5 ||
-        !_expiryController.text.contains('/')) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(context.t('invalid_date_format'))));
-      return;
+      if (_expiryController.text.length != 5 ||
+          !_expiryController.text.contains('/')) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.t('invalid_date_format'))),
+        );
+        return;
+      }
+    } else {
+      // Cash validation: Name required
+      if (_holderController.text.isEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.t('enter_name_error'))));
+        return;
+      }
     }
 
     final balance =
@@ -84,13 +128,14 @@ class _AddCardScreenState extends State<AddCardScreen> {
         name: _holderController.text.toUpperCase(),
         balance: balance,
         currency: _selectedCurrency,
-        cardNumber: _numberController.text,
-        expiryDate: _expiryController.text,
+        cardNumber: _isCash ? 'CASH' : _numberController.text,
+        expiryDate: _isCash ? 'N/A' : _expiryController.text,
         colorValue: _selectedColorValue,
-        bankName: _selectedBank,
+        bankName: _isCash ? context.t('card_cash') : _selectedBank,
         isLocked: widget.cardToEdit!.isLocked,
         pin: widget.cardToEdit!.pin,
         spendingLimit: widget.cardToEdit!.spendingLimit,
+        isCash: _isCash,
       );
       provider.editCard(updatedCard);
     } else {
@@ -100,12 +145,15 @@ class _AddCardScreenState extends State<AddCardScreen> {
         name: _holderController.text.toUpperCase(),
         balance: balance,
         currency: _selectedCurrency,
-        cardNumber: _numberController.text,
-        expiryDate: _expiryController.text.isEmpty
-            ? '12/28'
-            : _expiryController.text,
+        cardNumber: _isCash ? 'CASH' : _numberController.text,
+        expiryDate: _isCash
+            ? 'N/A'
+            : (_expiryController.text.isEmpty
+                  ? '12/28'
+                  : _expiryController.text),
         colorValue: _selectedColorValue,
-        bankName: _selectedBank,
+        bankName: _isCash ? context.t('card_cash') : _selectedBank,
+        isCash: _isCash,
       );
       provider.addCard(newCard);
     }
@@ -141,6 +189,14 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Currency Symbol Lookup
+    final currencyObj = Provider.of<AppProvider>(context).availableCurrencies
+        .firstWhere(
+          (c) => c.code == _selectedCurrency,
+          orElse: () =>
+              Currency(code: _selectedCurrency, symbol: '\$', name: ''),
+        );
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -161,7 +217,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          if (widget.cardToEdit == null) // Only for new cards
+          if (widget.cardToEdit == null && !_isCash) // Only for new cards
             IconButton(
               onPressed: _scanCard,
               icon: const Icon(
@@ -177,6 +233,37 @@ class _AddCardScreenState extends State<AddCardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Account Type Toggle
+            if (widget.cardToEdit == null) ...[
+              Text(
+                context.t('account_type'),
+                style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildTypeOption(
+                      title: context.t('bank_card'),
+                      icon: Icons.credit_card,
+                      isSelected: !_isCash,
+                      onTap: () => setState(() => _isCash = false),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildTypeOption(
+                      title: context.t('card_cash'),
+                      icon: Icons.attach_money,
+                      isSelected: _isCash,
+                      onTap: () => setState(() => _isCash = true),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 30),
+            ],
+
             // Preview Card
             Container(
               height: 200,
@@ -209,18 +296,36 @@ class _AddCardScreenState extends State<AddCardScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        _selectedBank,
+                        _isCash ? context.t('card_cash') : _selectedBank,
                         style: GoogleFonts.outfit(
                           color: Colors.white70,
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const Icon(Icons.contactless, color: Colors.white70),
+                      Row(
+                        children: [
+                          Text(
+                            _selectedCurrency,
+                            style: GoogleFonts.outfit(
+                              color: Colors.white70,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            _isCash
+                                ? Icons.account_balance_wallet
+                                : Icons.contactless,
+                            color: Colors.white70,
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                   Text(
-                    '\$ ${_balanceController.text.isEmpty ? '0.00' : _balanceController.text}',
+                    '${currencyObj.symbol} ${_balanceController.text.isEmpty ? '0.00' : _balanceController.text}',
                     style: GoogleFonts.outfit(
                       color: Colors.white,
                       fontSize: 32,
@@ -230,23 +335,26 @@ class _AddCardScreenState extends State<AddCardScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        _numberController.text.isEmpty
-                            ? '****-****-****-****'
-                            : _numberController.text,
-                        style: GoogleFonts.sourceCodePro(
-                          color: Colors.white,
-                          fontSize: 18,
-                          letterSpacing: 2,
+                      if (!_isCash)
+                        Text(
+                          _numberController.text.isEmpty
+                              ? '****-****-****-****'
+                              : _numberController.text,
+                          style: GoogleFonts.sourceCodePro(
+                            color: Colors.white,
+                            fontSize: 18,
+                            letterSpacing: 2,
+                          ),
                         ),
-                      ),
                       const SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
                             _holderController.text.isEmpty
-                                ? context.t('card_holder_placeholder')
+                                ? (_isCash
+                                      ? context.t('wallet_name')
+                                      : context.t('card_holder_placeholder'))
                                 : _holderController.text.toUpperCase(),
                             style: GoogleFonts.outfit(
                               color: Colors.white70,
@@ -254,15 +362,16 @@ class _AddCardScreenState extends State<AddCardScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          Text(
-                            _expiryController.text.isEmpty
-                                ? 'MM/YY'
-                                : _expiryController.text,
-                            style: GoogleFonts.outfit(
-                              color: Colors.white70,
-                              fontSize: 14,
+                          if (!_isCash)
+                            Text(
+                              _expiryController.text.isEmpty
+                                  ? 'MM/YY'
+                                  : _expiryController.text,
+                              style: GoogleFonts.outfit(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ],
@@ -273,40 +382,49 @@ class _AddCardScreenState extends State<AddCardScreen> {
             const SizedBox(height: 40),
 
             // Inputs
+            if (!_isCash) ...[
+              _buildTextField(
+                context.t('bank_label'),
+                context.t('select_bank'),
+                TextEditingController(text: _selectedBank),
+                isDropdown: true,
+              ),
+              const SizedBox(height: 16),
+            ],
+
             _buildTextField(
-              context.t('bank_label'),
-              context.t('select_bank'),
-              TextEditingController(text: _selectedBank),
-              isDropdown: true,
-            ),
-            const SizedBox(height: 16),
-            _buildTextField(
-              context.t('card_holder'),
-              context.t('full_name'),
+              _isCash ? context.t('wallet_name') : context.t('card_holder'),
+              _isCash ? context.t('cat_name_hint') : context.t('full_name'),
               _holderController,
             ),
             const SizedBox(height: 16),
-            _buildTextField(
-              context.t('card_number'),
-              'XXXX-XXXX-XXXX-XXXX',
-              _numberController,
-              type: TextInputType.number,
-              isCardNumber: true,
-            ),
-            const SizedBox(height: 16),
+
+            if (!_isCash) ...[
+              _buildTextField(
+                context.t('card_number'),
+                'XXXX-XXXX-XXXX-XXXX',
+                _numberController,
+                type: TextInputType.number,
+                isCardNumber: true,
+              ),
+              const SizedBox(height: 16),
+            ],
+
             Row(
               children: [
-                Flexible(
-                  fit: FlexFit.tight,
-                  child: _buildTextField(
-                    context.t('expiration'),
-                    'MM/YY',
-                    _expiryController,
-                    type: TextInputType.number,
-                    isExpiry: true,
+                if (!_isCash) ...[
+                  Flexible(
+                    fit: FlexFit.tight,
+                    child: _buildTextField(
+                      context.t('expiration'),
+                      'MM/YY',
+                      _expiryController,
+                      type: TextInputType.number,
+                      isExpiry: true,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 16),
+                  const SizedBox(width: 16),
+                ],
                 Flexible(
                   fit: FlexFit.tight,
                   child: _buildTextField(
@@ -420,6 +538,45 @@ class _AddCardScreenState extends State<AddCardScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTypeOption({
+    required String title,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.deepPurple : Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? Colors.deepPurple : Colors.grey.shade300,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? Colors.white : Colors.grey,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: GoogleFonts.outfit(
+                color: isSelected ? Colors.white : Colors.grey,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ],

@@ -298,26 +298,36 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
                     ),
                     dropdownColor: Theme.of(context).cardColor,
                     items: provider.cards.map((card) {
-                      final last4 = card.cardNumber.length >= 4
-                          ? card.cardNumber.substring(
-                              card.cardNumber.length - 4,
-                            )
-                          : '****';
-                      String bankName =
-                          card.bankName ?? context.t('card_default_name');
-                      if (bankName == 'Efectivo') {
-                        bankName = context.t('card_cash');
+                      final last4 =
+                          card.cardNumber.isEmpty || card.cardNumber == 'CASH'
+                          ? ''
+                          : (card.cardNumber.length >= 4
+                                ? '(...${card.cardNumber.substring(card.cardNumber.length - 4)})'
+                                : '');
+
+                      String displayName;
+                      if (card.isCash) {
+                        // User requested format: "Cash(Name)-Currency"
+                        displayName =
+                            "${context.t('card_cash')}(${card.name})-${card.currency}";
+                      } else {
+                        // Format for Bank Cards: "BankName (...1234) - USD"
+                        String bankName =
+                            card.bankName ?? context.t('card_default_name');
+                        displayName = "$bankName $last4 - ${card.currency}";
                       }
+
                       return DropdownMenuItem<String>(
                         value: card.id,
                         child: Text(
-                          "$bankName (...$last4) - ${card.currency}",
+                          displayName,
                           style: GoogleFonts.outfit(
                             fontWeight: FontWeight.bold,
                             color: Theme.of(
                               context,
                             ).textTheme.bodyMedium?.color,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       );
                     }).toList(),

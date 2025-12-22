@@ -22,6 +22,7 @@ class _StatsScreenState extends State<StatsScreen> {
   DateTime _selectedDate = DateTime.now();
   bool _showIncome = false;
   TimeRange _timeRange = TimeRange.month;
+  String _accountTypeFilter = 'all'; // 'all', 'card', 'cash'
   DateTimeRange? _customDateRange;
 
   void _updateDate(int direction) {
@@ -113,48 +114,70 @@ class _StatsScreenState extends State<StatsScreen> {
           final categories = provider.categories;
 
           // Filter Logic
-          final filteredTransactions = transactions.where((t) {
-            final date = t.date;
-            switch (_timeRange) {
-              case TimeRange.day:
-                return date.year == _selectedDate.year &&
-                    date.month == _selectedDate.month &&
-                    date.day == _selectedDate.day;
-              case TimeRange.week:
-                final startOfWeek = _selectedDate.subtract(
-                  Duration(days: _selectedDate.weekday - 1),
-                );
-                final endOfWeek = startOfWeek.add(const Duration(days: 6));
-                final tDate = DateTime(date.year, date.month, date.day);
-                final sDate = DateTime(
-                  startOfWeek.year,
-                  startOfWeek.month,
-                  startOfWeek.day,
-                );
-                final eDate = DateTime(
-                  endOfWeek.year,
-                  endOfWeek.month,
-                  endOfWeek.day,
-                );
-                return tDate.isAfter(
-                      sDate.subtract(const Duration(seconds: 1)),
-                    ) &&
-                    tDate.isBefore(eDate.add(const Duration(seconds: 1)));
-              case TimeRange.month:
-                return date.month == _selectedDate.month &&
-                    date.year == _selectedDate.year;
-              case TimeRange.year:
-                return date.year == _selectedDate.year;
-              case TimeRange.custom:
-                if (_customDateRange == null) return false;
-                final start = _customDateRange!.start;
-                final end = _customDateRange!.end;
-                final tDate = DateTime(date.year, date.month, date.day);
-                final sDate = DateTime(start.year, start.month, start.day);
-                final eDate = DateTime(end.year, end.month, end.day);
-                return !tDate.isBefore(sDate) && !tDate.isAfter(eDate);
-            }
-          }).toList();
+          final filteredTransactions = transactions
+              .where((t) {
+                final date = t.date;
+                switch (_timeRange) {
+                  case TimeRange.day:
+                    return date.year == _selectedDate.year &&
+                        date.month == _selectedDate.month &&
+                        date.day == _selectedDate.day;
+                  case TimeRange.week:
+                    final startOfWeek = _selectedDate.subtract(
+                      Duration(days: _selectedDate.weekday - 1),
+                    );
+                    final endOfWeek = startOfWeek.add(const Duration(days: 6));
+                    final tDate = DateTime(date.year, date.month, date.day);
+                    final sDate = DateTime(
+                      startOfWeek.year,
+                      startOfWeek.month,
+                      startOfWeek.day,
+                    );
+                    final eDate = DateTime(
+                      endOfWeek.year,
+                      endOfWeek.month,
+                      endOfWeek.day,
+                    );
+                    return tDate.isAfter(
+                          sDate.subtract(const Duration(seconds: 1)),
+                        ) &&
+                        tDate.isBefore(eDate.add(const Duration(seconds: 1)));
+                  case TimeRange.month:
+                    return date.month == _selectedDate.month &&
+                        date.year == _selectedDate.year;
+                  case TimeRange.year:
+                    return date.year == _selectedDate.year;
+                  case TimeRange.custom:
+                    if (_customDateRange == null) return false;
+                    final start = _customDateRange!.start;
+                    final end = _customDateRange!.end;
+                    final tDate = DateTime(date.year, date.month, date.day);
+                    final sDate = DateTime(start.year, start.month, start.day);
+                    final eDate = DateTime(end.year, end.month, end.day);
+                    return !tDate.isBefore(sDate) && !tDate.isAfter(eDate);
+                }
+              })
+              .where((t) {
+                if (_accountTypeFilter == 'all') return true;
+
+                // We need to check the card associated with the transaction (t.cardId)
+                // However, Transaction model might not hold full card info, just ID.
+                // We need to look up the card in provider.cards
+                if (t.cardId == null)
+                  return false; // Or handle as generic expense? usually mapped
+
+                try {
+                  final card = provider.cards.firstWhere(
+                    (c) => c.id == t.cardId,
+                  );
+                  if (_accountTypeFilter == 'cash') return card.isCash;
+                  if (_accountTypeFilter == 'card') return !card.isCash;
+                } catch (e) {
+                  return false; // Card deleted or not found
+                }
+                return true;
+              })
+              .toList();
 
           // Calculate Totals
           final Map<String, double> categoryTotals = {};
@@ -240,6 +263,10 @@ class _StatsScreenState extends State<StatsScreen> {
                 const SizedBox(height: 10),
                 // Modern Tab Selector
                 _buildModernTabSelector(context),
+                const SizedBox(height: 16),
+
+                // Account Type Filter
+                _buildAccountTypeFilter(context),
                 const SizedBox(height: 20),
 
                 // Date Navigator
@@ -271,10 +298,7 @@ class _StatsScreenState extends State<StatsScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  // Simplified title logic
-                                  _showIncome
-                                      ? context.t('income_month')
-                                      : context.t('expense_month'),
+                                  _getDynamicTitle(_showIncome),
                                   style: GoogleFonts.outfit(
                                     color: Theme.of(context)
                                         .textTheme
@@ -999,5 +1023,87 @@ class _StatsScreenState extends State<StatsScreen> {
         // Let's keep current range type but update anchor date.
       });
     }
+  }
+
+  Widget _buildAccountTypeFilter(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildTypeFilterOption(context, 'all', context.t('all_accounts')),
+            _buildTypeFilterOption(
+              context,
+              'card',
+              context.t('bank_cards_only'),
+            ),
+            _buildTypeFilterOption(context, 'cash', context.t('cash_only')),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTypeFilterOption(
+    BuildContext context,
+    String value,
+    String label,
+  ) {
+    final isSelected = _accountTypeFilter == value;
+    return GestureDetector(
+      onTap: () => setState(() => _accountTypeFilter = value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Theme.of(context).colorScheme.primary
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.outfit(
+            color: isSelected
+                ? Colors.white
+                : Theme.of(context).textTheme.bodyMedium?.color,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getDynamicTitle(bool isIncome) {
+    String typeIdx = isIncome ? 'income' : 'expense';
+    String rangeLabel = '';
+
+    switch (_timeRange) {
+      case TimeRange.day:
+        rangeLabel = context.t('day');
+        break;
+      case TimeRange.week:
+        rangeLabel = context.t('week');
+        break;
+      case TimeRange.month:
+        rangeLabel = context.t('month');
+        break;
+      case TimeRange.year:
+        rangeLabel = context.t('year');
+        break;
+      case TimeRange.custom:
+        rangeLabel = context.t('range');
+        break;
+    }
+
+    return "${context.t(typeIdx)} ($rangeLabel)";
   }
 }

@@ -126,13 +126,14 @@ class AccountCardAdapter extends TypeAdapter<AccountCard> {
       pin: fields[8] as String?,
       spendingLimit: fields[9] as double?,
       bankName: fields[10] as String?,
+      isCash: fields[11] == null ? false : fields[11] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, AccountCard obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -154,7 +155,9 @@ class AccountCardAdapter extends TypeAdapter<AccountCard> {
       ..writeByte(9)
       ..write(obj.spendingLimit)
       ..writeByte(10)
-      ..write(obj.bankName);
+      ..write(obj.bankName)
+      ..writeByte(11)
+      ..write(obj.isCash);
   }
 
   @override

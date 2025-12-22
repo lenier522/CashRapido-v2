@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
+import '../models/models.dart';
 import '../services/localization_service.dart';
 import 'add_card_screen.dart';
+import 'money_counter_screen.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -109,20 +111,37 @@ class _WalletScreenState extends State<WalletScreen> {
                       final card = cards[index];
                       // Translate name if 'Efectivo'
                       String displayName = card.name;
-                      if (displayName == 'Efectivo') {
+                      if (displayName == 'Efectivo' || displayName == 'CASH') {
                         displayName = context.t('card_cash');
                       }
+
+                      final currencyObj = provider.availableCurrencies
+                          .firstWhere(
+                            (c) => c.code == card.currency,
+                            orElse: () => Currency(
+                              code: card.currency,
+                              symbol: '\$',
+                              name: '',
+                            ),
+                          );
 
                       return _buildCreditCard(
                         context: context,
                         cardId: card.id,
                         isLocked: card.isLocked,
                         color: Color(card.colorValue),
-                        bankName: card.bankName ?? 'VISA',
-                        balance: '\$ ${card.balance.toStringAsFixed(2)}',
-                        cardNumber: _maskCardNumber(card.cardNumber),
-                        expiry: card.expiryDate,
+                        bankName: card.isCash
+                            ? context.t('card_cash')
+                            : (card.bankName ?? 'VISA'),
+                        balance:
+                            '${currencyObj.symbol} ${card.balance.toStringAsFixed(2)}',
+                        cardNumber: card.isCash
+                            ? ''
+                            : _maskCardNumber(card.cardNumber),
+                        expiry: card.isCash ? '' : card.expiryDate,
                         cardHolder: displayName,
+                        isCash: card.isCash,
+                        currencyCode: card.currency,
                       );
                     },
                   ),
@@ -185,16 +204,17 @@ class _WalletScreenState extends State<WalletScreen> {
                         isDestructive: activeCard.isLocked ? false : true,
                       ),
 
-                      _buildSettingTile(
-                        Icons.pin,
-                        context.t('change_pin'),
-                        context.t('transaction_security'),
-                        onTap: () => _showPinDialog(
-                          context,
-                          Provider.of<AppProvider>(context, listen: false),
-                          activeCard.id,
+                      if (!activeCard.isCash)
+                        _buildSettingTile(
+                          Icons.pin,
+                          context.t('change_pin'),
+                          context.t('transaction_security'),
+                          onTap: () => _showPinDialog(
+                            context,
+                            Provider.of<AppProvider>(context, listen: false),
+                            activeCard.id,
+                          ),
                         ),
-                      ),
 
                       _buildSettingTile(
                         Icons.speed,
@@ -208,6 +228,35 @@ class _WalletScreenState extends State<WalletScreen> {
                           activeCard.id,
                         ),
                       ),
+
+                      if (activeCard.isCash)
+                        _buildSettingTile(
+                          Icons.calculate_outlined,
+                          context.t('count_money'),
+                          context.t('money_counter_title'),
+                          onTap: () {
+                            final currency =
+                                Provider.of<AppProvider>(
+                                  context,
+                                  listen: false,
+                                ).availableCurrencies.firstWhere(
+                                  (c) => c.code == activeCard.currency,
+                                  orElse: () => Currency(
+                                    code: activeCard.currency,
+                                    symbol: '\$',
+                                    name: '',
+                                  ),
+                                );
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => MoneyCounterScreen(
+                                  currencySymbol: currency.symbol,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
 
                       const SizedBox(height: 20),
                       _buildSettingTile(
@@ -231,6 +280,7 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   String _maskCardNumber(String input) {
+    if (input == 'CASH') return '';
     // Input format from DB: "2547-5568-7854-1154"
     if (input.length < 5) return input;
     // We want: "**** **** **** 1154" (Spaces)
@@ -249,6 +299,8 @@ class _WalletScreenState extends State<WalletScreen> {
     required String expiry,
     required String cardHolder,
     required String bankName,
+    required String currencyCode,
+    bool isCash = false,
   }) {
     return Container(
       width: 320,
@@ -289,7 +341,25 @@ class _WalletScreenState extends State<WalletScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const Icon(Icons.contactless, color: Colors.white70),
+                  Row(
+                    children: [
+                      Text(
+                        currencyCode,
+                        style: GoogleFonts.outfit(
+                          color: Colors.white70,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        isCash
+                            ? Icons.account_balance_wallet
+                            : Icons.contactless,
+                        color: Colors.white70,
+                      ),
+                    ],
+                  ),
                 ],
               ),
               const SizedBox(height: 20),
@@ -305,14 +375,15 @@ class _WalletScreenState extends State<WalletScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    cardNumber,
-                    style: GoogleFonts.sourceCodePro(
-                      color: Colors.white,
-                      fontSize: 18,
-                      letterSpacing: 2,
+                  if (!isCash)
+                    Text(
+                      cardNumber,
+                      style: GoogleFonts.sourceCodePro(
+                        color: Colors.white,
+                        fontSize: 18,
+                        letterSpacing: 2,
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,

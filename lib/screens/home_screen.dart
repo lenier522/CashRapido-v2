@@ -5,6 +5,7 @@ import '../providers/app_provider.dart';
 import '../models/models.dart';
 import '../services/localization_service.dart';
 import 'all_transactions_screen.dart';
+import 'ai_chat_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,46 +15,61 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String? _selectedCardId; // Null means "All" or "Default View" logic
-  // For simplicity, if _selectedCardId is null, we show global stats or first card.
-  // Use first card as default if available.
+  String? _selectedCardId;
+
+  // Tutorial Keys (used by MainScreen tour)
+  final GlobalKey _aiKey = GlobalKey();
+  final GlobalKey _balanceKey = GlobalKey();
+  final GlobalKey _transferKey = GlobalKey();
+  final GlobalKey _scanKey = GlobalKey();
+  final GlobalKey _cardSelectorKey = GlobalKey();
+  final GlobalKey _transactionsKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    // Tour moved to MainScreen for multi-screen coverage
+  }
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Consumer<AppProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return Consumer<AppProvider>(
+      builder: (context, provider, child) {
+        if (provider.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-          // Ensure valid selection
-          if (_selectedCardId != null &&
-              !provider.cards.any((c) => c.id == _selectedCardId)) {
-            _selectedCardId = null;
-          }
+        // Ensure valid selection
+        if (_selectedCardId != null &&
+            !provider.cards.any((c) => c.id == _selectedCardId)) {
+          _selectedCardId = null;
+        }
 
-          if (_selectedCardId == null && provider.cards.isNotEmpty) {
-            _selectedCardId = provider.cards.first.id;
-          }
+        if (_selectedCardId == null && provider.cards.isNotEmpty) {
+          _selectedCardId = provider.cards.first.id;
+        }
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 24),
-                _buildBalanceCard(context, provider),
-                const SizedBox(height: 24),
-                _buildQuickActions(context, provider),
-                const SizedBox(height: 24),
-                _buildTransactionsList(context, provider),
-              ],
+        return Scaffold(
+          backgroundColor: Colors.transparent,
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 24),
+                  _buildBalanceCard(context, provider),
+                  const SizedBox(height: 24),
+                  _buildQuickActions(context, provider),
+                  const SizedBox(height: 24),
+                  _buildTransactionsList(context, provider),
+                ],
+              ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -68,6 +84,38 @@ class _HomeScreenState extends State<HomeScreen> {
   // Actually, let's look at the bottom of the file later.
 
   Widget _buildHeader() {
+    final provider = Provider.of<AppProvider>(context);
+
+    // AI Button
+    Widget? aiButton;
+    if (provider.aiChatEnabled) {
+      aiButton = GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AIChatScreen()),
+          );
+        },
+        child: Container(
+          key: _aiKey,
+          height: 48,
+          width: 48,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: const Icon(Icons.smart_toy_rounded, color: Colors.white),
+        ),
+      );
+    }
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -84,24 +132,29 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        Container(
-          height: 48,
-          width: 48,
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
+        Row(
+          children: [
+            if (aiButton != null) ...[aiButton, const SizedBox(width: 12)],
+            Container(
+              height: 48,
+              width: 48,
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Icon(
-            Icons.notifications_outlined,
-            color: Theme.of(context).iconTheme.color,
-          ),
+              child: Icon(
+                Icons.notifications_outlined,
+                color: Theme.of(context).iconTheme.color,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -140,6 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     return Container(
+      key: _balanceKey,
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -166,6 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // Card Selector
               Flexible(
                 child: Container(
+                  key: _cardSelectorKey,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 6,
@@ -195,23 +250,32 @@ class _HomeScreenState extends State<HomeScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       items: provider.cards.map((AccountCard card) {
-                        final last4 = card.cardNumber.length >= 4
-                            ? card.cardNumber.substring(
-                                card.cardNumber.length - 4,
-                              )
-                            : '****';
-                        String bankName = card.bankName ?? 'Tarjeta';
-                        if (bankName == 'Efectivo') {
-                          bankName = context.t('card_cash');
+                        String displayName;
+                        if (card.isCash) {
+                          displayName = card.name;
+                        } else {
+                          String bankName = card.bankName ?? 'Tarjeta';
+                          if (bankName == 'Efectivo') {
+                            bankName = context.t('card_cash');
+                          }
+                          displayName = bankName;
                         }
+
+                        final last4 = card.isCash
+                            ? ''
+                            : (card.cardNumber.length >= 4
+                                  ? card.cardNumber.substring(
+                                      card.cardNumber.length - 4,
+                                    )
+                                  : '****');
+
                         return DropdownMenuItem<String>(
                           value: card.id,
                           child: Text(
-                            "$bankName $last4 ${card.currency}",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                            ), // Slightly smaller font
+                            card.isCash
+                                ? "${context.t('card_cash')}(${card.name})-${card.currency}"
+                                : "$displayName $last4 ${card.currency}",
+                            style: TextStyle(color: Colors.white, fontSize: 13),
                             overflow: TextOverflow.ellipsis,
                           ),
                         );
@@ -291,37 +355,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildQuickActions(BuildContext context, AppProvider provider) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment
+          .spaceAround, // Changed to spaceAround for better look with 2 items
       children: [
         _buildActionButton(
           context,
           Icons.swap_horiz,
           context.t('action_transfer'),
-          () => _showActionDialog(
-            context,
-            provider,
-            "transfer",
-          ), // Use code 'transfer'
-        ),
-        _buildActionButton(
-          context,
-          Icons.add,
-          context.t('action_recharge'),
-          () => _showActionDialog(
-            context,
-            provider,
-            "recharge",
-          ), // Use code 'recharge'
-        ),
-        _buildActionButton(
-          context,
-          Icons.request_quote_outlined,
-          context.t('action_request'),
-          () => _showActionDialog(
-            context,
-            provider,
-            "request",
-          ), // Use code 'request'
+          () => _showActionDialog(context, provider, "transfer"),
+          key: _transferKey,
         ),
         _buildActionButton(
           context,
@@ -330,6 +372,7 @@ class _HomeScreenState extends State<HomeScreen> {
           () {
             _showMoreOptions(context);
           },
+          key: _scanKey,
         ),
       ],
     );
@@ -339,9 +382,11 @@ class _HomeScreenState extends State<HomeScreen> {
     BuildContext context,
     IconData icon,
     String label,
-    VoidCallback onTap,
-  ) {
+    VoidCallback onTap, {
+    Key? key,
+  }) {
     return GestureDetector(
+      key: key,
       onTap: onTap,
       child: Column(
         children: [
@@ -710,6 +755,7 @@ class _HomeScreenState extends State<HomeScreen> {
     transactions = transactions.take(5).toList();
 
     return Column(
+      key: _transactionsKey,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(

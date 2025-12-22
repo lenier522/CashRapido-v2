@@ -37,6 +37,10 @@ class AppProvider with ChangeNotifier {
   bool get biometricsEnabled => _biometricsEnabled;
   final LocalAuthentication auth = LocalAuthentication();
 
+  // AI Chat
+  bool _aiChatEnabled = false;
+  bool get aiChatEnabled => _aiChatEnabled;
+
   // PIN & Password
   String? _appPinHash;
   String? _appPasswordHash;
@@ -97,6 +101,7 @@ class AppProvider with ChangeNotifier {
     }
 
     final prefs = await SharedPreferences.getInstance();
+    _aiChatEnabled = prefs.getBool('ai_chat_enabled') ?? false;
     _chartType = prefs.getString('chart_type') ?? 'Pie';
     _biometricsEnabled = prefs.getBool('biometrics_enabled') ?? false;
     _appPinHash = prefs.getString('app_pin_hash');
@@ -225,7 +230,8 @@ class AppProvider with ChangeNotifier {
           isLocked: card.isLocked,
           pin: card.pin,
           spendingLimit: card.spendingLimit,
-          bankName: card.bankName, // Fix: Preserve bank name
+          bankName: card.bankName,
+          isCash: card.isCash, // Preserve isCash
         );
 
         await editCard(updatedCard);
@@ -339,6 +345,7 @@ class AppProvider with ChangeNotifier {
           pin: card.pin,
           spendingLimit: card.spendingLimit,
           bankName: card.bankName,
+          isCash: card.isCash,
         );
         await _cardBox.putAt(index, updatedCard);
 
@@ -369,6 +376,7 @@ class AppProvider with ChangeNotifier {
           pin: pin,
           spendingLimit: card.spendingLimit,
           bankName: card.bankName,
+          isCash: card.isCash,
         );
         await _cardBox.putAt(index, updatedCard);
 
@@ -398,6 +406,7 @@ class AppProvider with ChangeNotifier {
           pin: card.pin,
           spendingLimit: limit,
           bankName: card.bankName,
+          isCash: card.isCash,
         );
         await _cardBox.putAt(index, updatedCard);
 
@@ -1036,5 +1045,12 @@ class AppProvider with ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('app_language', languageCode);
     notifyListeners();
+  }
+
+  Future<void> setAIChatEnabled(bool enabled) async {
+    _aiChatEnabled = enabled;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('ai_chat_enabled', enabled);
   }
 }

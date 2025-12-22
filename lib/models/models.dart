@@ -95,6 +95,12 @@ class AccountCard extends HiveObject {
   @HiveField(9)
   final double? spendingLimit;
 
+  @HiveField(10)
+  final String? bankName;
+
+  @HiveField(11, defaultValue: false)
+  final bool isCash;
+
   AccountCard({
     required this.id,
     required this.name,
@@ -107,10 +113,8 @@ class AccountCard extends HiveObject {
     this.pin,
     this.spendingLimit,
     this.bankName,
+    this.isCash = false,
   });
-
-  @HiveField(10)
-  final String? bankName;
 }
 
 class Currency {

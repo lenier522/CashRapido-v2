@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../models/models.dart';
+import 'info_screens.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -113,6 +114,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             const SizedBox(height: 24),
             _buildSectionTitle(context.t('preferences')),
+            _buildSettingsTile(
+              context,
+              icon: Icons.smart_toy_outlined,
+              title: context.t('enable_ai'),
+              trailing: Switch(
+                value: provider.aiChatEnabled,
+                activeThumbColor: Theme.of(context).colorScheme.primary,
+                onChanged: (val) async {
+                  await provider.setAIChatEnabled(val);
+                },
+              ),
+            ),
             _buildSettingsTile(
               context,
               icon: Icons.language,
@@ -290,7 +303,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 size: 16,
                 color: Theme.of(context).disabledColor,
               ),
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const TermsScreen()),
+                );
+              },
             ),
             _buildSettingsTile(
               context,
@@ -301,7 +319,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 size: 16,
                 color: Theme.of(context).disabledColor,
               ),
-              onTap: () {},
+              onTap: () {
+                // Placeholder or maybe show LicensePage too?
+                // User asked specifically for Terms and Help.
+                // I'll leave this empty for now or maybe just show a snackbar "Coming Soon"
+                // Or better, showLicensePage is already used for Open Source.
+                // Let's just leave it empty as I shouldn't touch what wasn't asked if unsure.
+              },
             ),
             _buildSettingsTile(
               context,
@@ -334,7 +358,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 size: 16,
                 color: Theme.of(context).disabledColor,
               ),
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const HelpCenterScreen(),
+                  ),
+                );
+              },
             ),
             _buildSettingsTile(
               context,
