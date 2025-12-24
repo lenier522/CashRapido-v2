@@ -163,8 +163,9 @@ class _StatsScreenState extends State<StatsScreen> {
                 // We need to check the card associated with the transaction (t.cardId)
                 // However, Transaction model might not hold full card info, just ID.
                 // We need to look up the card in provider.cards
-                if (t.cardId == null)
+                if (t.cardId == null) {
                   return false; // Or handle as generic expense? usually mapped
+                }
 
                 try {
                   final card = provider.cards.firstWhere(

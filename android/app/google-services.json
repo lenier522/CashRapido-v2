@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "4418325804-3umifohbd054bu83aru8p869fn4tvtao.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "cu.lenier.cashrapido",
+            "certificate_hash": "da8d6d6d7a948a06112f3a940973957eccacbbb7"
+          }
+        },
+        {
           "client_id": "4418325804-59u1dns3nn7spa99ju4v0vfm5pepvjfa.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

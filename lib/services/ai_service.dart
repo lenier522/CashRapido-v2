@@ -122,10 +122,11 @@ class AIService {
     double income30 = 0;
     double expense30 = 0;
     for (var t in last30Days) {
-      if (t.amount > 0)
+      if (t.amount > 0) {
         income30 += t.amount;
-      else
+      } else {
         expense30 += t.amount.abs();
+      }
     }
 
     // 5. Settings
