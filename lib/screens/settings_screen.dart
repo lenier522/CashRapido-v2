@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../models/models.dart';
 import 'info_screens.dart';
+import 'licenses_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -320,11 +322,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 color: Theme.of(context).disabledColor,
               ),
               onTap: () {
-                // Placeholder or maybe show LicensePage too?
-                // User asked specifically for Terms and Help.
-                // I'll leave this empty for now or maybe just show a snackbar "Coming Soon"
-                // Or better, showLicensePage is already used for Open Source.
-                // Let's just leave it empty as I shouldn't touch what wasn't asked if unsure.
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LicensesScreen(),
+                  ),
+                );
               },
             ),
             _buildSettingsTile(
@@ -730,13 +733,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildSocialIcon(Icons.facebook, Colors.blue),
+              _buildSocialIcon(Icons.facebook, Colors.blue, null),
               const SizedBox(width: 16),
-              _buildSocialIcon(Icons.camera_alt, Colors.pink),
+              _buildSocialIcon(
+                Icons.camera_alt,
+                Colors.pink,
+                () => launchUrl(
+                  Uri.parse('https://instagram.com/cashrapido23'),
+                  mode: LaunchMode.externalApplication,
+                ),
+              ),
               const SizedBox(width: 16),
-              _buildSocialIcon(Icons.alternate_email, Colors.lightBlue),
+              _buildSocialIcon(
+                Icons.alternate_email,
+                Colors.lightBlue,
+                () => launchUrl(Uri.parse('mailto:leniercruz02@gmail.com')),
+              ),
               const SizedBox(width: 16),
-              _buildSocialIcon(Icons.telegram, Colors.blueAccent),
+              _buildSocialIcon(
+                Icons.telegram,
+                Colors.blueAccent,
+                () => launchUrl(
+                  Uri.parse('https://t.me/+De8fwjWq94xjMzBh'),
+                  mode: LaunchMode.externalApplication,
+                ),
+              ),
             ],
           ),
         ],
@@ -744,21 +765,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSocialIcon(IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
+  Widget _buildSocialIcon(IconData icon, Color color, VoidCallback? onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(50),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(icon, color: color, size: 20),
       ),
-      child: Icon(icon, color: color, size: 20),
     );
   }
 

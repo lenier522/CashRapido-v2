@@ -366,6 +366,32 @@ class AppLocalizations {
       'ai_chat_title': 'Asistente Financiero',
       'ask_ai_hint': 'Pide consejos, análisis...',
       'ai_welcome_message': '¡Hola! Soy tu asistente financiero personal.',
+
+      // Licenses
+      'licenses_title': 'Licencias Disponibles',
+      'license_personal': 'Personal',
+      'license_pro': 'Pro',
+      'license_enterprise': 'Empresarial',
+      'features_basic': 'Funciones básicas',
+      'features_device_1': '1 Dispositivo',
+      'features_support_basic': 'Soporte Básico',
+      'features_all_personal': 'Todo lo de Personal',
+      'features_multi_device': 'Multi-dispositivo',
+      'features_support_priority': 'Soporte Prioritario',
+      'features_advanced_analytics': 'Análisis Avanzado',
+      'features_all_pro': 'Todo lo de Pro',
+      'features_unlimited_users': 'Usuarios ilimitados',
+      'features_api_access': 'Acceso API',
+      'features_support_247': 'Soporte 24/7',
+      'select_plan': 'Seleccionar Plan',
+      'popular': 'POPULAR',
+      'month_short': '/ mes',
+
+      // Holiday Promo
+      'promo_title': '¡Feliz Año Nuevo! 🎉',
+      'promo_message':
+          'Como regalo de fin de año, disfruta de todas las funciones PRO totalmente gratis hasta el 10 de Enero. ¡Gracias por usar CashRapido!',
+      'promo_button': '¡Genial! 🚀',
     },
     'en': {
       // General
@@ -719,6 +745,32 @@ class AppLocalizations {
       'ai_chat_title': 'Financial Assistant',
       'ask_ai_hint': 'Ask for advice, analysis...',
       'ai_welcome_message': 'Hello! I am your personal financial assistant.',
+
+      // Licenses
+      'licenses_title': 'Available Licenses',
+      'license_personal': 'Personal',
+      'license_pro': 'Pro',
+      'license_enterprise': 'Enterprise',
+      'features_basic': 'Basic Features',
+      'features_device_1': '1 Device',
+      'features_support_basic': 'Basic Support',
+      'features_all_personal': 'All Personal features',
+      'features_multi_device': 'Multi-device',
+      'features_support_priority': 'Priority Support',
+      'features_advanced_analytics': 'Advanced Analytics',
+      'features_all_pro': 'All Pro features',
+      'features_unlimited_users': 'Unlimited Users',
+      'features_api_access': 'API Access',
+      'features_support_247': '24/7 Support',
+      'select_plan': 'Select Plan',
+      'popular': 'POPULAR',
+      'month_short': '/ month',
+
+      // Holiday Promo
+      'promo_title': 'Happy New Year! 🎉',
+      'promo_message':
+          'As a year-end gift, enjoy all PRO features completely free until January 10th. Thanks for using CashRapido!',
+      'promo_button': 'Awesome! 🚀',
     },
     'fr': {
       // General
@@ -799,6 +851,13 @@ class AppLocalizations {
           'Cela écrasera toutes les données actuelles avec la sauvegarde cloud. Cette action est irréversible.',
       'restore_success_msg': 'Données restaurées avec succès',
       'backup_success_msg': 'Sauvegarde terminée',
+
+      // Rest of keys... I will assume similar structure for FR if I see the end of file, but I don't see the end of FR block in the previous view_file.
+      // Wait, I only saw up to line 800. I need to be careful. The chunk needs to be precise.
+      // I'll skip FR for this specific chunk call and do a separate view to find the end of the FR block or just append to where I know it is safe.
+      // Actually, looking at the previous file view, 'fr' starts at 723.
+      // I can't see the end of 'fr'. I should verify the file content for FR before writing.
+      // I will only write ES and EN for now and then read the rest to write FR.
       'developed_by': 'Développé par',
       'developer_name': 'Lenier Cruz Perez',
       'app_desc':
@@ -1078,6 +1137,32 @@ class AppLocalizations {
       'ask_ai_hint': 'Demandez des conseils...',
       'ai_welcome_message':
           'Bonjour ! Je suis votre assistant financier personnel.',
+
+      // Licenses
+      'licenses_title': 'Licences Disponibles',
+      'license_personal': 'Personnel',
+      'license_pro': 'Pro',
+      'license_enterprise': 'Entreprise',
+      'features_basic': 'Fonctionnalités de base',
+      'features_device_1': '1 Appareil',
+      'features_support_basic': 'Support de base',
+      'features_all_personal': 'Tout du Personnel',
+      'features_multi_device': 'Multi-appareils',
+      'features_support_priority': 'Support Prioritaire',
+      'features_advanced_analytics': 'Analyses Avancées',
+      'features_all_pro': 'Tout du Pro',
+      'features_unlimited_users': 'Utilisateurs illimités',
+      'features_api_access': 'Accès API',
+      'features_support_247': 'Support 24/7',
+      'select_plan': 'Sélectionner le plan',
+      'popular': 'POPULAIRE',
+      'month_short': '/ mois',
+
+      // Holiday Promo
+      'promo_title': 'Bonne Année ! 🎉',
+      'promo_message':
+          'En cadeau de fin d\'année, profitez de toutes les fonctionnalités PRO gratuitement jusqu\'au 10 janvier. Merci d\'utiliser CashRapido !',
+      'promo_button': 'Génial ! 🚀',
     },
   };
 
