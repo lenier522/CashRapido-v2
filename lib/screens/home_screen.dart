@@ -6,6 +6,8 @@ import '../models/models.dart';
 import '../services/localization_service.dart';
 import 'all_transactions_screen.dart';
 import 'ai_chat_screen.dart';
+import 'licenses_screen.dart';
+import '../widgets/add_transaction_modal.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -362,19 +364,81 @@ class _HomeScreenState extends State<HomeScreen> {
           context,
           Icons.swap_horiz,
           context.t('action_transfer'),
-          () => _showActionDialog(context, provider, "transfer"),
+          () {
+            if (provider.canTransfer) {
+              _showActionDialog(context, provider, "transfer");
+            } else {
+              _showLockedFeatureDialog(context);
+            }
+          },
           key: _transferKey,
+          isLocked: !provider.canTransfer,
         ),
         _buildActionButton(
           context,
           Icons.more_horiz,
           context.t('action_more'),
-          () {
-            _showMoreOptions(context);
-          },
+          () => _checkPremiumAndExecute(
+            context,
+            provider,
+            () => _showMoreOptions(context),
+          ),
           key: _scanKey,
+          isLocked: !provider.canUseMoreActions,
         ),
       ],
+    );
+  }
+
+  void _checkPremiumAndExecute(
+    BuildContext context,
+    AppProvider provider,
+    VoidCallback action,
+  ) {
+    if (provider.canUseMoreActions) {
+      action();
+    } else {
+      _showLockedFeatureDialog(context);
+    }
+  }
+
+  void _showLockedFeatureDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          context.t('feature_locked_title'),
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.lock_person, size: 48, color: Colors.amber),
+            const SizedBox(height: 16),
+            Text(
+              context.t('feature_locked_desc'),
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(context.t('cancel')),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const LicensesScreen()),
+              );
+            },
+            child: Text(context.t('upgrade_btn')),
+          ),
+        ],
+      ),
     );
   }
 
@@ -384,27 +448,55 @@ class _HomeScreenState extends State<HomeScreen> {
     String label,
     VoidCallback onTap, {
     Key? key,
+    bool isLocked = false,
   }) {
     return GestureDetector(
       key: key,
       onTap: onTap,
       child: Column(
         children: [
-          Container(
-            height: 60,
-            width: 60,
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(20), // Softer radius
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
+          Stack(
+            clipBehavior: Clip
+                .none, // Allow lock to overflow without clipping or affecting layout
+            children: [
+              Container(
+                height: 60,
+                width: 60,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(20), // Softer radius
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: Icon(icon, color: Colors.deepPurple),
+                child: Icon(icon, color: Colors.deepPurple),
+              ),
+              if (isLocked)
+                Positioned(
+                  right: -2,
+                  top: -2,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.amber,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Theme.of(context).scaffoldBackgroundColor,
+                        width: 2,
+                      ), // Border to separate
+                    ),
+                    child: const Icon(
+                      Icons.lock,
+                      size: 12,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
@@ -800,6 +892,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ...transactions.map((tx) {
             final isExpense = tx.amount < 0;
             return _buildTransactionItem(
+              context,
+              provider,
+              tx,
               _getTransactionTitle(context, tx),
               tx.date.toString().substring(0, 10),
               '${isExpense ? '-' : '+'}\$${tx.amount.abs().toStringAsFixed(2)}',
@@ -836,6 +931,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTransactionItem(
+    BuildContext context,
+    AppProvider provider,
+    InternalTransaction tx,
     String title,
     String subtitle,
     String amount,
@@ -843,60 +941,135 @@ class _HomeScreenState extends State<HomeScreen> {
     Color iconColor,
     IconData icon,
   ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            height: 48,
-            width: 48,
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: iconColor),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
+    return GestureDetector(
+      onLongPress: () {
+        showModalBottomSheet(
+          context: context,
+          builder: (ctx) => Container(
+            padding: const EdgeInsets.all(20),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  title,
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+                ListTile(
+                  leading: const Icon(Icons.edit, color: Colors.blue),
+                  title: Text(context.t('edit')),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _showEditTransactionDialog(context, provider, tx);
+                  },
                 ),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.outfit(
-                    color: Theme.of(context).textTheme.bodySmall?.color,
-                    fontSize: 14,
-                  ),
+                ListTile(
+                  leading: const Icon(Icons.delete, color: Colors.red),
+                  title: Text(context.t('delete')),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _showDeleteConfirmation(context, provider, tx);
+                  },
                 ),
               ],
             ),
           ),
-          Text(
-            amount,
-            style: GoogleFonts.outfit(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: amount.startsWith('+') ? Colors.green : Colors.red,
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
             ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              height: 48,
+              width: 48,
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: iconColor),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.outfit(
+                      color: Theme.of(context).textTheme.bodySmall?.color,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              amount,
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: amount.startsWith('+') ? Colors.green : Colors.red,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditTransactionDialog(
+    BuildContext context,
+    AppProvider provider,
+    InternalTransaction tx,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => AddTransactionModal(transactionToEdit: tx),
+    );
+  }
+
+  void _showDeleteConfirmation(
+    BuildContext context,
+    AppProvider provider,
+    InternalTransaction tx,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(context.t('delete_transaction')),
+        content: Text(context.t('delete_transaction_confirm')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(context.t('cancel')),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              await provider.deleteTransaction(tx.id);
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(context.t('transaction_deleted'))),
+              );
+            },
+            child: Text(context.t('delete')),
           ),
         ],
       ),

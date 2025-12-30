@@ -115,6 +115,36 @@ class AccountCard extends HiveObject {
     this.bankName,
     this.isCash = false,
   });
+
+  AccountCard copyWith({
+    String? id,
+    String? name,
+    double? balance,
+    String? currency,
+    String? cardNumber,
+    String? expiryDate,
+    int? colorValue,
+    bool? isLocked,
+    String? pin,
+    double? spendingLimit,
+    String? bankName,
+    bool? isCash,
+  }) {
+    return AccountCard(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      balance: balance ?? this.balance,
+      currency: currency ?? this.currency,
+      cardNumber: cardNumber ?? this.cardNumber,
+      expiryDate: expiryDate ?? this.expiryDate,
+      colorValue: colorValue ?? this.colorValue,
+      isLocked: isLocked ?? this.isLocked,
+      pin: pin ?? this.pin,
+      spendingLimit: spendingLimit ?? this.spendingLimit,
+      bankName: bankName ?? this.bankName,
+      isCash: isCash ?? this.isCash,
+    );
+  }
 }
 
 class Currency {
@@ -136,3 +166,5 @@ class Currency {
     );
   }
 }
+
+enum LicenseType { free, personal, pro, enterprise }

@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../providers/app_provider.dart';
 import '../models/models.dart';
 import '../screens/card_scanner_screen.dart';
+import '../screens/licenses_screen.dart';
 import '../services/localization_service.dart';
 
 class AddCardScreen extends StatefulWidget {
@@ -218,13 +219,79 @@ class _AddCardScreenState extends State<AddCardScreen> {
         ),
         actions: [
           if (widget.cardToEdit == null && !_isCash) // Only for new cards
-            IconButton(
-              onPressed: _scanCard,
-              icon: const Icon(
-                Icons.document_scanner_outlined,
-                color: Colors.deepPurple,
-              ),
-              tooltip: context.t('scan_card'),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                IconButton(
+                  onPressed: () {
+                    final provider = Provider.of<AppProvider>(
+                      context,
+                      listen: false,
+                    );
+                    if (provider.canUseScanner) {
+                      _scanCard();
+                    } else {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: Text(context.t('feature_locked_title')),
+                          content: Text(context.t('feature_locked_desc')),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: Text(context.t('close')),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const LicensesScreen(),
+                                  ),
+                                );
+                              },
+                              child: Text(context.t('upgrade_btn')),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(
+                    Icons.document_scanner_outlined,
+                    color: Colors.deepPurple,
+                  ),
+                  tooltip: context.t('scan_card'),
+                ),
+                Consumer<AppProvider>(
+                  builder: (context, provider, _) {
+                    if (!provider.canUseScanner) {
+                      return Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: Colors.amber,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Theme.of(context).scaffoldBackgroundColor,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.lock,
+                            size: 8,
+                            color: Colors.white,
+                          ),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ],
             ),
         ],
       ),

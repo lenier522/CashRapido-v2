@@ -7,6 +7,7 @@ import 'package:local_auth/local_auth.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import '../models/models.dart';
+import '../models/payment_method.dart';
 import '../services/notification_service.dart';
 import '../services/export_service.dart';
 import '../services/drive_service.dart';
@@ -47,6 +48,190 @@ class AppProvider with ChangeNotifier {
   bool get hasPinSet => _appPinHash != null && _appPinHash!.isNotEmpty;
   bool get hasPasswordSet =>
       _appPasswordHash != null && _appPasswordHash!.isNotEmpty;
+
+  // Licenses & Restrictions
+  // Licenses & Restrictions
+  LicenseType _licenseType = LicenseType.free;
+  LicenseType get licenseType => _licenseType;
+
+  void setLicenseType(LicenseType type) {
+    _licenseType = type;
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setInt('license_type', type.index);
+    });
+    notifyListeners();
+  }
+
+  // Payment System
+  // Change this variable to build for different regions
+  final bool _isCuba = true;
+  bool get isCuba => _isCuba;
+
+  List<PaymentMethod> get paymentMethods {
+    if (_isCuba) {
+      return [
+        PaymentMethod(
+          id: 'apklis',
+          name: 'Apklis',
+          iconAsset: 'assets/icons/apklis.png', // Placeholder
+          isEnabled: true,
+          isVisible: true,
+        ),
+        PaymentMethod(
+          id: 'transfermovil',
+          name: 'Transfermóvil',
+          iconAsset: 'assets/icons/transfermovil.png',
+          isEnabled: true,
+          isVisible: true,
+        ),
+        PaymentMethod(
+          id: 'enzona',
+          name: 'EnZona',
+          iconAsset: 'assets/icons/enzona.png',
+          isEnabled: true,
+          isVisible: true,
+        ),
+        PaymentMethod(
+          id: 'test_cuba',
+          name: 'Prueba (Test)',
+          iconAsset: 'assets/icons/test.png',
+          isEnabled: true,
+          isVisible: true,
+          isTest: true,
+        ),
+      ];
+    } else {
+      return [
+        PaymentMethod(
+          id: 'stripe',
+          name: 'Stripe',
+          iconAsset: 'assets/icons/stripe.png',
+          isEnabled: true,
+          isVisible: true,
+        ),
+        PaymentMethod(
+          id: 'paypal',
+          name: 'PayPal',
+          iconAsset: 'assets/icons/paypal.png',
+          isEnabled: true,
+          isVisible: true,
+        ),
+        PaymentMethod(
+          id: 'google_play',
+          name: 'Google Play',
+          iconAsset: 'assets/icons/google_play.png',
+          isEnabled: true,
+          isVisible: true,
+        ),
+        PaymentMethod(
+          id: 'test_intl',
+          name: 'Prueba (Test)',
+          iconAsset: 'assets/icons/test.png',
+          isEnabled: true,
+          isVisible: true,
+          isTest: true,
+        ),
+      ];
+    }
+  }
+
+  Future<bool> simulatePayment(
+    String methodId,
+    LicenseType targetLicense,
+  ) async {
+    // Simulate network delay
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (methodId == 'test_cuba' || methodId == 'test_intl') {
+      setLicenseType(targetLicense);
+      return true;
+    }
+
+    // For other methods, we just return false (simulating failure/not implemented) or true
+    // User asked "Prueba" to unlock. Others are just "methods".
+    // I I'll fail them for now saying "Maintenance" or just log it.
+    // The requirement: "Prueba q es para los dos es para yo probar si efectivamente se desbloquean"
+    // "visible/enabled in boolean values for me to activate/deactivate"
+    // So if enabled, clicking allows attempt. But only "Prueba" succeeds implementation-wise here.
+    return false;
+  }
+
+  // Capability Getters
+
+  bool get isPremium {
+    // For backward compatibility or general "Not Free" check
+    // Holiday Promo: Free Premium (PRO) until Jan 10, 2026
+    final isPromoActive = DateTime.now().isBefore(DateTime(2026, 1, 11));
+    if (isPromoActive) return true;
+    return _licenseType != LicenseType.free;
+  }
+
+  // Specific Capabilities
+
+  int get maxCards {
+    if (isPromoActive) return 999;
+    switch (_licenseType) {
+      case LicenseType.free:
+        return 1;
+      case LicenseType.personal:
+        return 3; // 2 + 1 free
+      case LicenseType.pro:
+        return 4; // Requested: 4 cards for Pro
+      case LicenseType.enterprise:
+        return 999;
+    }
+  }
+
+  bool get canAddCard {
+    if (maxCards == 999) return true;
+    return _cards.length < maxCards;
+  }
+
+  bool get isPromoActive => DateTime.now().isBefore(DateTime(2026, 1, 11));
+
+  // Features unlocked at PERSONAL level
+  bool get canTransfer => isPromoActive || _licenseType != LicenseType.free;
+  bool get canSecurizeCard =>
+      isPromoActive || _licenseType != LicenseType.free; // Lock/Limit
+  bool get canViewDetailedStats =>
+      isPromoActive || _licenseType != LicenseType.free; // Day/Week/Year/Range
+  bool get canChangePassword =>
+      isPromoActive || _licenseType != LicenseType.free;
+  bool get canAddCurrency => isPromoActive || _licenseType != LicenseType.free;
+  bool get canImportData => isPromoActive || _licenseType != LicenseType.free;
+
+  // Features locked at PERSONAL (Pro only)
+  bool get canExportData =>
+      isPromoActive || _licenseType.index >= LicenseType.pro.index;
+  bool get canSyncDrive =>
+      isPromoActive || _licenseType == LicenseType.enterprise;
+  bool get canUseAI => isPromoActive || _licenseType == LicenseType.enterprise;
+  bool get canUseBiometrics =>
+      isPromoActive || _licenseType == LicenseType.enterprise;
+
+  // Enterprise Only
+  bool get canUseScanner =>
+      isPromoActive || _licenseType == LicenseType.enterprise;
+  bool get canUseMoreActions =>
+      isPromoActive || _licenseType == LicenseType.enterprise;
+  bool get canExportPDF =>
+      isPromoActive || _licenseType == LicenseType.enterprise;
+
+  // Features locked at PERSONAL (Pro only) - Newly Requested
+  bool get canChangeCardPIN =>
+      isPromoActive || _licenseType.index >= LicenseType.pro.index;
+  bool get canChangeAppPIN =>
+      isPromoActive || _licenseType.index >= LicenseType.pro.index;
+  bool get canCreateCategory =>
+      isPromoActive || _licenseType.index >= LicenseType.pro.index;
+  bool get canFilterStatsAccount =>
+      isPromoActive || _licenseType.index >= LicenseType.pro.index;
+  bool get canManageBanks =>
+      isPromoActive || _licenseType.index >= LicenseType.pro.index;
+  bool get canExportExcel =>
+      isPromoActive || _licenseType.index >= LicenseType.pro.index;
+  bool get canCustomizeCharts =>
+      isPromoActive || _licenseType == LicenseType.enterprise;
 
   // Notifications
   bool _notificationsEnabled = false;
@@ -130,6 +315,12 @@ class AppProvider with ChangeNotifier {
       _customCurrencies = customCurrenciesJson
           .map((e) => Currency.fromJson(jsonDecode(e)))
           .toList();
+    }
+
+    // Load License
+    final licenseIndex = prefs.getInt('license_type') ?? 0;
+    if (licenseIndex >= 0 && licenseIndex < LicenseType.values.length) {
+      _licenseType = LicenseType.values[licenseIndex];
     }
 
     // Fallback locale logic if not set above
@@ -238,6 +429,112 @@ class AppProvider with ChangeNotifier {
       }
     }
 
+    notifyListeners();
+  }
+
+  Future<void> deleteTransaction(String transactionId) async {
+    final index = _transactions.indexWhere((t) => t.id == transactionId);
+    if (index == -1) return;
+
+    final transaction = _transactions[index];
+
+    // Revert Balance
+    if (transaction.cardId != null) {
+      final cardIndex = _cards.indexWhere((c) => c.id == transaction.cardId);
+      if (cardIndex != -1) {
+        final card = _cards[cardIndex];
+        // If it was Income (+), we subtract. If Expense (-), we add (subtracting negative).
+        double newBalance = card.balance - transaction.amount;
+        final updatedCard = card.copyWith(balance: newBalance);
+        await editCard(updatedCard);
+      }
+    }
+
+    // Delete from Hive
+    final key = _transactionBox.keys.firstWhere(
+      (k) => _transactionBox.get(k)?.id == transactionId,
+      orElse: () => null,
+    );
+    if (key != null) {
+      await _transactionBox.delete(key);
+    }
+
+    _transactions.removeAt(index);
+    notifyListeners();
+  }
+
+  Future<void> editTransaction(
+    String transactionId, {
+    required double newAmount,
+    required String newTitle,
+    required String newCategoryId,
+    required String newCurrency,
+  }) async {
+    final index = _transactions.indexWhere((t) => t.id == transactionId);
+    if (index == -1) return;
+
+    final oldTransaction = _transactions[index];
+
+    // Update Card Balance if linked
+    if (oldTransaction.cardId != null) {
+      final cardIndex = _cards.indexWhere((c) => c.id == oldTransaction.cardId);
+      if (cardIndex != -1) {
+        final card = _cards[cardIndex];
+
+        // Calculate what the balance would be without the old transaction
+        double baseBalance = card.balance - oldTransaction.amount;
+
+        // Calculate new balance with the new transaction
+        double proposedBalance = baseBalance + newAmount;
+
+        // If proposed balance would be negative, adjust the transaction amount
+        double finalAmount = newAmount;
+        double finalBalance = proposedBalance;
+
+        if (proposedBalance < 0) {
+          // Adjust so balance stays at 0
+          // baseBalance + finalAmount = 0
+          // finalAmount = -baseBalance
+          finalAmount = -baseBalance;
+          finalBalance = 0;
+        }
+
+        final updatedCard = card.copyWith(balance: finalBalance);
+
+        // Update card in Hive and list
+        final hiveIndex = _cardBox.values.toList().indexWhere(
+          (c) => c.id == updatedCard.id,
+        );
+        if (hiveIndex != -1) {
+          await _cardBox.putAt(hiveIndex, updatedCard);
+          _cards[cardIndex] = updatedCard;
+        }
+
+        // Update the newAmount parameter for transaction save
+        newAmount = finalAmount;
+      }
+    }
+
+    // Update Transaction
+    final updatedTx = InternalTransaction(
+      id: oldTransaction.id,
+      amount: newAmount,
+      title: newTitle,
+      categoryId: newCategoryId,
+      currency: newCurrency,
+      date: oldTransaction.date,
+      cardId: oldTransaction.cardId,
+    );
+
+    // Save to Hive
+    final key = _transactionBox.keys.firstWhere(
+      (k) => _transactionBox.get(k)?.id == transactionId,
+      orElse: () => null,
+    );
+    if (key != null) {
+      await _transactionBox.put(key, updatedTx);
+    }
+    _transactions[index] = updatedTx;
     notifyListeners();
   }
 

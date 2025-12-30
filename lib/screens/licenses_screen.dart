@@ -3,19 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cashrapido/services/localization_service.dart';
 
-class LicensesScreen extends StatelessWidget {
-  // Set this to true for the Cuban version, false for the International version
-  static const bool isCuba = true;
+import 'package:provider/provider.dart';
+import '../providers/app_provider.dart';
+import '../models/models.dart';
 
+class LicensesScreen extends StatelessWidget {
   const LicensesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<AppProvider>(context);
+    final isCuba = provider.isCuba;
     // Holiday Promotion Check (Until Jan 10th midnight, 2026)
     final isPromoActive = DateTime.now().isBefore(DateTime(2026, 1, 11));
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(
           context.t('licenses_title'),
@@ -25,7 +27,7 @@ class LicensesScreen extends StatelessWidget {
           ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.transparent,
+        backgroundColor: const Color(0xFF121212),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
@@ -84,7 +86,7 @@ class LicensesScreen extends StatelessWidget {
               : ListView(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
-                    vertical: 120,
+                    vertical: 24,
                   ),
                   children: [
                     _buildLicenseCard(
@@ -94,12 +96,19 @@ class LicensesScreen extends StatelessWidget {
                       currency: isCuba ? 'CUP' : 'USD',
                       period: context.t('month_short'),
                       features: [
-                        context.t('features_basic'),
-                        context.t('features_device_1'),
-                        context.t('features_support_basic'),
+                        context.t('feat_3_cards'),
+                        context.t('feat_transfers'),
+                        context.t('feat_lock_card'),
+                        context.t('feat_adv_stats'),
+                        context.t('feat_settings_basic'),
                       ],
                       color: Colors.blueGrey.shade400,
                       accentColor: Colors.blueGrey,
+                      onTap: () => _showPaymentMethodsDialog(
+                        context,
+                        LicenseType.personal,
+                      ),
+                      isCurrent: provider.licenseType == LicenseType.personal,
                     ),
                     const SizedBox(height: 24),
                     _buildLicenseCard(
@@ -109,14 +118,18 @@ class LicensesScreen extends StatelessWidget {
                       currency: isCuba ? 'CUP' : 'USD',
                       period: context.t('month_short'),
                       features: [
-                        context.t('features_all_personal'),
-                        context.t('features_multi_device'),
-                        context.t('features_support_priority'),
-                        context.t('features_advanced_analytics'),
+                        context.t('feat_pro_cards'),
+                        context.t('feat_pro_categories'),
+                        context.t('feat_pro_stats'),
+                        context.t('feat_pro_settings'),
+                        context.t('feat_pro_security'),
                       ],
                       color: const Color(0xFFBB86FC), // Premium Purple
                       accentColor: Colors.deepPurpleAccent,
                       isPopular: true,
+                      onTap: () =>
+                          _showPaymentMethodsDialog(context, LicenseType.pro),
+                      isCurrent: provider.licenseType == LicenseType.pro,
                     ),
                     const SizedBox(height: 24),
                     _buildLicenseCard(
@@ -126,13 +139,19 @@ class LicensesScreen extends StatelessWidget {
                       currency: isCuba ? 'CUP' : 'USD',
                       period: context.t('month_short'),
                       features: [
-                        context.t('features_all_pro'),
-                        context.t('features_unlimited_users'),
-                        context.t('features_api_access'),
-                        context.t('features_support_247'),
+                        context.t('feat_ent_unlimited'),
+                        context.t('feat_ent_scanner'),
+                        context.t('feat_ent_ai_bio'),
+                        context.t('feat_ent_charts_pdf'),
+                        context.t('feat_ent_cloud'),
                       ],
                       color: Colors.amberAccent,
                       accentColor: Colors.orangeAccent,
+                      onTap: () => _showPaymentMethodsDialog(
+                        context,
+                        LicenseType.enterprise,
+                      ),
+                      isCurrent: provider.licenseType == LicenseType.enterprise,
                     ),
                   ],
                 ),
@@ -230,7 +249,11 @@ class LicensesScreen extends StatelessWidget {
     required List<String> features,
     required Color color,
     required Color accentColor,
+
     bool isPopular = false,
+
+    bool isCurrent = false,
+    VoidCallback? onTap,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -358,32 +381,70 @@ class LicensesScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isPopular ? accentColor : Colors.white10,
-                      foregroundColor: isPopular ? Colors.white : Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                if (!isCurrent)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: onTap,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isPopular
+                            ? accentColor
+                            : Colors.white10,
+                        foregroundColor: isPopular
+                            ? Colors.white
+                            : Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      context.t('select_plan'),
-                      style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                      child: Text(
+                        context.t('select_plan'),
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
-          if (isPopular)
+          if (isCurrent)
+            Positioned(
+              top: 0,
+              right: 24,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.greenAccent,
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(12),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.greenAccent.withValues(alpha: 0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  context.t('active_plan_banner'),
+                  style: GoogleFonts.outfit(
+                    color: Colors.black,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ),
+            )
+          else if (isPopular)
             Positioned(
               top: 0,
               right: 24,
@@ -417,6 +478,142 @@ class LicensesScreen extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  void _showPaymentMethodsDialog(
+    BuildContext context,
+    LicenseType targetLicense,
+  ) {
+    Provider.of<AppProvider>(
+      context,
+      listen: false,
+    ); // Listen false? No, we might want to check isCuba updates?
+    // Actually we are inside a function. Dialog builder needs its own context or Consumer if we want updates.
+    // Provider.of outside is fine for reading initial state, but if user toggles region inside dialog?
+    // I'll put Consumer in dialog.
+
+    showDialog(
+      context: context,
+      builder: (ctx) => Consumer<AppProvider>(
+        builder: (context, provider, _) {
+          return AlertDialog(
+            backgroundColor: const Color(0xFF1E1E2C),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            title: Text(
+              context.t('payment_methods_title'),
+              style: GoogleFonts.outfit(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: ListView(
+                shrinkWrap: true,
+                children: provider.paymentMethods.map((method) {
+                  return Opacity(
+                    opacity: method.isVisible ? 1.0 : 0.0,
+                    child: method.isVisible
+                        ? Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.white12),
+                            ),
+                            child: ListTile(
+                              leading:
+                                  method.iconAsset.endsWith(
+                                    '.png',
+                                  ) // Crude check, assume asset
+                                  ? Image.asset(
+                                      method.iconAsset,
+                                      width: 32,
+                                      height: 32,
+                                      errorBuilder: (c, e, s) => const Icon(
+                                        Icons.payment,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.payment,
+                                      color: Colors.white,
+                                    ),
+                              title: Text(
+                                method.id.contains('test')
+                                    ? context.t('test_method')
+                                    : method.name,
+                                style: GoogleFonts.outfit(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              onTap: () async {
+                                if (!method.isEnabled) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        context.t('payment_disabled'),
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                // Process Payment
+                                if (method.isTest) {
+                                  Navigator.pop(ctx); // Close dialog first
+
+                                  // Show loading or just success
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        '${context.t('payment_test_success')} (${targetLicense.name.toUpperCase()})',
+                                      ),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+
+                                  await provider.simulatePayment(
+                                    method.id,
+                                    targetLicense,
+                                  );
+
+                                  // Force refresh or navigation?
+                                  // Provider update notifies listeners, so LicensesScreen (if it listens) should rebuild?
+                                  // LicensesScreen is stateless and calls Provider.of(context).
+                                  // But usually we might want to go back to Home or Settings.
+                                  // For now simple snackbar is enough verification.
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        context.t('payment_disabled'),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                  );
+                }).toList(),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(context.t('close')),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

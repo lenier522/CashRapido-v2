@@ -17,6 +17,32 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  void _showLockedFeature(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(context.t('feature_locked_title')),
+        content: Text(context.t('feature_locked_desc')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(context.t('close')),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const LicensesScreen()),
+              );
+            },
+            child: Text(context.t('upgrade_btn')),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<AppProvider>(context);
@@ -46,10 +72,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               context,
               icon: Icons.fingerprint,
               title: context.t('biometrics'),
+              isLocked: !provider.canUseBiometrics,
               trailing: Switch(
                 value: provider.biometricsEnabled,
                 activeThumbColor: Theme.of(context).colorScheme.primary,
                 onChanged: (val) async {
+                  if (!provider.canUseBiometrics) {
+                    _showLockedFeature(context);
+                    return;
+                  }
                   if (val) {
                     final authenticated = await provider.authenticate();
                     if (authenticated) {
@@ -75,6 +106,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               context,
               icon: Icons.lock_outline,
               title: context.t('change_pin'),
+              isLocked: !provider.canChangeAppPIN,
               trailing: Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
@@ -86,6 +118,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               context,
               icon: Icons.password,
               title: context.t('change_password'),
+              isLocked: !provider.canChangePassword,
               trailing: Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
@@ -120,10 +153,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               context,
               icon: Icons.smart_toy_outlined,
               title: context.t('enable_ai'),
+              isLocked: !provider.canUseAI,
               trailing: Switch(
                 value: provider.aiChatEnabled,
                 activeThumbColor: Theme.of(context).colorScheme.primary,
                 onChanged: (val) async {
+                  if (!provider.canUseAI) {
+                    _showLockedFeature(context);
+                    return;
+                  }
                   await provider.setAIChatEnabled(val);
                 },
               ),
@@ -156,6 +194,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               context,
               icon: Icons.account_balance_rounded,
               title: context.t('manage_banks'),
+              isLocked: !provider.canManageBanks,
               trailing: Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
@@ -180,6 +219,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               icon: Icons.pie_chart_outline_rounded,
               title: context.t('chart_type'),
               subtitle: provider.chartType,
+              isLocked: !provider.canCustomizeCharts,
               trailing: Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
@@ -217,6 +257,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               icon: Icons.restore_rounded,
               title: context.t('restore_local'),
               subtitle: context.t('restore_local_sub'),
+              isLocked: !provider.canImportData, // "Import Data"
               onTap: () async {
                 final confirm = await showDialog<bool>(
                   context: context,
@@ -249,6 +290,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               icon: Icons.table_chart_outlined,
               title: context.t('export_excel'),
               subtitle: context.t('export_excel_sub'),
+              isLocked: !provider.canExportExcel,
               onTap: () async {
                 _showSnack(context, context.t('generating_excel'));
                 try {
@@ -272,6 +314,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               icon: Icons.picture_as_pdf_outlined,
               title: context.t('export_pdf'),
               subtitle: context.t('export_pdf_sub'),
+              isLocked: !provider.canExportPDF,
               onTap: () async {
                 _showSnack(context, context.t('generating_pdf'));
                 try {
@@ -427,6 +470,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     String? subtitle,
     Widget? trailing,
     VoidCallback? onTap,
+    bool isLocked = false,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -435,26 +479,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: ListTile(
-        onTap: onTap,
+        onTap: () {
+          if (isLocked) {
+            _showLockedFeature(context);
+          } else {
+            onTap?.call();
+          }
+        },
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            icon,
-            color: Theme.of(context).colorScheme.primary,
-            size: 20,
-          ),
+        leading: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
+            ),
+            if (isLocked)
+              Positioned(
+                right: -2,
+                top: -2,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: Colors.amber,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Theme.of(context).cardColor,
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 2,
+                        offset: Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(Icons.lock, size: 8, color: Colors.white),
+                ),
+              ),
+          ],
         ),
         title: Text(
           title,
@@ -470,7 +549,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   fontSize: 12,
                   color: Theme.of(
                     context,
-                  ).textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                  ).textTheme.bodyMedium?.color?.withOpacity(0.7),
                 ),
               )
             : null,
@@ -487,11 +566,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
         icon: Icons.cloud_upload_outlined,
         title: context.t('sync_drive_title'),
         subtitle: context.t('sync_drive_desc'),
+        isLocked: !provider.canSyncDrive,
         trailing: Icon(
           Icons.login,
           color: Theme.of(context).colorScheme.primary,
         ),
         onTap: () async {
+          if (!provider.canSyncDrive) {
+            // Already handled by _buildSettingsTile isLocked logic,
+            // but since calling onTap manually disables the tile's internal check?
+            // No, _buildSettingsTile with isLocked=true intercepts onTap.
+            // So I just need to return.
+            // Wait, passing isLocked=true is enough.
+            // But let's be explicit if needed.
+            // The widget handles it.
+          }
           try {
             await provider.signInToGoogle();
           } catch (e) {
@@ -615,6 +704,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onPressed: provider.isSyncing
                       ? null
                       : () async {
+                          if (!provider.canSyncDrive) {
+                            _showLockedFeature(context);
+                            return;
+                          }
                           try {
                             await provider.backupToCloud();
                             if (context.mounted) {
@@ -651,6 +744,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onPressed: provider.isSyncing
                       ? null
                       : () async {
+                          if (!provider.canSyncDrive) {
+                            _showLockedFeature(context);
+                            return;
+                          }
                           final confirm = await showDialog<bool>(
                             context: context,
                             builder: (context) => _buildConfirmDialog(
@@ -687,7 +784,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     side: BorderSide(
                       color: Theme.of(
                         context,
-                      ).colorScheme.primary.withValues(alpha: 0.5),
+                      ).colorScheme.primary.withOpacity(0.5),
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -1281,6 +1378,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ),
                             ),
                             onTap: () {
+                              final provider = Provider.of<AppProvider>(
+                                context,
+                                listen: false,
+                              );
+                              if (!provider.isPremium) {
+                                _showLockedFeature(context);
+                                return;
+                              }
                               _showAddCurrencyDialog(context);
                             },
                           );
@@ -1640,6 +1745,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ),
                             ),
                             onTap: () {
+                              final provider = Provider.of<AppProvider>(
+                                context,
+                                listen: false,
+                              );
+                              if (!provider.isPremium) {
+                                _showLockedFeature(context);
+                                return;
+                              }
                               _showAddBankDialog(context);
                             },
                           );

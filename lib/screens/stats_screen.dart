@@ -7,6 +7,7 @@ import '../providers/app_provider.dart';
 import 'package:intl/intl.dart';
 import '../models/models.dart';
 import '../services/localization_service.dart';
+import 'licenses_screen.dart';
 
 enum TimeRange { day, week, month, year, custom }
 
@@ -83,6 +84,32 @@ class _StatsScreenState extends State<StatsScreen> {
     }
   }
 
+  void _showLockedFeature(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(context.t('feature_locked_title')),
+        content: Text(context.t('feature_locked_desc')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(context.t('close')),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const LicensesScreen()),
+              );
+            },
+            child: Text(context.t('upgrade_btn')),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -100,10 +127,49 @@ class _StatsScreenState extends State<StatsScreen> {
             : SystemUiOverlayStyle.dark,
         actions: [
           IconButton(
-            onPressed: () => _showDatePickerForRange(context),
-            icon: Icon(
-              Icons.calendar_month_rounded,
-              color: Theme.of(context).colorScheme.primary,
+            onPressed: () {
+              final provider = Provider.of<AppProvider>(context, listen: false);
+              if (provider.canViewDetailedStats) {
+                _showDatePickerForRange(context);
+              } else {
+                _showLockedFeature(context);
+              }
+            },
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  Icons.calendar_month_rounded,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                Consumer<AppProvider>(
+                  builder: (context, provider, _) {
+                    if (!provider.canViewDetailedStats) {
+                      return Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: Colors.amber,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Theme.of(context).scaffoldBackgroundColor,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.lock,
+                            size: 8,
+                            color: Colors.white,
+                          ),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ],
             ),
           ),
         ],
@@ -431,7 +497,7 @@ class _StatsScreenState extends State<StatsScreen> {
   Widget _buildModernTabSelector(BuildContext context) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.only(left: 20, right: 20, top: 12, bottom: 4),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: TimeRange.values.map((range) {
@@ -455,9 +521,19 @@ class _StatsScreenState extends State<StatsScreen> {
               break;
           }
 
+          final provider = Provider.of<AppProvider>(context);
+          // Month is allowed for Free. Others are locked.
+          final isLocked =
+              !provider.canViewDetailedStats && range != TimeRange.month;
+
           return GestureDetector(
             onTap: () async {
+              if (isLocked) {
+                _showLockedFeature(context);
+                return;
+              }
               if (range == TimeRange.custom) {
+                // ... custom logic ...
                 final picked = await showDateRangePicker(
                   context: context,
                   firstDate: DateTime(2020),
@@ -499,31 +575,67 @@ class _StatsScreenState extends State<StatsScreen> {
               }
               setState(() => _timeRange = range);
             },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).cardColor,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isSelected
-                      ? Colors.transparent
-                      : Theme.of(context).dividerColor.withOpacity(0.1),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isSelected
+                          ? Colors.transparent
+                          : Theme.of(context).dividerColor.withOpacity(0.1),
+                    ),
+                  ),
+                  child: Text(
+                    label,
+                    style: GoogleFonts.outfit(
+                      color: isSelected
+                          ? Colors.white
+                          : Theme.of(context).textTheme.bodyMedium?.color,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
-              ),
-              child: Text(
-                label,
-                style: GoogleFonts.outfit(
-                  color: isSelected
-                      ? Colors.white
-                      : Theme.of(context).textTheme.bodyMedium?.color,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
+                if (isLocked)
+                  Positioned(
+                    right: 4,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.amber,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Theme.of(context).scaffoldBackgroundColor,
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 2,
+                            offset: Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.lock,
+                        size: 8,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           );
         }).toList(),
@@ -543,7 +655,14 @@ class _StatsScreenState extends State<StatsScreen> {
               size: 20,
               color: Theme.of(context).textTheme.bodyMedium?.color,
             ),
-            onPressed: () => setState(() => _updateDate(-1)),
+            onPressed: () {
+              final provider = Provider.of<AppProvider>(context, listen: false);
+              if (provider.canViewDetailedStats) {
+                setState(() => _updateDate(-1));
+              } else {
+                _showLockedFeature(context);
+              }
+            },
             style: IconButton.styleFrom(
               backgroundColor: Theme.of(context).cardColor,
               padding: const EdgeInsets.all(12),
@@ -563,7 +682,14 @@ class _StatsScreenState extends State<StatsScreen> {
               size: 20,
               color: Theme.of(context).textTheme.bodyMedium?.color,
             ),
-            onPressed: () => setState(() => _updateDate(1)),
+            onPressed: () {
+              final provider = Provider.of<AppProvider>(context, listen: false);
+              if (provider.canViewDetailedStats) {
+                setState(() => _updateDate(1));
+              } else {
+                _showLockedFeature(context);
+              }
+            },
             style: IconButton.styleFrom(
               backgroundColor: Theme.of(context).cardColor,
               padding: const EdgeInsets.all(12),
@@ -609,22 +735,63 @@ class _StatsScreenState extends State<StatsScreen> {
     AppProvider provider,
   ) {
     final isSelected = provider.chartType == type;
+    final isLocked =
+        !provider.canCustomizeCharts &&
+        type != 'Pie'; // Only Pie allowed for Free/Personal
+
     return GestureDetector(
-      onTap: () => provider.setChartType(type),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(
-          icon,
-          color: isSelected ? Colors.white : Theme.of(context).disabledColor,
-          size: 20,
-        ),
+      onTap: () {
+        if (isLocked) {
+          _showLockedFeature(context);
+        } else {
+          provider.setChartType(type);
+        }
+      },
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).scaffoldBackgroundColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: isSelected
+                  ? Colors.white
+                  : Theme.of(context).disabledColor,
+              size: 20,
+            ),
+          ),
+          if (isLocked)
+            Positioned(
+              right: -4,
+              top: -4,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: Colors.amber,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 2,
+                      offset: Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.lock, size: 8, color: Colors.white),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -1029,7 +1196,7 @@ class _StatsScreenState extends State<StatsScreen> {
   Widget _buildAccountTypeFilter(BuildContext context) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.only(left: 20, right: 20, top: 4, bottom: 4),
       child: Container(
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
@@ -1058,27 +1225,69 @@ class _StatsScreenState extends State<StatsScreen> {
     String label,
   ) {
     final isSelected = _accountTypeFilter == value;
+    final provider = Provider.of<AppProvider>(context);
+    final isLocked =
+        !provider.canFilterStatsAccount &&
+        value != 'all'; // Only 'all' allowed for Free
+
     return GestureDetector(
-      onTap: () => setState(() => _accountTypeFilter = value),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? Theme.of(context).colorScheme.primary
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.outfit(
-            color: isSelected
-                ? Colors.white
-                : Theme.of(context).textTheme.bodyMedium?.color,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            fontSize: 13,
+      onTap: () {
+        if (isLocked) {
+          _showLockedFeature(context);
+        } else {
+          setState(() => _accountTypeFilter = value);
+        }
+      },
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              label,
+              style: GoogleFonts.outfit(
+                color: isSelected
+                    ? Colors.white
+                    : Theme.of(context).textTheme.bodyMedium?.color,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontSize: 13,
+              ),
+            ),
           ),
-        ),
+          if (isLocked)
+            Positioned(
+              right: -4,
+              top: -4,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: Colors.amber,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Theme.of(
+                      context,
+                    ).cardColor, // Use cardColor here as bg is card
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 2,
+                      offset: Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.lock, size: 8, color: Colors.white),
+              ),
+            ),
+        ],
       ),
     );
   }

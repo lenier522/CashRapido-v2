@@ -3,7 +3,7 @@ import 'package:lottie/lottie.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/localization_service.dart';
-import 'main_screen.dart';
+import 'default_license_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -175,10 +175,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     await prefs.setBool('seenOnboarding', true);
 
     if (!mounted) return;
-    // Navigate to Home (Create a specialized replacement later)
-    Navigator.of(
-      context,
-    ).pushReplacement(MaterialPageRoute(builder: (_) => const MainScreen()));
+    if (!mounted) return;
+    // Navigate to Default License Screen
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const DefaultLicenseScreen()),
+    );
   }
 }
 

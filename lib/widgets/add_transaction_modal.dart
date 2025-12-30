@@ -7,7 +7,9 @@ import '../models/models.dart';
 import '../screens/add_category_screen.dart';
 
 class AddTransactionModal extends StatefulWidget {
-  const AddTransactionModal({super.key});
+  final InternalTransaction? transactionToEdit;
+
+  const AddTransactionModal({super.key, this.transactionToEdit});
 
   @override
   State<AddTransactionModal> createState() => _AddTransactionModalState();
@@ -21,6 +23,21 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
   AccountCard? _selectedCard; // Added state variable
   String _selectedCurrency = 'USD';
   bool _isExpense = true; // Default to Expense
+
+  @override
+  void initState() {
+    super.initState();
+    // If editing, populate fields
+    if (widget.transactionToEdit != null) {
+      final tx = widget.transactionToEdit!;
+      _amountController.text = tx.amount.abs().toStringAsFixed(2);
+      _titleController.text = tx.title;
+      _selectedCategoryId = tx.categoryId;
+      _selectedCardId = tx.cardId;
+      _selectedCurrency = tx.currency;
+      _isExpense = tx.amount < 0;
+    }
+  }
 
   @override
   void dispose() {
@@ -75,8 +92,10 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
           return;
         }
 
-        // Check Insufficient Funds
-        if (amount > card.balance) {
+        // Check Insufficient Funds (Only for Expenses, and only when adding new transactions)
+        if (_isExpense &&
+            widget.transactionToEdit == null &&
+            amount > card.balance) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -107,15 +126,41 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
     _executeTransaction(provider, finalAmount, title);
   }
 
-  void _executeTransaction(AppProvider provider, double amount, String title) {
-    provider.addTransaction(
-      amount: amount,
-      title: title,
-      categoryId: _selectedCategoryId,
-      currency: _selectedCurrency,
-      cardId: _selectedCardId,
-    );
-    Navigator.pop(context);
+  void _executeTransaction(
+    AppProvider provider,
+    double amount,
+    String title,
+  ) async {
+    if (widget.transactionToEdit != null) {
+      // Edit mode
+      try {
+        await provider.editTransaction(
+          widget.transactionToEdit!.id,
+          newAmount: amount,
+          newTitle: title,
+          newCategoryId: _selectedCategoryId,
+          newCurrency: _selectedCurrency,
+        );
+        Navigator.pop(context);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } else {
+      // Add mode
+      provider.addTransaction(
+        amount: amount,
+        title: title,
+        categoryId: _selectedCategoryId,
+        currency: _selectedCurrency,
+        cardId: _selectedCardId,
+      );
+      Navigator.pop(context);
+    }
   }
 
   void _showPinDialog(BuildContext context, Function(String) onConfirm) {
@@ -155,7 +200,8 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
   @override
   Widget build(BuildContext context) {
     // Fetch categories from provider
-    final categories = Provider.of<AppProvider>(context).categories;
+    final provider = Provider.of<AppProvider>(context);
+    final categories = provider.categories;
     // Set default category if none selected and categories exist
     if (_selectedCategoryId.isEmpty && categories.isNotEmpty) {
       _selectedCategoryId = categories.first.id;
@@ -178,7 +224,9 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                context.t('new_transaction'),
+                widget.transactionToEdit != null
+                    ? context.t('edit_transaction')
+                    : context.t('new_transaction'),
                 style: GoogleFonts.outfit(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -434,17 +482,34 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
                 // Add Custom Category Button
                 _buildCategorySelector(
                   context.t('create'),
-                  Icons.add,
+                  Icons.add, // Always show Add icon
                   Colors.grey,
                   false,
                   () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const AddCategoryScreen(),
-                      ),
-                    );
+                    if (provider.canCreateCategory) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AddCategoryScreen(),
+                        ),
+                      );
+                    } else {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: Text(context.t('feature_locked_title')),
+                          content: Text(context.t('feature_locked_desc')),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: Text(context.t('close')),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
                   },
+                  isLocked: !provider.canCreateCategory, // Pass locked state
                 ),
               ],
             ),
@@ -485,22 +550,56 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
     IconData icon,
     Color color,
     bool isSelected,
-    VoidCallback onTap,
-  ) {
+    VoidCallback onTap, {
+    bool isLocked = false,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(right: 16),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isSelected ? color : Colors.grey[100],
-                shape: BoxShape.circle,
-                border: isSelected ? Border.all(color: color, width: 2) : null,
-              ),
-              child: Icon(icon, color: isSelected ? Colors.white : Colors.grey),
+            Stack(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isSelected ? color : Colors.grey[100],
+                    shape: BoxShape.circle,
+                    border: isSelected
+                        ? Border.all(color: color, width: 2)
+                        : null,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: isSelected ? Colors.white : Colors.grey,
+                  ),
+                ),
+                if (isLocked)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.amber, // Warning/Lock color
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 4,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.lock,
+                        size: 10,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 8),
             Text(

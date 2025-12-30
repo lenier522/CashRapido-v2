@@ -7,6 +7,7 @@ import '../models/models.dart';
 import '../services/localization_service.dart';
 import 'add_card_screen.dart';
 import 'money_counter_screen.dart';
+import 'licenses_screen.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -36,10 +37,41 @@ class _WalletScreenState extends State<WalletScreen> {
             : SystemUiOverlayStyle.dark,
         actions: [
           IconButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AddCardScreen()),
-            ),
+            onPressed: () {
+              final provider = Provider.of<AppProvider>(context, listen: false);
+              if (provider.canAddCard) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AddCardScreen()),
+                );
+              } else {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: Text(context.t('limit_reached_title')),
+                    content: Text(context.t('limit_card_desc')),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: Text(context.t('cancel')),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const LicensesScreen(),
+                            ),
+                          );
+                        },
+                        child: Text(context.t('upgrade_btn')),
+                      ),
+                    ],
+                  ),
+                );
+              }
+            },
             icon: const Icon(
               Icons.add_circle_outline,
               color: Colors.deepPurple,
@@ -69,10 +101,37 @@ class _WalletScreenState extends State<WalletScreen> {
                     style: GoogleFonts.outfit(color: Colors.grey),
                   ),
                   TextButton(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const AddCardScreen()),
-                    ),
+                    onPressed: () {
+                      final provider = Provider.of<AppProvider>(
+                        context,
+                        listen: false,
+                      );
+                      if (provider.canAddCard) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AddCardScreen(),
+                          ),
+                        );
+                      } else {
+                        // Should not happen if limit is 1 and cards is empty (0), but for safety/future:
+                        // Actually if empty, length is 0, limit is 1. so always true.
+                        // But if limit logic changes, good to have consistent check.
+                        // However, "Limit 1" means if (0 < 1) true.
+                        // So this branch is implicitly safe.
+                        // BUT I'll leave it as direct push for now to avoid complexity,
+                        // or use the check to be robust. I'll use direct push since it's redundant.
+                        // Wait, if limit is 0 (locked entirely?), then we need check.
+                        // But limit is "Max 1". so 0 -> ok.
+                        // I will keep it simple.
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AddCardScreen(),
+                          ),
+                        );
+                      }
+                    },
                     child: Text(context.t('add_now')),
                   ),
                 ],
@@ -195,6 +254,7 @@ class _WalletScreenState extends State<WalletScreen> {
                         activeCard.isLocked
                             ? context.t('enable_use')
                             : context.t('disable_temporarily'),
+                        isLocked: !provider.canSecurizeCard,
                         onTap: () async {
                           await Provider.of<AppProvider>(
                             context,
@@ -209,6 +269,7 @@ class _WalletScreenState extends State<WalletScreen> {
                           Icons.pin,
                           context.t('change_pin'),
                           context.t('transaction_security'),
+                          isLocked: !provider.canChangeCardPIN,
                           onTap: () => _showPinDialog(
                             context,
                             Provider.of<AppProvider>(context, listen: false),
@@ -222,6 +283,7 @@ class _WalletScreenState extends State<WalletScreen> {
                         activeCard.spendingLimit == null
                             ? context.t('no_limit_set')
                             : '\$ ${activeCard.spendingLimit!.toStringAsFixed(2)}',
+                        isLocked: !provider.canSecurizeCard,
                         onTap: () => _showLimitDialog(
                           context,
                           Provider.of<AppProvider>(context, listen: false),
@@ -431,6 +493,7 @@ class _WalletScreenState extends State<WalletScreen> {
     String subtitle, {
     required VoidCallback onTap,
     bool isDestructive = false,
+    bool isLocked = false,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -446,21 +509,43 @@ class _WalletScreenState extends State<WalletScreen> {
         ],
       ),
       child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: isDestructive
-                ? Colors.red.withOpacity(0.1)
-                : Theme.of(context).colorScheme.primary.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            icon,
-            color: isDestructive
-                ? Colors.red
-                : Theme.of(context).colorScheme.primary,
-            size: 20,
-          ),
+        leading: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDestructive
+                    ? Colors.red.withOpacity(0.1)
+                    : Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: isDestructive
+                    ? Colors.red
+                    : Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
+            ),
+            if (isLocked)
+              Positioned(
+                right: -4,
+                top: -4,
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    color: Colors.amber,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Theme.of(context).cardColor,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: const Icon(Icons.lock, size: 10, color: Colors.white),
+                ),
+              ),
+          ],
         ),
         title: Text(
           title,
@@ -481,7 +566,37 @@ class _WalletScreenState extends State<WalletScreen> {
             fontSize: 14,
           ),
         ),
-        onTap: onTap,
+        onTap: () {
+          if (isLocked) {
+            showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: Text(context.t('feature_locked_title')),
+                content: Text(context.t('feature_locked_desc')),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(context.t('close')),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const LicensesScreen(),
+                        ),
+                      );
+                    },
+                    child: Text(context.t('upgrade_btn')),
+                  ),
+                ],
+              ),
+            );
+          } else {
+            onTap();
+          }
+        },
         trailing: Icon(
           Icons.arrow_forward_ios,
           size: 16,
