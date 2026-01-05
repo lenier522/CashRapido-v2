@@ -557,61 +557,68 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(right: 16),
-        child: Column(
-          children: [
-            Stack(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: isSelected ? color : Colors.grey[100],
-                    shape: BoxShape.circle,
-                    border: isSelected
-                        ? Border.all(color: color, width: 2)
-                        : null,
-                  ),
-                  child: Icon(
-                    icon,
-                    color: isSelected ? Colors.white : Colors.grey,
-                  ),
-                ),
-                if (isLocked)
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Colors.amber, // Warning/Lock color
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.lock,
-                        size: 10,
-                        color: Colors.white,
-                      ),
+        child: SizedBox(
+          width: 72, // Fixed width for consistent spacing
+          child: Column(
+            children: [
+              Stack(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isSelected ? color : Colors.grey[100],
+                      shape: BoxShape.circle,
+                      border: isSelected
+                          ? Border.all(color: color, width: 2)
+                          : null,
+                    ),
+                    child: Icon(
+                      icon,
+                      color: isSelected ? Colors.white : Colors.grey,
                     ),
                   ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: GoogleFonts.outfit(
-                color: isSelected
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).disabledColor,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  if (isLocked)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.amber, // Warning/Lock color
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.lock,
+                          size: 10,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                label,
+                textAlign: TextAlign.center, // Center text
+                maxLines: 2, // Allow 2 lines for longer names
+                overflow: TextOverflow.ellipsis, // Truncate if too long
+                style: GoogleFonts.outfit(
+                  fontSize: 12, // Slightly smaller font
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).disabledColor,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
