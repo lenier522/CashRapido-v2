@@ -43,35 +43,35 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
   // Curated list of icons (Material Icons code points)
   final List<int> _iconCodes = [
     0xe532, // restaurant
-    0xe57a, // fastfood
-    0xe52d, // local_pizza
-    0xe54d, // local_bar
-    0xe541, // local_cafe
-    0xe1d5, // directions_car
-    0xe531, // directions_bus
-    0xe559, // local_gas_station
-    0xe195, // commute
+    0xe25a, // fastfood
+    0xe3a0, // local_pizza
+    0xe38c, // local_bar
+    0xe38d, // local_cafe
+    0xe1d7, // directions_car
+    0xe1d5, // directions_bus
+    0xe394, // local_gas_station
+    0xe180, // commute
     0xe318, // home
-    0xe406, // movie
-    0xe33f, // sports_esports
-    0xe566, // local_mall
-    0xe8cc, // shopping_cart
-    0xe8cb, // shopping_bag
-    0xe00f, // favorite
-    0xe548, // local_hospital
-    0xe338, // fitness_center
-    0xe149, // checkroom
-    0xe32a, // chair
-    0xe1eb, // lightbulb
-    0xe1e1, // school
-    0xe55f, // local_library
-    0xe80c, // school
-    0xe0b7, // business_center
-    0xe897, // lock
-    0xe88a, // home_work
-    0xe1af, // build
-    0xe571, // pets
-    0xe226, // flight
+    0xe40d, // movie
+    0xe5e8, // sports_esports
+    0xe39a, // local_mall
+    0xe59c, // shopping_cart
+    0xe59a, // shopping_bag
+    0xe25b, // favorite
+    0xe396, // local_hospital
+    0xe28d, // fitness_center
+    0xe15d, // checkroom
+    0xe14d, // chair
+    0xe37b, // lightbulb
+    0xe559, // school
+    0xe399, // local_library
+    0xe4a3, // phone
+    0xe11c, // business_center
+    0xe3ae, // lock
+    0xe31d, // home_work
+    0xe116, // build
+    0xe4a1, // pets
+    0xe297, // flight
   ];
 
   void _saveCategory() {

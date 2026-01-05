@@ -744,50 +744,50 @@ class AppProvider with ChangeNotifier {
       Category(
         id: 'cat_health',
         name: 'Salud',
-        iconCode: 0xe00f,
+        iconCode: 0xe396,
         colorValue: 0xFFEF5350,
       ), // favorite
       Category(
         id: 'cat_entertainment',
         name: 'Entretenimiento',
-        iconCode: 0xe406,
+        iconCode: 0xe3a1,
         colorValue: 0xFFEC407A,
       ), // movie
       // Income Categories
       Category(
         id: 'cat_salary',
         name: 'Salario',
-        iconCode: 0xe06d, // attach_money or similar work icon
+        iconCode: 0xe0b2, // attach_money or similar work icon
         colorValue: 0xFF4CAF50, // Green
       ),
       Category(
         id: 'cat_business',
         name: 'Negocio',
-        iconCode: 0xe0af, // business_center or similar
+        iconCode: 0xe11c, // business_center or similar
         colorValue: 0xFF2196F3, // Blue
       ),
       Category(
         id: 'cat_gifts',
         name: 'Regalos',
-        iconCode: 0xe8f6, // card_giftcard
+        iconCode: 0xe13e, // card_giftcard
         colorValue: 0xFF9C27B0, // Purple
       ),
       Category(
         id: 'cat_rent',
         name: 'Alquiler',
-        iconCode: 0xe88a, // home
+        iconCode: 0xe31d, // home
         colorValue: 0xFFFF9800, // Orange
       ),
       Category(
         id: 'cat_investment',
         name: 'Inversiones',
-        iconCode: 0xe6e1, // show_chart
+        iconCode: 0xe59f, // show_chart
         colorValue: 0xFF009688, // Teal
       ),
       Category(
         id: 'cat_other_income',
         name: 'Otros Ingresos',
-        iconCode: 0xe227, // attach_money usually
+        iconCode: 0xe482, // attach_money usually
         colorValue: 0xFF607D8B, // BlueGrey
       ),
     ];
