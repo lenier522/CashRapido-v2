@@ -207,340 +207,374 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
       _selectedCategoryId = categories.first.id;
     }
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.90,
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor, // Replaced Colors.white
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(30),
-          topRight: Radius.circular(30),
-        ),
-      ),
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                widget.transactionToEdit != null
-                    ? context.t('edit_transaction')
-                    : context.t('new_transaction'),
-                style: GoogleFonts.outfit(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+    return ScaffoldMessenger(
+      child: Builder(
+        builder: (context) {
+          return Scaffold(
+            backgroundColor: Colors.transparent,
+            body: Container(
+              height: MediaQuery.of(context).size.height * 0.90,
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor, // Replaced Colors.white
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(30),
+                  topRight: Radius.circular(30),
                 ),
               ),
-              IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Transaction Type Toggle
-          Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => _isExpense = true),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: _isExpense
-                            ? Colors.red.withValues(alpha: 0.1)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
-                        border: _isExpense
-                            ? Border.all(
-                                color: Colors.red.withValues(alpha: 0.5),
-                              )
-                            : null,
-                      ),
-                      child: Center(
-                        child: Text(
-                          context.t('type_expense'),
-                          style: GoogleFonts.outfit(
-                            fontWeight: FontWeight.bold,
-                            color: _isExpense
-                                ? Colors.red
-                                : Theme.of(context).textTheme.bodyMedium?.color,
-                          ),
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        widget.transactionToEdit != null
+                            ? context.t('edit_transaction')
+                            : context.t('new_transaction'),
+                        style: GoogleFonts.outfit(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => _isExpense = false),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: !_isExpense
-                            ? Colors.green.withValues(alpha: 0.1)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
-                        border: !_isExpense
-                            ? Border.all(
-                                color: Colors.green.withValues(alpha: 0.5),
-                              )
-                            : null,
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
                       ),
-                      child: Center(
-                        child: Text(
-                          context.t('type_income'),
-                          style: GoogleFonts.outfit(
-                            fontWeight: FontWeight.bold,
-                            color: !_isExpense
-                                ? Colors.green
-                                : Theme.of(context).textTheme.bodyMedium?.color,
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Transaction Type Toggle
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.grey.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _isExpense = true),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: _isExpense
+                                    ? Colors.red.withValues(alpha: 0.1)
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(12),
+                                border: _isExpense
+                                    ? Border.all(
+                                        color: Colors.red.withValues(
+                                          alpha: 0.5,
+                                        ),
+                                      )
+                                    : null,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  context.t('type_expense'),
+                                  style: GoogleFonts.outfit(
+                                    fontWeight: FontWeight.bold,
+                                    color: _isExpense
+                                        ? Colors.red
+                                        : Theme.of(
+                                            context,
+                                          ).textTheme.bodyMedium?.color,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _isExpense = false),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: !_isExpense
+                                    ? Colors.green.withValues(alpha: 0.1)
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(12),
+                                border: !_isExpense
+                                    ? Border.all(
+                                        color: Colors.green.withValues(
+                                          alpha: 0.5,
+                                        ),
+                                      )
+                                    : null,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  context.t('type_income'),
+                                  style: GoogleFonts.outfit(
+                                    fontWeight: FontWeight.bold,
+                                    color: !_isExpense
+                                        ? Colors.green
+                                        : Theme.of(
+                                            context,
+                                          ).textTheme.bodyMedium?.color,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
 
-          const SizedBox(height: 20),
-          // Card Selector instead of just Currency
-          // Filter cards by selected currency or auto-select logic
-          Consumer<AppProvider>(
-            builder: (ctx, provider, _) {
-              if (provider.cards.isEmpty) return const SizedBox.shrink();
+                  const SizedBox(height: 20),
+                  // Card Selector instead of just Currency
+                  // Filter cards by selected currency or auto-select logic
+                  Consumer<AppProvider>(
+                    builder: (ctx, provider, _) {
+                      if (provider.cards.isEmpty)
+                        return const SizedBox.shrink();
 
-              // If no card selected yet, pick first
-              if (_selectedCardId == null && provider.cards.isNotEmpty) {
-                _selectedCardId = provider.cards.first.id;
-                _selectedCurrency = provider.cards.first.currency;
-                _selectedCard =
-                    provider.cards.first; // Initialize _selectedCard
-              } else if (_selectedCard != null) {
-                _selectedCurrency = _selectedCard!.currency;
-              }
-
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    isExpanded: true,
-                    value: _selectedCardId,
-                    hint: Text(
-                      context.t('select_card'),
-                      style: TextStyle(color: Theme.of(context).hintColor),
-                    ),
-                    dropdownColor: Theme.of(context).cardColor,
-                    items: provider.cards.map((card) {
-                      final last4 =
-                          card.cardNumber.isEmpty || card.cardNumber == 'CASH'
-                          ? ''
-                          : (card.cardNumber.length >= 4
-                                ? '(...${card.cardNumber.substring(card.cardNumber.length - 4)})'
-                                : '');
-
-                      String displayName;
-                      if (card.isCash) {
-                        // User requested format: "Cash(Name)-Currency"
-                        displayName =
-                            "${context.t('card_cash')}(${card.name})-${card.currency}";
-                      } else {
-                        // Format for Bank Cards: "BankName (...1234) - USD"
-                        String bankName =
-                            card.bankName ?? context.t('card_default_name');
-                        displayName = "$bankName $last4 - ${card.currency}";
+                      // If no card selected yet, pick first
+                      if (_selectedCardId == null &&
+                          provider.cards.isNotEmpty) {
+                        _selectedCardId = provider.cards.first.id;
+                        _selectedCurrency = provider.cards.first.currency;
+                        _selectedCard =
+                            provider.cards.first; // Initialize _selectedCard
+                      } else if (_selectedCard != null) {
+                        _selectedCurrency = _selectedCard!.currency;
                       }
 
-                      return DropdownMenuItem<String>(
-                        value: card.id,
-                        child: Text(
-                          displayName,
-                          style: GoogleFonts.outfit(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(
-                              context,
-                            ).textTheme.bodyMedium?.color,
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).cardColor,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            isExpanded: true,
+                            value: _selectedCardId,
+                            hint: Text(
+                              context.t('select_card'),
+                              style: TextStyle(
+                                color: Theme.of(context).hintColor,
+                              ),
+                            ),
+                            dropdownColor: Theme.of(context).cardColor,
+                            items: provider.cards.map((card) {
+                              final last4 =
+                                  card.cardNumber.isEmpty ||
+                                      card.cardNumber == 'CASH'
+                                  ? ''
+                                  : (card.cardNumber.length >= 4
+                                        ? '(...${card.cardNumber.substring(card.cardNumber.length - 4)})'
+                                        : '');
+
+                              String displayName;
+                              if (card.isCash) {
+                                // User requested format: "Cash(Name)-Currency"
+                                displayName =
+                                    "${context.t('card_cash')}(${card.name})-${card.currency}";
+                              } else {
+                                // Format for Bank Cards: "BankName (...1234) - USD"
+                                String bankName =
+                                    card.bankName ??
+                                    context.t('card_default_name');
+                                displayName =
+                                    "$bankName $last4 - ${card.currency}";
+                              }
+
+                              return DropdownMenuItem<String>(
+                                value: card.id,
+                                child: Text(
+                                  displayName,
+                                  style: GoogleFonts.outfit(
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium?.color,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              if (val == null) return;
+                              final card = provider.cards.firstWhere(
+                                (c) => c.id == val,
+                              );
+                              setState(() {
+                                _selectedCardId = val;
+                                _selectedCard = card;
+                                _selectedCurrency = card.currency;
+                              });
+                            },
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
                       );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val == null) return;
-                      final card = provider.cards.firstWhere(
-                        (c) => c.id == val,
-                      );
-                      setState(() {
-                        _selectedCardId = val;
-                        _selectedCard = card;
-                        _selectedCurrency = card.currency;
-                      });
                     },
                   ),
-                ),
-              );
-            },
-          ),
 
-          const SizedBox(height: 20),
-          // Amount Input
-          Center(
-            child: Column(
-              children: [
-                Text(
-                  '${context.t('amount')} ($_selectedCurrency)',
-                  style: GoogleFonts.outfit(
-                    color: Theme.of(context).hintColor,
-                  ), // Replaced Colors.grey
-                ),
-                Container(
-                  // Added Container for amount input styling
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: TextField(
-                    controller: _amountController,
-                    textAlign: TextAlign.center,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
+                  const SizedBox(height: 20),
+                  // Amount Input
+                  Center(
+                    child: Column(
+                      children: [
+                        Text(
+                          '${context.t('amount')} ($_selectedCurrency)',
+                          style: GoogleFonts.outfit(
+                            color: Theme.of(context).hintColor,
+                          ), // Replaced Colors.grey
+                        ),
+                        Container(
+                          // Added Container for amount input styling
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).cardColor,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: TextField(
+                            controller: _amountController,
+                            textAlign: TextAlign.center,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            style: GoogleFonts.outfit(
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                              color: _amountController.text.isEmpty
+                                  ? Theme.of(context).textTheme.bodyLarge?.color
+                                  : (_isExpense ? Colors.red : Colors.green),
+                            ),
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              hintText: '0.00',
+                              hintStyle: GoogleFonts.outfit(
+                                color: Theme.of(context).hintColor,
+                              ),
+                            ),
+                            onChanged: (_) => setState(() {}),
+                          ),
+                        ),
+                        TextField(
+                          controller: _titleController,
+                          textAlign: TextAlign.center,
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            hintText: context.t('description_hint'),
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+                  const SizedBox(height: 30),
+                  // Category Selection
+                  Text(
+                    context.t('category_label'),
                     style: GoogleFonts.outfit(
-                      fontSize: 48,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: _amountController.text.isEmpty
-                          ? Theme.of(context).textTheme.bodyLarge?.color
-                          : (_isExpense ? Colors.red : Colors.green),
                     ),
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      hintText: '0.00',
-                      hintStyle: GoogleFonts.outfit(
-                        color: Theme.of(context).hintColor,
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: 110,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: [
+                        ...categories.map((cat) {
+                          String displayName = cat.name;
+                          if (cat.id.startsWith('cat_')) {
+                            displayName = context.t(cat.id);
+                          }
+                          return _buildCategorySelector(
+                            displayName,
+                            IconData(cat.iconCode, fontFamily: 'MaterialIcons'),
+                            Color(cat.colorValue),
+                            _selectedCategoryId == cat.id,
+                            () => setState(() => _selectedCategoryId = cat.id),
+                          );
+                        }),
+                        // Add Custom Category Button
+                        _buildCategorySelector(
+                          context.t('create'),
+                          Icons.add, // Always show Add icon
+                          Colors.grey,
+                          false,
+                          () {
+                            if (provider.canCreateCategory) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const AddCategoryScreen(),
+                                ),
+                              );
+                            } else {
+                              showDialog(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: Text(
+                                    context.t('feature_locked_title'),
+                                  ),
+                                  content: Text(
+                                    context.t('feature_locked_desc'),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(ctx),
+                                      child: Text(context.t('close')),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+                          },
+                          isLocked:
+                              !provider.canCreateCategory, // Pass locked state
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Spacer(),
+                  // Save Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: _saveTransaction,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: Text(
+                        context.t('save_transaction'),
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                    onChanged: (_) => setState(() {}),
                   ),
-                ),
-                TextField(
-                  controller: _titleController,
-                  textAlign: TextAlign.center,
-                  decoration: InputDecoration(
-                    border: InputBorder.none,
-                    hintText: context.t('description_hint'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 30),
-          // Category Selection
-          Text(
-            context.t('category_label'),
-            style: GoogleFonts.outfit(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 110,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                ...categories.map((cat) {
-                  String displayName = cat.name;
-                  if (cat.id.startsWith('cat_')) {
-                    displayName = context.t(cat.id);
-                  }
-                  return _buildCategorySelector(
-                    displayName,
-                    IconData(cat.iconCode, fontFamily: 'MaterialIcons'),
-                    Color(cat.colorValue),
-                    _selectedCategoryId == cat.id,
-                    () => setState(() => _selectedCategoryId = cat.id),
-                  );
-                }),
-                // Add Custom Category Button
-                _buildCategorySelector(
-                  context.t('create'),
-                  Icons.add, // Always show Add icon
-                  Colors.grey,
-                  false,
-                  () {
-                    if (provider.canCreateCategory) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const AddCategoryScreen(),
-                        ),
-                      );
-                    } else {
-                      showDialog(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: Text(context.t('feature_locked_title')),
-                          content: Text(context.t('feature_locked_desc')),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx),
-                              child: Text(context.t('close')),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                  },
-                  isLocked: !provider.canCreateCategory, // Pass locked state
-                ),
-              ],
-            ),
-          ),
-          const Spacer(),
-          // Save Button
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: _saveTransaction,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              child: Text(
-                context.t('save_transaction'),
-                style: GoogleFonts.outfit(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                  SizedBox(
+                    height:
+                        MediaQuery.of(context).viewInsets.bottom +
+                        MediaQuery.of(context).padding.bottom +
+                        16, // Extra padding for aesthetics
+                  ), // Keyboard + Safe Area spacer
+                ],
               ),
             ),
-          ),
-          SizedBox(
-            height: MediaQuery.of(context).viewInsets.bottom,
-          ), // Keyboard spacer
-        ],
+          );
+        },
       ),
     );
   }

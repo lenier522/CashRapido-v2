@@ -436,6 +436,7 @@ class AppLocalizations {
       'limit_reached_title': 'Límite Alcanzado',
       'limit_card_desc':
           'La licencia gratuita solo permite 1 tarjeta. Mejora tu plan para agregar más.',
+      'skip': 'Omitir',
     },
     'en': {
       // General
@@ -798,6 +799,7 @@ class AppLocalizations {
 
       // Licenses
       'licenses_title': 'Available Licenses',
+      'skip': 'Skip',
       'license_personal': 'Personal',
       'license_pro': 'Pro',
       'license_enterprise': 'Enterprise',
