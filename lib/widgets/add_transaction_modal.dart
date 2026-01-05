@@ -46,7 +46,7 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
     super.dispose();
   }
 
-  void _saveTransaction() {
+  void _saveTransaction(BuildContext localContext) {
     final amountText = _amountController.text.replaceAll(
       RegExp(r'[^0-9.]'),
       '',
@@ -55,8 +55,8 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
 
     if (amount <= 0 || _selectedCategoryId.isEmpty) {
       // Show error snackbar or simple return
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.t('enter_amount_category_error'))),
+      ScaffoldMessenger.of(localContext).showSnackBar(
+        SnackBar(content: Text(localContext.t('enter_amount_category_error'))),
       );
       return;
     }
@@ -67,12 +67,12 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
     // Use Category Name if title is empty
     String title = _titleController.text;
     if (title.isEmpty) {
-      final category = Provider.of<AppProvider>(context, listen: false)
+      final category = Provider.of<AppProvider>(localContext, listen: false)
           .categories
           .firstWhere(
             (cat) => cat.id == _selectedCategoryId,
             orElse: () => Provider.of<AppProvider>(
-              context,
+              localContext,
               listen: false,
             ).categories.first,
           );
@@ -80,15 +80,15 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
     }
 
     // Validate Card Security
-    final provider = Provider.of<AppProvider>(context, listen: false);
+    final provider = Provider.of<AppProvider>(localContext, listen: false);
     if (_selectedCardId != null) {
       try {
         final card = provider.cards.firstWhere((c) => c.id == _selectedCardId);
 
         if (card.isLocked) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(context.t('card_locked'))));
+          ScaffoldMessenger.of(localContext).showSnackBar(
+            SnackBar(content: Text(localContext.t('card_locked'))),
+          );
           return;
         }
 
@@ -96,10 +96,10 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
         if (_isExpense &&
             widget.transactionToEdit == null &&
             amount > card.balance) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          ScaffoldMessenger.of(localContext).showSnackBar(
             SnackBar(
               content: Text(
-                '${context.t('insufficient_funds')} (${context.t('balance')}: ${card.balance.toStringAsFixed(2)} ${card.currency})',
+                '${localContext.t('insufficient_funds')} (${card.balance.toStringAsFixed(2)} ${card.currency})',
               ),
             ),
           );
@@ -107,12 +107,12 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
         }
 
         if (card.pin != null && card.pin!.isNotEmpty) {
-          _showPinDialog(context, (pin) {
+          _showPinDialog(localContext, (pin) {
             if (pin == card.pin) {
               _executeTransaction(provider, finalAmount, title);
             } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(context.t('incorrect_pin'))),
+              ScaffoldMessenger.of(localContext).showSnackBar(
+                SnackBar(content: Text(localContext.t('incorrect_pin'))),
               );
             }
           });
@@ -141,7 +141,7 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
           newCategoryId: _selectedCategoryId,
           newCurrency: _selectedCurrency,
         );
-        Navigator.pop(context);
+        Navigator.pop(context); // Use main context to pop
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -159,7 +159,7 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
         currency: _selectedCurrency,
         cardId: _selectedCardId,
       );
-      Navigator.pop(context);
+      Navigator.pop(context); // Use main context to pop
     }
   }
 
@@ -250,9 +250,7 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
                     decoration: BoxDecoration(
                       color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.grey.withValues(alpha: 0.2),
-                      ),
+                      border: Border.all(color: Colors.grey.withOpacity(0.2)),
                     ),
                     child: Row(
                       children: [
@@ -263,14 +261,12 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               decoration: BoxDecoration(
                                 color: _isExpense
-                                    ? Colors.red.withValues(alpha: 0.1)
+                                    ? Colors.red.withOpacity(0.1)
                                     : Colors.transparent,
                                 borderRadius: BorderRadius.circular(12),
                                 border: _isExpense
                                     ? Border.all(
-                                        color: Colors.red.withValues(
-                                          alpha: 0.5,
-                                        ),
+                                        color: Colors.red.withOpacity(0.5),
                                       )
                                     : null,
                               ),
@@ -297,14 +293,12 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               decoration: BoxDecoration(
                                 color: !_isExpense
-                                    ? Colors.green.withValues(alpha: 0.1)
+                                    ? Colors.green.withOpacity(0.1)
                                     : Colors.transparent,
                                 borderRadius: BorderRadius.circular(12),
                                 border: !_isExpense
                                     ? Border.all(
-                                        color: Colors.green.withValues(
-                                          alpha: 0.5,
-                                        ),
+                                        color: Colors.green.withOpacity(0.5),
                                       )
                                     : null,
                               ),
@@ -547,7 +541,7 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: _saveTransaction,
+                      onPressed: () => _saveTransaction(context),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.deepPurple,
                         shape: RoundedRectangleBorder(
