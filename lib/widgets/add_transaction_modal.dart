@@ -545,8 +545,10 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
             ),
           ),
           SizedBox(
-            height: MediaQuery.of(context).viewInsets.bottom,
-          ), // Keyboard spacer
+            height: MediaQuery.of(context).viewInsets.bottom > 0
+                ? MediaQuery.of(context).viewInsets.bottom
+                : MediaQuery.of(context).padding.bottom,
+          ), // Keyboard spacer & Safe Area
         ],
       ),
     );
