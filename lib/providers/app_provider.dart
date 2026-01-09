@@ -17,6 +17,7 @@ import 'package:share_plus/share_plus.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 import '../services/backup_service.dart';
+import '../licences/apklis.dart';
 
 class AppProvider with ChangeNotifier {
   late Box<InternalTransaction> _transactionBox;
@@ -135,25 +136,119 @@ class AppProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> simulatePayment(
+  Future<String?> simulatePayment(
     String methodId,
     LicenseType targetLicense,
   ) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(seconds: 2));
-
     if (methodId == 'test_cuba' || methodId == 'test_intl') {
+      // Simulate network delay only for test methods
+      await Future.delayed(const Duration(seconds: 2));
       setLicenseType(targetLicense);
-      return true;
+      return null; // Success
     }
 
-    // For other methods, we just return false (simulating failure/not implemented) or true
-    // User asked "Prueba" to unlock. Others are just "methods".
-    // I I'll fail them for now saying "Maintenance" or just log it.
-    // The requirement: "Prueba q es para los dos es para yo probar si efectivamente se desbloquean"
-    // "visible/enabled in boolean values for me to activate/deactivate"
-    // So if enabled, clicking allows attempt. But only "Prueba" succeeds implementation-wise here.
-    return false;
+    if (methodId == 'apklis') {
+      // Map LicenseType to string for ApklisService
+      String licenseTypeStr;
+      switch (targetLicense) {
+        case LicenseType.personal:
+          licenseTypeStr = 'personal';
+          break;
+        case LicenseType.pro:
+          licenseTypeStr = 'pro';
+          break;
+        case LicenseType.enterprise:
+          licenseTypeStr = 'enterprise';
+          break;
+        default:
+          licenseTypeStr = 'personal';
+      }
+
+      final status = await ApklisService.purchase(licenseTypeStr);
+
+      // Check for strict success ONLY
+      if (status.paid) {
+        setLicenseType(targetLicense);
+        return null; // Success
+      }
+
+      // Return the specific error from Apklis
+      // This includes "Ya pagaste una licencia" if user already has one
+      return status.error ?? 'Error desconocido de Apklis';
+    }
+
+    // Default error for unknown methods
+    return 'Método no implementado';
+  }
+
+  /// Verifies if user has an active Apklis license and restores it
+  /// This is used when user reinstalls the app to recover their purchased license
+  Future<String?> verifyAndRestoreLicense() async {
+    try {
+      final status = await ApklisService.verify();
+
+      if (!status.paid) {
+        // User doesn't have an active license
+        // Clean up the error message if it comes as JSON
+        String errorMsg = status.error ?? 'No se encontró licencia activa';
+
+        // Try to extract detail from JSON format: {"detail":"Mensaje"}
+        try {
+          if (errorMsg.trim().startsWith('{')) {
+            final detailMatch = RegExp(
+              r'"detail"\s*:\s*"([^"]+)"',
+            ).firstMatch(errorMsg);
+            if (detailMatch != null) {
+              errorMsg = detailMatch.group(1) ?? errorMsg;
+            }
+          }
+        } catch (_) {
+          // If parsing fails, use the original message
+        }
+
+        // Clean up remaining JSON artifacts
+        errorMsg = errorMsg
+            .replaceAll('"}"', '')
+            .replaceAll('{"', '')
+            .replaceAll('"', '');
+
+        return errorMsg;
+      }
+
+      // User has a paid license, now determine which tier
+      String? licenseType = ApklisService.getLicenseTypeFromUUID(
+        status.license,
+      );
+
+      licenseType ??= 'pro';
+
+      // Map string to LicenseType enum and activate
+      LicenseType targetLicense;
+      switch (licenseType) {
+        case 'personal':
+          targetLicense = LicenseType.personal;
+          break;
+        case 'pro':
+          targetLicense = LicenseType.pro;
+          break;
+        case 'enterprise':
+          targetLicense = LicenseType.enterprise;
+          break;
+        default:
+          targetLicense = LicenseType.pro;
+      }
+
+      setLicenseType(targetLicense);
+      return null; // Success
+    } catch (e) {
+      // Clean up error message
+      String errorMsg = e.toString();
+
+      // Remove "Exception: " prefix if present
+      errorMsg = errorMsg.replaceFirst('Exception: ', '');
+
+      return 'Error al verificar: $errorMsg';
+    }
   }
 
   // Capability Getters
@@ -161,7 +256,9 @@ class AppProvider with ChangeNotifier {
   bool get isPremium {
     // For backward compatibility or general "Not Free" check
     // Holiday Promo: Free Premium (PRO) until Jan 10, 2026
-    final isPromoActive = DateTime.now().isBefore(DateTime(2026, 1, 11));
+    final isPromoActive = DateTime.now().isBefore(
+      DateTime(2026, 1, 11),
+    ); // Promo ended
     if (isPromoActive) return true;
     return _licenseType != LicenseType.free;
   }
@@ -187,7 +284,8 @@ class AppProvider with ChangeNotifier {
     return _cards.length < maxCards;
   }
 
-  bool get isPromoActive => DateTime.now().isBefore(DateTime(2026, 1, 11));
+  bool get isPromoActive =>
+      DateTime.now().isBefore(DateTime(2026, 1, 11)); // Promo ended
 
   // Features unlocked at PERSONAL level
   bool get canTransfer => isPromoActive || _licenseType != LicenseType.free;

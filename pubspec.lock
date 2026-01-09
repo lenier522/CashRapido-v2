@@ -25,6 +25,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.4.1"
+  apklis_license_validator:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: main
+      resolved-ref: "25e8970cc67a834af7d1d8a9c962c919ee80a8d6"
+      url: "https://github.com/z17-cuba/apklis_license_validator.git"
+    source: git
+    version: "0.0.0"
   archive:
     dependency: "direct main"
     description:

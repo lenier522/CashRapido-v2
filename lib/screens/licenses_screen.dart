@@ -15,7 +15,9 @@ class LicensesScreen extends StatelessWidget {
     final provider = Provider.of<AppProvider>(context);
     final isCuba = provider.isCuba;
     // Holiday Promotion Check (Until Jan 10th midnight, 2026)
-    final isPromoActive = DateTime.now().isBefore(DateTime(2026, 1, 11));
+    final isPromoActive = DateTime.now().isBefore(
+      DateTime(2026, 1, 1),
+    ); // Promo ended
 
     return Scaffold(
       appBar: AppBar(
@@ -33,6 +35,93 @@ class LicensesScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            tooltip: context.t('verify_license'),
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: () async {
+              // Show loading dialog
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                useRootNavigator: true,
+                builder: (_) => PopScope(
+                  canPop: false,
+                  child: Center(
+                    child: Card(
+                      margin: const EdgeInsets.all(32),
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const CircularProgressIndicator(),
+                            const SizedBox(height: 16),
+                            Text(
+                              context.t('verifying'),
+                              style: GoogleFonts.outfit(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+
+              // Capture navigator and messenger
+              final navigator = Navigator.of(context, rootNavigator: true);
+              final messenger = ScaffoldMessenger.of(context);
+              final appProvider = Provider.of<AppProvider>(
+                context,
+                listen: false,
+              );
+
+              String? errorMsg;
+              try {
+                errorMsg = await appProvider.verifyAndRestoreLicense();
+              } catch (e) {
+                errorMsg = e.toString();
+              } finally {
+                navigator.pop(); // Close loading dialog
+              }
+
+              if (!context.mounted) return;
+
+              // Show result
+              if (errorMsg == null) {
+                // Success - license restored
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(context.t('license_restored')),
+                    backgroundColor: Colors.green,
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              } else {
+                // Error or no license found
+                final isNoLicense =
+                    errorMsg.contains('No se encontró') ||
+                    errorMsg.contains('No active license') ||
+                    errorMsg.contains('Aucune licence');
+
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      isNoLicense ? context.t('no_license_found') : errorMsg,
+                    ),
+                    backgroundColor: isNoLicense ? Colors.orange : Colors.red,
+                    duration: const Duration(seconds: 4),
+                  ),
+                );
+              }
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Stack(
         children: [
@@ -92,7 +181,7 @@ class LicensesScreen extends StatelessWidget {
                     _buildLicenseCard(
                       context,
                       title: context.t('license_personal'),
-                      price: isCuba ? '\$500' : '\$5',
+                      price: isCuba ? '\$50' : '\$5',
                       currency: isCuba ? 'CUP' : 'USD',
                       period: context.t('month_short'),
                       features: [
@@ -114,7 +203,7 @@ class LicensesScreen extends StatelessWidget {
                     _buildLicenseCard(
                       context,
                       title: context.t('license_pro'),
-                      price: isCuba ? '\$1000' : '\$10',
+                      price: isCuba ? '\$75' : '\$10',
                       currency: isCuba ? 'CUP' : 'USD',
                       period: context.t('month_short'),
                       features: [
@@ -135,7 +224,7 @@ class LicensesScreen extends StatelessWidget {
                     _buildLicenseCard(
                       context,
                       title: context.t('license_enterprise'),
-                      price: isCuba ? '\$2000' : '\$20',
+                      price: isCuba ? '\$110' : '\$20',
                       currency: isCuba ? 'CUP' : 'USD',
                       period: context.t('month_short'),
                       features: [
@@ -497,7 +586,7 @@ class LicensesScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => Consumer<AppProvider>(
-        builder: (context, provider, _) {
+        builder: (innerContext, provider, _) {
           return AlertDialog(
             backgroundColor: const Color(0xFF1E1E2C),
             shape: RoundedRectangleBorder(
@@ -565,11 +654,11 @@ class LicensesScreen extends StatelessWidget {
                                   return;
                                 }
 
-                                // Process Payment
-                                if (method.isTest) {
-                                  Navigator.pop(ctx); // Close dialog first
+                                // 1. Close the "Select Payment Method" dialog
+                                // Use innerContext because it belongs to the dialog
+                                Navigator.of(innerContext).pop();
 
-                                  // Show loading or just success
+                                if (method.isTest) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
@@ -578,23 +667,169 @@ class LicensesScreen extends StatelessWidget {
                                       backgroundColor: Colors.green,
                                     ),
                                   );
+                                }
 
-                                  await provider.simulatePayment(
+                                // 2. Show Loading Dialog for Apklis (non-test)
+                                if (!method.isTest) {
+                                  showDialog(
+                                    context: context,
+                                    barrierDismissible: false,
+                                    useRootNavigator:
+                                        true, // Ensure we use root navigator
+                                    builder: (_) => PopScope(
+                                      canPop: false,
+                                      child: Center(
+                                        child: Card(
+                                          margin: const EdgeInsets.all(32),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(24),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const CircularProgressIndicator(),
+                                                const SizedBox(height: 16),
+                                                Text(
+                                                  'Procesando pago...',
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }
+
+                                // Capture Navigator (Root) and Messenger to use after async gap safely
+                                final navigator = Navigator.of(
+                                  context,
+                                  rootNavigator: true,
+                                );
+                                final messenger = ScaffoldMessenger.of(context);
+
+                                // 3. Perform the async Purchase operation
+                                String? errorMsg;
+                                try {
+                                  errorMsg = await provider.simulatePayment(
                                     method.id,
                                     targetLicense,
                                   );
+                                } catch (e) {
+                                  errorMsg = 'Error inesperado: $e';
+                                } finally {
+                                  // 4. ALWAYS close the Loading Dialog
+                                  if (!method.isTest) {
+                                    // We use the captured navigator to ensure we pop the dialog
+                                    // regardless of current context state if possible.
+                                    navigator.pop();
+                                  }
+                                }
 
-                                  // Force refresh or navigation?
-                                  // Provider update notifies listeners, so LicensesScreen (if it listens) should rebuild?
-                                  // LicensesScreen is stateless and calls Provider.of(context).
-                                  // But usually we might want to go back to Home or Settings.
-                                  // For now simple snackbar is enough verification.
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        context.t('payment_disabled'),
+                                // Check OUTER context (Screen) which behaves correctly
+                                if (!context.mounted) return;
+
+                                // 5. Handle Result
+                                if (errorMsg == null) {
+                                  // Success
+                                  if (!method.isTest) {
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          '${context.t('payment_success_title')} (${targetLicense.name.toUpperCase()})',
+                                        ),
+                                        backgroundColor: Colors.green,
                                       ),
+                                    );
+                                  }
+                                } else {
+                                  // Failure - Parse logic
+                                  String displayError = errorMsg;
+
+                                  // 1. Check for specific Apklis error codes/strings
+                                  if (displayError.contains(
+                                        'pending_payment',
+                                      ) ||
+                                      displayError.contains(
+                                        'El pago de la licencia está pendiente',
+                                      )) {
+                                    displayError = context.t('payment_pending');
+                                  } else if (displayError
+                                          .toLowerCase()
+                                          .contains('cancel') ||
+                                      displayError.toLowerCase().contains(
+                                        'aborted',
+                                      )) {
+                                    displayError = context.t(
+                                      'payment_cancelled',
+                                    );
+                                  } else {
+                                    // 2. Try cleaning JSON format if it looks like JSON
+                                    try {
+                                      if (displayError.trim().startsWith('{')) {
+                                        final detailMatch = RegExp(
+                                          r'"detail"\s*:\s*"([^"]+)"',
+                                        ).firstMatch(displayError);
+                                        if (detailMatch != null) {
+                                          displayError =
+                                              detailMatch.group(1) ??
+                                              displayError;
+                                        }
+                                      }
+                                    } catch (_) {}
+
+                                    // 3. Map cleaned strings to localized messages
+                                    if (displayError.contains('credentials') ||
+                                        (displayError.contains('403') &&
+                                            displayError.contains(
+                                              'autenticación',
+                                            )) ||
+                                        displayError.contains(
+                                          'Autenticación requerida',
+                                        )) {
+                                      displayError = context.t('auth_required');
+                                    } else if (displayError.contains(
+                                          'pending_payment',
+                                        ) ||
+                                        displayError.contains('pendiente')) {
+                                      // Check again in case JSON parsing revealed it
+                                      displayError = context.t(
+                                        'payment_pending',
+                                      );
+                                    } else if (displayError.contains(
+                                          'Network',
+                                        ) ||
+                                        displayError.contains(
+                                          'SocketException',
+                                        )) {
+                                      displayError = context.t(
+                                        'connection_error',
+                                      );
+                                    }
+                                  }
+
+                                  // Final cleanup
+                                  displayError = displayError
+                                      .replaceAll('"}', '')
+                                      .replaceAll('{"', '')
+                                      .replaceAll('"', '');
+
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text(displayError),
+                                      backgroundColor:
+                                          displayError ==
+                                                  context.t(
+                                                    'payment_cancelled',
+                                                  ) ||
+                                              displayError ==
+                                                  context.t('already_paid')
+                                          ? Colors.orange
+                                          : Colors.red,
+                                      duration: const Duration(seconds: 4),
                                     ),
                                   );
                                 }
