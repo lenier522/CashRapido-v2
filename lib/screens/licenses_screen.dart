@@ -16,7 +16,7 @@ class LicensesScreen extends StatelessWidget {
     final isCuba = provider.isCuba;
     // Holiday Promotion Check (Until Jan 10th midnight, 2026)
     final isPromoActive = DateTime.now().isBefore(
-      DateTime(2026, 1, 1),
+      DateTime(2026, 1, 11),
     ); // Promo ended
 
     return Scaffold(
