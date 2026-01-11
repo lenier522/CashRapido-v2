@@ -68,149 +68,99 @@ class HelpCenterScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           // Getting Started
-          _buildSectionHeader(context, '🚀 Primeros Pasos'),
+          _buildSectionHeader(context, '🚀 ${context.t('onboarding_title_1')}'),
           _buildHelpItem(
             context,
-            "¿Cómo agregar mi primera tarjeta?",
-            "Ve a la pantalla de Billetera (icono inferior), toca el botón '+' y rellena los datos de tu tarjeta o efectivo.",
+            context.t('help_q_add_card'),
+            context.t('help_a_add_card'),
           ),
           _buildHelpItem(
             context,
-            "¿Cómo registrar una transacción?",
-            "Toca el botón '+' flotante. Selecciona gasto/ingreso, categoría, monto y descripción.",
+            context.t('help_q_add_transaction'),
+            context.t('help_a_add_transaction'),
           ),
           _buildHelpItem(
             context,
-            "¿Cómo usar el escáner?",
-            "Toca 'Más' en acciones rápidas → 'Escanear Tarjeta'. Alinea tu tarjeta con el marco.",
+            context.t('help_q_scanner'),
+            context.t('help_a_scanner'),
           ),
           const SizedBox(height: 20),
 
           // Transactions
-          _buildSectionHeader(context, '💰 Transacciones'),
-          _buildHelpItem(
+          _buildSectionHeader(
             context,
-            "¿Cómo editar una transacción?",
-            "Toca cualquier transacción en la lista para ver detalles y editarla o eliminarla.",
+            '💰 ${context.t('recent_transactions')}',
           ),
           _buildHelpItem(
             context,
-            "¿Cómo transferir entre tarjetas?",
-            "Usa 'Transferir' en acciones rápidas. Selecciona origen, destino y monto.",
+            context.t('help_q_edit_transaction'),
+            context.t('help_a_edit_transaction'),
           ),
           _buildHelpItem(
             context,
-            "¿Puedo crear categorías personalizadas?",
-            "Las categorías son predefinidas (Comida, Transporte, etc.) para simplicidad.",
+            context.t('help_q_transfer'),
+            context.t('help_a_transfer'),
+          ),
+          _buildHelpItem(
+            context,
+            context.t('help_q_categories'),
+            context.t('help_a_categories'),
           ),
           const SizedBox(height: 20),
 
           // Cards & Accounts
-          _buildSectionHeader(context, '💳 Tarjetas'),
+          _buildSectionHeader(context, '💳 ${context.t('cards')}'),
           _buildHelpItem(
             context,
-            "¿Cuántas tarjetas puedo tener?",
-            "Ilimitadas: efectivo, bancos, tarjetas de crédito, etc.",
+            context.t('help_q_cards_limit'),
+            context.t('help_a_cards_limit'),
           ),
           _buildHelpItem(
             context,
-            "¿Cómo cambiar el balance?",
-            "Ve a Billetera → Toca la tarjeta → Editar → Ajusta el balance.",
+            context.t('help_q_change_balance'),
+            context.t('help_a_change_balance'),
           ),
           _buildHelpItem(
             context,
-            "¿Qué es el Contador de Dinero?",
-            "Herramienta para contar billetes/monedas. Solo para cuentas de Efectivo.",
-          ),
-          const SizedBox(height: 20),
-
-          // Statistics
-          _buildSectionHeader(context, '📊 Estadísticas'),
-          _buildHelpItem(
-            context,
-            "¿Cómo ver gastos por categoría?",
-            "Pestaña Estadísticas muestra gráficos circulares organizados por categoría.",
-          ),
-          _buildHelpItem(
-            context,
-            "¿Puedo exportar datos?",
-            "Sí, en Configuración → Exportar Datos (Excel o PDF).",
-          ),
-          _buildHelpItem(
-            context,
-            "¿Cómo cambiar el período?",
-            "En Estadísticas, toca el selector: Mes, Año o Rango personalizado.",
+            context.t('help_q_money_counter'),
+            context.t('help_a_money_counter'),
           ),
           const SizedBox(height: 20),
 
-          // AI Assistant
-          _buildSectionHeader(context, '🤖 Asistente IA'),
+          // Licenses
+          _buildSectionHeader(context, '🔓 ${context.t('paid_licenses')}'),
           _buildHelpItem(
             context,
-            "¿Qué hace la IA?",
-            "Analiza gastos, da consejos financieros y responde preguntas sobre tus finanzas.",
+            context.t('help_q_license_types'),
+            context.t('help_a_license_types'),
           ),
           _buildHelpItem(
             context,
-            "¿Cómo activar la IA?",
-            "Configuración → Asistente IA → Activar. El botón aparecerá en inicio.",
-          ),
-          _buildHelpItem(
-            context,
-            "¿Mis datos están seguros?",
-            "Sí, todos los datos se guardan en tu teléfono. Si activas la biometría, nadie podrá entrar sin tu huella o rostro.",
+            context.t('help_q_restore_purchase'),
+            context.t('help_a_restore_purchase'),
           ),
           const SizedBox(height: 20),
 
-          // Settings
-          _buildSectionHeader(context, '⚙️ Configuración'),
+          // Settings & Customization
+          _buildSectionHeader(context, '⚙️ ${context.t('settings_title')}'),
           _buildHelpItem(
             context,
-            "¿Cómo cambiar idioma?",
-            "Configuración → Idioma → Español/English/Français.",
+            context.t('help_q_custom_bank'),
+            context.t('help_a_custom_bank'),
           ),
           _buildHelpItem(
             context,
-            "¿Cómo activar biometría?",
-            "Configuración → Seguridad → Bloqueo Biométrico.",
-          ),
-          _buildHelpItem(
-            context,
-            "¿Cómo cambiar moneda?",
-            "Configuración → Moneda Principal → Selecciona o crea una.",
+            context.t('help_q_currency'),
+            context.t('help_a_currency'),
           ),
           const SizedBox(height: 20),
 
-          // Troubleshooting
-          _buildSectionHeader(context, '🔧 Problemas'),
+          // Feedback
+          _buildSectionHeader(context, '💬 ${context.t('feedback_title')}'),
           _buildHelpItem(
             context,
-            "No guarda mis cambios",
-            "Verifica permisos de almacenamiento. Reinicia la app si persiste.",
-          ),
-          _buildHelpItem(
-            context,
-            "Escáner no detecta tarjeta",
-            "Asegura buena iluminación y alineación. Algunos diseños no son detectables.",
-          ),
-          _buildHelpItem(
-            context,
-            "¿Qué hago si olvido mi PIN?",
-            "Por seguridad, no guardamos tu PIN. Si lo olvidas, tendrás que reinstalar la aplicación, pero podrás restaurar tu copia de seguridad si hiciste una previamente.",
-          ),
-          const SizedBox(height: 20),
-
-          // Contact
-          _buildSectionHeader(context, '📧 Contacto'),
-          _buildHelpItem(
-            context,
-            "¿Cómo reportar un error?",
-            "Contacta al desarrollador con descripción detallada del problema.",
-          ),
-          _buildHelpItem(
-            context,
-            "¿Hay versión web?",
-            "Actualmente solo disponible como app móvil (Android/iOS).",
+            context.t('help_q_feedback'),
+            context.t('help_a_feedback'),
           ),
           const SizedBox(height: 32),
         ],

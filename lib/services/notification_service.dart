@@ -2,6 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'dart:math';
+import 'localization_service.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -55,18 +56,21 @@ class NotificationService {
   }
 
   // Schedule all notifications
-  Future<void> scheduleAllNotifications() async {
-    await scheduleDailyReminder();
-    await scheduleWeeklySummary();
-    await scheduleMotivationalTips();
+  Future<void> scheduleAllNotifications(String langCode) async {
+    await scheduleDailyReminder(langCode);
+    await scheduleWeeklySummary(langCode);
+    await scheduleMotivationalTips(langCode);
   }
 
   // Daily reminder at 9:00 AM
-  Future<void> scheduleDailyReminder() async {
+  Future<void> scheduleDailyReminder(String langCode) async {
+    final title = AppLocalizations.getString(langCode, 'notif_daily_title');
+    final body = AppLocalizations.getString(langCode, 'notif_daily_body');
+
     await _notifications.zonedSchedule(
       0, // Notification ID
-      '💰 Registra tus gastos',
-      '¡No olvides actualizar tu presupuesto de hoy!',
+      title,
+      body,
       _nextInstanceOfTime(9, 0),
       const NotificationDetails(
         android: AndroidNotificationDetails(
@@ -84,11 +88,14 @@ class NotificationService {
   }
 
   // Weekly summary on Sundays at 7:00 PM
-  Future<void> scheduleWeeklySummary() async {
+  Future<void> scheduleWeeklySummary(String langCode) async {
+    final title = AppLocalizations.getString(langCode, 'notif_weekly_title');
+    final body = AppLocalizations.getString(langCode, 'notif_weekly_body');
+
     await _notifications.zonedSchedule(
       1, // Notification ID
-      '📊 Resumen Semanal',
-      'Revisa tus gastos de la semana en CashRapido',
+      title,
+      body,
       _nextInstanceOfWeekday(DateTime.sunday, 19, 0),
       const NotificationDetails(
         android: AndroidNotificationDetails(
@@ -106,15 +113,7 @@ class NotificationService {
   }
 
   // Motivational tips (3 random times per week)
-  Future<void> scheduleMotivationalTips() async {
-    final tips = [
-      'Tip: Revisa tus gastos mensuales para encontrar áreas de ahorro 💡',
-      'Consejo: El 70% de los gastos diarios son evitables 🎯',
-      'Recuerda: Pequeños ahorros diarios = grandes resultados 🌟',
-      'Tip: Establece metas de ahorro realistas y alcanzables 🚀',
-      'Sabías que: Registrar gastos aumenta tu conciencia financiera 📈',
-    ];
-
+  Future<void> scheduleMotivationalTips(String langCode) async {
     // Schedule 3 tips per week (Mon, Wed, Fri at different times)
     final schedules = [
       {'day': DateTime.monday, 'hour': 14, 'minute': 0},
@@ -122,13 +121,17 @@ class NotificationService {
       {'day': DateTime.friday, 'hour': 12, 'minute': 0},
     ];
 
+    final title = AppLocalizations.getString(langCode, 'notif_tip_title');
+
     for (int i = 0; i < schedules.length; i++) {
       final schedule = schedules[i];
-      final randomTip = tips[Random().nextInt(tips.length)];
+      // Pick a random tip key from tip_1 to tip_5
+      final randomTipKey = 'tip_${Random().nextInt(5) + 1}';
+      final randomTip = AppLocalizations.getString(langCode, randomTipKey);
 
       await _notifications.zonedSchedule(
         10 + i, // Notification IDs: 10, 11, 12
-        '💡 Tip Financiero',
+        title,
         randomTip,
         _nextInstanceOfWeekday(
           schedule['day'] as int,

@@ -13,8 +13,78 @@ class AppLocalizations {
   static const LocalizationsDelegate<AppLocalizations> delegate =
       _AppLocalizationsDelegate();
 
+  static String getString(String langCode, String key) {
+    if (!_localizedValues.containsKey(langCode)) return key;
+    return _localizedValues[langCode]?[key] ?? key;
+  }
+
   static final Map<String, Map<String, String>> _localizedValues = {
     'es': {
+      // Feedback
+      'feedback_title': '¡Tu opinión nos importa!',
+      'feedback_description':
+          'Si te gusta CashRapido, valóranos en nuestro grupo de Telegram.',
+      'join_telegram': 'Unirse a Telegram',
+      'maybe_later': 'Quizás más tarde',
+      'apklis': 'Apklis',
+      'play_store': 'Play Store',
+
+      // Notifications
+      'notif_daily_title': '💰 Registra tus gastos',
+      'notif_daily_body': '¡No olvides actualizar tu presupuesto de hoy!',
+      'notif_weekly_title': '📊 Resumen Semanal',
+      'notif_weekly_body': 'Revisa tus gastos de la semana en CashRapido',
+      'notif_tip_title': '💡 Tip Financiero',
+      'tip_1': 'Revisa tus gastos mensuales para encontrar áreas de ahorro 💡',
+      'tip_2': 'El 70% de los gastos diarios son evitables 🎯',
+      'tip_3': 'Pequeños ahorros diarios = grandes resultados 🌟',
+      'tip_4': 'Establece metas de ahorro realistas y alcanzables 🚀',
+      'tip_5': 'Registrar gastos aumenta tu conciencia financiera 📈',
+
+      // Help Center
+      'help_q_add_card': '¿Cómo agregar mi primera tarjeta?',
+      'help_a_add_card':
+          'Ve a la pantalla de Billetera (icono inferior), toca el botón "+" y rellena los datos de tu tarjeta o efectivo.',
+      'help_q_add_transaction': '¿Cómo registrar una transacción?',
+      'help_a_add_transaction':
+          'Toca el botón "+" flotante. Selecciona gasto/ingreso, categoría, monto y descripción.',
+      'help_q_scanner': '¿Cómo usar el escáner?',
+      'help_a_scanner':
+          'Toca "Más" en acciones rápidas → "Escanear Tarjeta". Alinea tu tarjeta con el marco.',
+      'help_q_edit_transaction': '¿Cómo editar una transacción?',
+      'help_a_edit_transaction':
+          'Toca cualquier transacción en la lista para ver detalles y editarla o eliminarla.',
+      'help_q_transfer': '¿Cómo transferir entre tarjetas?',
+      'help_a_transfer':
+          'Usa "Transferir" en acciones rápidas. Selecciona origen, destino y monto.',
+      'help_q_categories': '¿Puedo crear categorías personalizadas?',
+      'help_a_categories':
+          'Con la licencia Pro o Enterprise, puedes crear tus propias categorías en Configuración.',
+      'help_q_cards_limit': '¿Cuántas tarjetas puedo tener?',
+      'help_a_cards_limit':
+          'Depende de tu licencia. Gratis: 1, Pro: 4, Enterprise: Ilimitadas.',
+      'help_q_change_balance': '¿Cómo cambiar el balance?',
+      'help_a_change_balance':
+          'Ve a Billetera → Toca la tarjeta → Editar → Ajusta el balance.',
+      'help_q_money_counter': '¿Qué es el Contador de Dinero?',
+      'help_a_money_counter':
+          'Herramienta para contar billetes/monedas. Solo para cuentas de Efectivo.',
+      'help_q_license_types': '¿Qué tipos de licencias existen?',
+      'help_a_license_types':
+          'Personal (Gratis), Pro y Enterprise. Cada una desbloquea más tarjetas, gráficos y sincronización.',
+      'help_q_restore_purchase': '¿Cómo restauro mi compra?',
+      'help_a_restore_purchase':
+          'Ve a Configuración -> Licencias -> Verificar Licencia. La app comprobará tu compra en Apklis automáticamente.',
+      'help_q_custom_bank': '¿Puedo agregar bancos personalizados?',
+      'help_a_custom_bank':
+          'Sí, en Configuración -> Bancos puedes crear y editar tus propias entidades bancarias (Plan Pro+).',
+      'help_q_currency': '¿Cómo cambio la moneda principal?',
+      'help_a_currency':
+          'En Configuración -> Moneda Principal. Esto define la moneda por defecto para los totales.',
+      'help_q_feedback': '¿Cómo puedo dar mi opinión?',
+      'help_a_feedback':
+          'La app te invitará a unirte a nuestro grupo de Telegram después de usarla varios días.',
+
       // General
       'app_name': 'CashRapido',
       'cancel': 'Cancelar',
@@ -452,6 +522,71 @@ class AppLocalizations {
       'skip': 'Omitir',
     },
     'en': {
+      // Help Center
+      'help_q_add_card': 'How to add my first card?',
+      'help_a_add_card':
+          'Go to Wallet screen (bottom icon), tap (+) and fill in your card or cash details.',
+      'help_q_add_transaction': 'How to record a transaction?',
+      'help_a_add_transaction':
+          'Tap the floating (+) button. Select expense/income, category, amount and description.',
+      'help_q_scanner': 'How to use the scanner?',
+      'help_a_scanner':
+          'Tap "More" in quick actions -> "Scan Card". Align your card within the frame.',
+      'help_q_edit_transaction': 'How to edit a transaction?',
+      'help_a_edit_transaction':
+          'Tap any transaction in the list to view details and edit or delete it.',
+      'help_q_transfer': 'How to transfer between cards?',
+      'help_a_transfer':
+          'Use "Transfer" in quick actions. Select source, destination and amount.',
+      'help_q_categories': 'Can I create custom categories?',
+      'help_a_categories':
+          'With Pro or Enterprise license, you can create your own categories in Settings.',
+      'help_q_cards_limit': 'How many cards can I have?',
+      'help_a_cards_limit':
+          'Depends on your license. Free: 1, Pro: 4, Enterprise: Unlimited.',
+      'help_q_change_balance': 'How to change balance?',
+      'help_a_change_balance':
+          'Go to Wallet -> Tap card -> Edit -> Adjust balance.',
+      'help_q_money_counter': 'What is the Money Counter?',
+      'help_a_money_counter':
+          'Tool for counting bills/coins. Only for Cash accounts.',
+      'help_q_license_types': 'What license types are available?',
+      'help_a_license_types':
+          'Personal (Free), Pro, and Enterprise. Each unlocks more cards, charts, and cloud sync.',
+      'help_q_restore_purchase': 'How do I restore my purchase?',
+      'help_a_restore_purchase':
+          'Go to Settings -> Licenses -> Verify License. The app will check your Apklis purchase automatically.',
+      'help_q_custom_bank': 'Can I add custom banks?',
+      'help_a_custom_bank':
+          'Yes, in Settings -> Banks you can create and edit your own banks (Pro+ Plan).',
+      'help_q_currency': 'How to change main currency?',
+      'help_a_currency':
+          'In Settings -> Main Currency. This sets the default currency for totals.',
+      'help_q_feedback': 'How can I give feedback?',
+      'help_a_feedback':
+          'The app will invite you to our Telegram group after a few days of use.',
+
+      // Feedback
+      'feedback_title': 'Your opinion matters!',
+      'feedback_description':
+          'If you like CashRapido, rate us in our Telegram group.',
+      'join_telegram': 'Join Telegram',
+      'maybe_later': 'Maybe later',
+      'apklis': 'Apklis',
+      'play_store': 'Play Store',
+
+      // Notifications
+      'notif_daily_title': '💰 Record your expenses',
+      'notif_daily_body': 'Don\'t forget to update your budget today!',
+      'notif_weekly_title': '📊 Weekly Summary',
+      'notif_weekly_body': 'Check your weekly spending in CashRapido',
+      'notif_tip_title': '💡 Financial Tip',
+      'tip_1': 'Check your monthly expenses to find areas for savings 💡',
+      'tip_2': '70% of daily expenses are avoidable 🎯',
+      'tip_3': 'Small daily savings = big results 🌟',
+      'tip_4': 'Set realistic and achievable savings goals 🚀',
+      'tip_5': 'Tracking expenses increases your financial awareness 📈',
+
       // General
       'app_name': 'CashRapido',
       'cancel': 'Cancel',
@@ -889,6 +1024,73 @@ class AppLocalizations {
           'The free license allows only 1 card. Upgrade your plan to add more.',
     },
     'fr': {
+      // Help Center
+      'help_q_add_card': 'Comment ajouter ma première carte ?',
+      'help_a_add_card':
+          'Allez à l\'écran Portefeuille, appuyez sur (+) et remplissez les détails de carte ou espèces.',
+      'help_q_add_transaction': 'Comment enregistrer une transaction ?',
+      'help_a_add_transaction':
+          'Appuyez sur le bouton flottant (+). Sélectionnez dépense/revenu, catégorie, montant.',
+      'help_q_scanner': 'Comment utiliser le scanner ?',
+      'help_a_scanner':
+          'Appuyez sur "Plus" -> "Scanner Carte". Alignez votre carte avec le cadre.',
+      'help_q_edit_transaction': 'Comment modifier une transaction ?',
+      'help_a_edit_transaction':
+          'Appuyez sur une transaction pour voir les détails, la modifier ou la supprimer.',
+      'help_q_transfer': 'Comment transférer entre cartes ?',
+      'help_a_transfer':
+          'Utilisez "Transférer". Sélectionnez la source, la destination et le montant.',
+      'help_q_categories': 'Puis-je créer des catégories ?',
+      'help_a_categories':
+          'Avec la licence Pro ou Entreprise, vous pouvez créer vos propres catégories.',
+      'help_q_cards_limit': 'Combien de cartes puis-je avoir ?',
+      'help_a_cards_limit':
+          'Dépend de votre licence. Gratuit : 1, Pro : 4, Entreprise : Illimité.',
+      'help_q_change_balance': 'Comment changer le solde ?',
+      'help_a_change_balance':
+          'Portefeuille -> Carte -> Modifier -> Ajuster le solde.',
+      'help_q_money_counter': 'Qu\'est-ce que le Compteur d\'Argent ?',
+      'help_a_money_counter':
+          'Outil pour compter billets/pièces. Uniquement pour les comptes Espèces.',
+      'help_q_license_types': 'Quels types de licences existent ?',
+      'help_a_license_types':
+          'Personnel (Gratuit), Pro et Entreprise. Chacun débloque plus de fonctionnalités.',
+      'help_q_restore_purchase': 'Comment restaurer mon achat ?',
+      'help_a_restore_purchase':
+          'Paramètres -> Licences -> Vérifier. L\'appli vérifiera votre achat Apklis.',
+      'help_q_custom_bank': 'Puis-je ajouter des banques ?',
+      'help_a_custom_bank':
+          'Oui, dans Paramètres -> Banques, vous pouvez créer vos propres banques (Plan Pro+).',
+      'help_q_currency': 'Comment changer la devise principale ?',
+      'help_a_currency':
+          'Dans Paramètres -> Devise Principale. Définit la devise par défaut.',
+      'help_q_feedback': 'Comment donner mon avis ?',
+      'help_a_feedback':
+          'L\'application vous invitera à rejoindre notre groupe Telegram après quelques jours.',
+
+      // Feedback
+      'feedback_title': 'Votre avis compte !',
+      'feedback_description':
+          'Si vous aimez CashRapido, évaluez-nous dans notre groupe Telegram.',
+      'join_telegram': 'Rejoindre Telegram',
+      'maybe_later': 'Peut-être plus tard',
+      'apklis': 'Apklis',
+      'play_store': 'Play Store',
+
+      // Notifications
+      'notif_daily_title': '💰 Enregistrez vos dépenses',
+      'notif_daily_body':
+          'N\'oubliez pas de mettre à jour votre budget aujourd\'hui !',
+      'notif_weekly_title': '📊 Résumé Hebdomadaire',
+      'notif_weekly_body':
+          'Vérifiez vos dépenses de la semaine dans CashRapido',
+      'notif_tip_title': '💡 Conseil Financier',
+      'tip_1': 'Vérifiez vos dépenses mensuelles pour trouver des économies 💡',
+      'tip_2': '70% des dépenses quotidiennes sont évitables 🎯',
+      'tip_3': 'Petites économies quotidiennes = grands résultats 🌟',
+      'tip_4': 'Fixez des objectifs d\'épargne réalistes et réalisables 🚀',
+      'tip_5': 'Le suivi des dépenses augmente votre conscience financière 📈',
+
       // General
       'app_name': 'CashRapido',
       'cancel': 'Annuler',

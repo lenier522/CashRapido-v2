@@ -9,6 +9,7 @@ import 'settings_screen.dart';
 import '../widgets/add_transaction_modal.dart';
 import '../services/localization_service.dart';
 import '../services/tour_service.dart';
+import '../services/feedback_service.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -17,7 +18,7 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
 
   // Tour GlobalKeys
@@ -34,9 +35,26 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkFirstSeen();
+      // Check for feedback prompt on app start
+      FeedbackService.checkAndShowFeedback(context);
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Check for feedback prompt when app resumes from background
+      FeedbackService.checkAndShowFeedback(context);
+    }
   }
 
   Future<void> _checkFirstSeen() async {

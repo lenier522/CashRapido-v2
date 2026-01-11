@@ -389,7 +389,7 @@ class AppProvider with ChangeNotifier {
     _biometricsEnabled = prefs.getBool('biometrics_enabled') ?? false;
     _appPinHash = prefs.getString('app_pin_hash');
     _appPasswordHash = prefs.getString('app_password_hash');
-    _notificationsEnabled = prefs.getBool('notifications_enabled') ?? false;
+    _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
 
     final themeString = prefs.getString('theme_mode');
     if (themeString != null) {
@@ -437,7 +437,10 @@ class AppProvider with ChangeNotifier {
     // Initialize NotificationService
     await _notificationService.initialize();
     if (_notificationsEnabled) {
-      await _notificationService.scheduleAllNotifications();
+      await _notificationService.requestPermissions();
+      await _notificationService.scheduleAllNotifications(
+        _currentLocale?.languageCode ?? 'es',
+      );
     }
 
     _fetchData();
@@ -1266,7 +1269,9 @@ class AppProvider with ChangeNotifier {
         // Permission denied, don't enable
         return;
       }
-      await _notificationService.scheduleAllNotifications();
+      await _notificationService.scheduleAllNotifications(
+        _currentLocale?.languageCode ?? 'es',
+      );
     } else {
       await _notificationService.cancelAllNotifications();
     }
