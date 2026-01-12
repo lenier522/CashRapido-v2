@@ -70,6 +70,7 @@ dependencies:
     git:
       url: https://github.com/z17-cuba/apklis_license_validator.git
       ref: main
+  google_mobile_ads: ^7.0.0
 
 dev_dependencies:
   flutter_test:

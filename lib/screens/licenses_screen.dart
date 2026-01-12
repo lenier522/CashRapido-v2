@@ -36,90 +36,91 @@ class LicensesScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          IconButton(
-            tooltip: context.t('verify_license'),
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () async {
-              // Show loading dialog
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                useRootNavigator: true,
-                builder: (_) => PopScope(
-                  canPop: false,
-                  child: Center(
-                    child: Card(
-                      margin: const EdgeInsets.all(32),
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const CircularProgressIndicator(),
-                            const SizedBox(height: 16),
-                            Text(
-                              context.t('verifying'),
-                              style: GoogleFonts.outfit(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
+          if (isCuba)
+            IconButton(
+              tooltip: context.t('verify_license'),
+              icon: const Icon(Icons.refresh, color: Colors.white),
+              onPressed: () async {
+                // Show loading dialog
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  useRootNavigator: true,
+                  builder: (_) => PopScope(
+                    canPop: false,
+                    child: Center(
+                      child: Card(
+                        margin: const EdgeInsets.all(32),
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const CircularProgressIndicator(),
+                              const SizedBox(height: 16),
+                              Text(
+                                context.t('verifying'),
+                                style: GoogleFonts.outfit(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              );
-
-              // Capture navigator and messenger
-              final navigator = Navigator.of(context, rootNavigator: true);
-              final messenger = ScaffoldMessenger.of(context);
-              final appProvider = Provider.of<AppProvider>(
-                context,
-                listen: false,
-              );
-
-              String? errorMsg;
-              try {
-                errorMsg = await appProvider.verifyAndRestoreLicense();
-              } catch (e) {
-                errorMsg = e.toString();
-              } finally {
-                navigator.pop(); // Close loading dialog
-              }
-
-              if (!context.mounted) return;
-
-              // Show result
-              if (errorMsg == null) {
-                // Success - license restored
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: Text(context.t('license_restored')),
-                    backgroundColor: Colors.green,
-                    duration: const Duration(seconds: 3),
-                  ),
                 );
-              } else {
-                // Error or no license found
-                final isNoLicense =
-                    errorMsg.contains('No se encontró') ||
-                    errorMsg.contains('No active license') ||
-                    errorMsg.contains('Aucune licence');
 
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      isNoLicense ? context.t('no_license_found') : errorMsg,
+                // Capture navigator and messenger
+                final navigator = Navigator.of(context, rootNavigator: true);
+                final messenger = ScaffoldMessenger.of(context);
+                final appProvider = Provider.of<AppProvider>(
+                  context,
+                  listen: false,
+                );
+
+                String? errorMsg;
+                try {
+                  errorMsg = await appProvider.verifyAndRestoreLicense();
+                } catch (e) {
+                  errorMsg = e.toString();
+                } finally {
+                  navigator.pop(); // Close loading dialog
+                }
+
+                if (!context.mounted) return;
+
+                // Show result
+                if (errorMsg == null) {
+                  // Success - license restored
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(context.t('license_restored')),
+                      backgroundColor: Colors.green,
+                      duration: const Duration(seconds: 3),
                     ),
-                    backgroundColor: isNoLicense ? Colors.orange : Colors.red,
-                    duration: const Duration(seconds: 4),
-                  ),
-                );
-              }
-            },
-          ),
+                  );
+                } else {
+                  // Error or no license found
+                  final isNoLicense =
+                      errorMsg.contains('No se encontró') ||
+                      errorMsg.contains('No active license') ||
+                      errorMsg.contains('Aucune licence');
+
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        isNoLicense ? context.t('no_license_found') : errorMsg,
+                      ),
+                      backgroundColor: isNoLicense ? Colors.orange : Colors.red,
+                      duration: const Duration(seconds: 4),
+                    ),
+                  );
+                }
+              },
+            ),
           const SizedBox(width: 8),
         ],
       ),
@@ -181,7 +182,7 @@ class LicensesScreen extends StatelessWidget {
                     _buildLicenseCard(
                       context,
                       title: context.t('license_personal'),
-                      price: isCuba ? '\$50' : '\$5',
+                      price: isCuba ? '\$50' : '\$0.50',
                       currency: isCuba ? 'CUP' : 'USD',
                       period: context.t('month_short'),
                       features: [
@@ -198,12 +199,14 @@ class LicensesScreen extends StatelessWidget {
                         LicenseType.personal,
                       ),
                       isCurrent: provider.licenseType == LicenseType.personal,
+                      isCuba: isCuba,
+                      hasAnyLicense: provider.licenseType != LicenseType.free,
                     ),
                     const SizedBox(height: 24),
                     _buildLicenseCard(
                       context,
                       title: context.t('license_pro'),
-                      price: isCuba ? '\$75' : '\$10',
+                      price: isCuba ? '\$75' : '\$1',
                       currency: isCuba ? 'CUP' : 'USD',
                       period: context.t('month_short'),
                       features: [
@@ -219,12 +222,14 @@ class LicensesScreen extends StatelessWidget {
                       onTap: () =>
                           _showPaymentMethodsDialog(context, LicenseType.pro),
                       isCurrent: provider.licenseType == LicenseType.pro,
+                      isCuba: isCuba,
+                      hasAnyLicense: provider.licenseType != LicenseType.free,
                     ),
                     const SizedBox(height: 24),
                     _buildLicenseCard(
                       context,
                       title: context.t('license_enterprise'),
-                      price: isCuba ? '\$110' : '\$20',
+                      price: isCuba ? '\$110' : '\$1.5',
                       currency: isCuba ? 'CUP' : 'USD',
                       period: context.t('month_short'),
                       features: [
@@ -241,6 +246,8 @@ class LicensesScreen extends StatelessWidget {
                         LicenseType.enterprise,
                       ),
                       isCurrent: provider.licenseType == LicenseType.enterprise,
+                      isCuba: isCuba,
+                      hasAnyLicense: provider.licenseType != LicenseType.free,
                     ),
                   ],
                 ),
@@ -342,6 +349,8 @@ class LicensesScreen extends StatelessWidget {
     bool isPopular = false,
 
     bool isCurrent = false,
+    bool isCuba = false,
+    bool hasAnyLicense = false,
     VoidCallback? onTap,
   }) {
     return Container(
@@ -470,26 +479,76 @@ class LicensesScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 32),
-                if (!isCurrent)
+                const SizedBox(height: 32),
+                if (!isCurrent) ...[
+                  if (!isCuba && hasAnyLicense)
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: onTap,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white10,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          context.t('plan_change'),
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    )
+                  else if (!isCuba || !hasAnyLicense)
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: onTap,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isPopular
+                              ? accentColor
+                              : Colors.white10,
+                          foregroundColor: isPopular
+                              ? Colors.white
+                              : Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          context.t('select_plan'),
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                ] else if (isCurrent && !isCuba) ...[
+                  // Renew Button for Non-Cuba (Ads)
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: onTap,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isPopular
-                            ? accentColor
-                            : Colors.white10,
-                        foregroundColor: isPopular
-                            ? Colors.white
-                            : Colors.white,
+                        backgroundColor: Colors.white10,
+                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
+                        side: BorderSide(
+                          color: accentColor.withValues(alpha: 0.5),
+                        ),
                       ),
                       child: Text(
-                        context.t('select_plan'),
+                        context.t('plan_renew'),
                         style: GoogleFonts.outfit(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -497,6 +556,7 @@ class LicensesScreen extends StatelessWidget {
                       ),
                     ),
                   ),
+                ],
               ],
             ),
           ),
@@ -636,6 +696,8 @@ class LicensesScreen extends StatelessWidget {
                               title: Text(
                                 method.id.contains('test')
                                     ? context.t('test_method')
+                                    : method.id == 'watch_ads'
+                                    ? context.t('pay_watch_ads')
                                     : method.name,
                                 style: GoogleFonts.outfit(
                                   color: Colors.white,
@@ -653,6 +715,15 @@ class LicensesScreen extends StatelessWidget {
                                   );
                                   return;
                                 }
+
+                                if (method.id == 'watch_ads') {
+                                  Navigator.of(innerContext).pop();
+                                  provider.setAdTargetLicense(targetLicense);
+                                  _showAdWatcherDialog(context, targetLicense);
+                                  return;
+                                }
+
+                                // 1. Close the "Select Payment Method" dialog
 
                                 // 1. Close the "Select Payment Method" dialog
                                 // Use innerContext because it belongs to the dialog
@@ -843,10 +914,163 @@ class LicensesScreen extends StatelessWidget {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(context.t('close')),
+                onPressed: () => Navigator.of(innerContext).pop(),
+                child: Text(
+                  context.t('cancel'),
+                  style: GoogleFonts.outfit(color: Colors.white54),
+                ),
               ),
             ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _showAdWatcherDialog(BuildContext context, LicenseType targetLicense) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Consumer<AppProvider>(
+        builder: (context, provider, __) {
+          final watched = provider.adsWatched;
+          final target = provider.adsTarget;
+          final isReady = provider.adService.isAdReady;
+
+          if (watched >= target) {
+            // Auto-close on success
+            Future.delayed(Duration.zero, () {
+              if (context.mounted) {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      context
+                          .t('msg_license_activated')
+                          .replaceAll(
+                            '{license}',
+                            targetLicense.name.toUpperCase(),
+                          ),
+                    ),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            });
+            return const SizedBox.shrink();
+          }
+
+          return PopScope(
+            canPop: true,
+            child: AlertDialog(
+              backgroundColor: const Color(0xFF1E1E2C),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              title: Column(
+                children: [
+                  const Icon(
+                    Icons.ondemand_video_rounded,
+                    color: Colors.amberAccent,
+                    size: 48,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    context.t('dialog_watch_ads_title'),
+                    style: GoogleFonts.outfit(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    context
+                        .t('dialog_watch_ads_desc')
+                        .replaceAll('{target}', target.toString())
+                        .replaceAll(
+                          '{license}',
+                          targetLicense.name.toUpperCase(),
+                        ),
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      color: Colors.white70,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      value: watched / target,
+                      minHeight: 12,
+                      backgroundColor: Colors.white12,
+                      color: Colors.amberAccent,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    "$watched / $target",
+                    style: GoogleFonts.outfit(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: isReady
+                          ? () {
+                              provider.adService.showRewardedAd(
+                                onUserEarnedReward: () {
+                                  provider.incrementAdsWatched();
+                                },
+                              );
+                            }
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amberAccent,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      icon: isReady
+                          ? const Icon(Icons.play_arrow_rounded)
+                          : const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.black54,
+                              ),
+                            ),
+                      label: Text(
+                        isReady
+                            ? context.t('btn_watch_video')
+                            : context.t('btn_loading_ad'),
+                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(
+                    context.t('btn_close'),
+                    style: GoogleFonts.outfit(color: Colors.white54),
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),

@@ -520,6 +520,18 @@ class AppLocalizations {
       'limit_card_desc':
           'La licencia gratuita solo permite 1 tarjeta. Mejora tu plan para agregar más.',
       'skip': 'Omitir',
+
+      // Ads
+      'pay_watch_ads': 'Ver Anuncios (Gratis)',
+      'plan_renew': 'Renovar',
+      'plan_change': 'Cambiar Plan',
+      'dialog_watch_ads_title': 'Ver Anuncios',
+      'dialog_watch_ads_desc':
+          'Mira {target} anuncios para activar la Licencia {license} gratis.',
+      'btn_watch_video': 'Ver Video',
+      'btn_loading_ad': 'Cargando anuncio...',
+      'msg_license_activated': '¡Licencia {license} activada con éxito!',
+      'btn_close': 'Cerrar',
     },
     'en': {
       // Help Center
@@ -1022,6 +1034,18 @@ class AppLocalizations {
       'limit_reached_title': 'Limit Reached',
       'limit_card_desc':
           'The free license allows only 1 card. Upgrade your plan to add more.',
+
+      // Ads
+      'pay_watch_ads': 'Watch Ads (Free)',
+      'plan_renew': 'Renew',
+      'plan_change': 'Change Plan',
+      'dialog_watch_ads_title': 'Watch Ads',
+      'dialog_watch_ads_desc':
+          'Watch {target} ads to activate {license} License for free.',
+      'btn_watch_video': 'Watch Video',
+      'btn_loading_ad': 'Loading ad...',
+      'msg_license_activated': '{license} License activated successfully!',
+      'btn_close': 'Close',
     },
     'fr': {
       // Help Center
@@ -1540,6 +1564,19 @@ class AppLocalizations {
       'limit_reached_title': 'Limite Atteinte',
       'limit_card_desc':
           'La licence gratuite permet seulement 1 carte. Mettez à niveau pour en ajouter plus.',
+      'skip': 'Passer',
+
+      // Ads
+      'pay_watch_ads': 'Regarder Pubs (Gratuit)',
+      'plan_renew': 'Renouveler',
+      'plan_change': 'Changer de Plan',
+      'dialog_watch_ads_title': 'Regarder Pubs',
+      'dialog_watch_ads_desc':
+          'Regardez {target} pubs pour activer la Licence {license} gratuitement.',
+      'btn_watch_video': 'Regarder Vidéo',
+      'btn_loading_ad': 'Chargement...',
+      'msg_license_activated': 'Licence {license} activée avec succès !',
+      'btn_close': 'Fermer',
     },
   };
 

@@ -11,6 +11,7 @@ import '../models/payment_method.dart';
 import '../services/notification_service.dart';
 import '../services/export_service.dart';
 import '../services/drive_service.dart';
+import '../services/ad_service.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
@@ -39,6 +40,33 @@ class AppProvider with ChangeNotifier {
   bool get biometricsEnabled => _biometricsEnabled;
   final LocalAuthentication auth = LocalAuthentication();
 
+  // Ad Service
+  final AdService _adService = AdService();
+  AdService get adService => _adService;
+
+  int _adsWatched = 0;
+  int get adsWatched => _adsWatched;
+
+  LicenseType _targetLicenseForAds = LicenseType.personal; // Default
+
+  int get adsTarget {
+    switch (_targetLicenseForAds) {
+      case LicenseType.personal:
+        return 10;
+      case LicenseType.pro:
+        return 25;
+      case LicenseType.enterprise:
+        return 35;
+      default:
+        return 10;
+    }
+  }
+
+  void setAdTargetLicense(LicenseType type) {
+    _targetLicenseForAds = type;
+    notifyListeners();
+  }
+
   // AI Chat
   bool _aiChatEnabled = false;
   bool get aiChatEnabled => _aiChatEnabled;
@@ -54,13 +82,38 @@ class AppProvider with ChangeNotifier {
   // Licenses & Restrictions
   LicenseType _licenseType = LicenseType.free;
   LicenseType get licenseType => _licenseType;
+  DateTime? _licenseActivationDate;
+  DateTime? get licenseActivationDate => _licenseActivationDate;
 
-  void setLicenseType(LicenseType type) {
+  void setLicenseType(LicenseType type, {DateTime? activationDate}) {
     _licenseType = type;
+    _licenseActivationDate = activationDate;
     SharedPreferences.getInstance().then((prefs) {
       prefs.setInt('license_type', type.index);
+      if (activationDate != null) {
+        prefs.setString(
+          'license_activation_date',
+          activationDate.toIso8601String(),
+        );
+      } else {
+        prefs.remove('license_activation_date');
+      }
     });
     notifyListeners();
+  }
+
+  void _checkLicenseExpiration() {
+    if (_licenseType == LicenseType.free) return;
+
+    if (_licenseActivationDate != null) {
+      final expirationDate = _licenseActivationDate!.add(
+        const Duration(days: 30),
+      );
+      if (DateTime.now().isAfter(expirationDate)) {
+        // Expired
+        setLicenseType(LicenseType.free);
+      }
+    }
   }
 
   // Payment System
@@ -96,33 +149,40 @@ class AppProvider with ChangeNotifier {
           id: 'test_cuba',
           name: 'Prueba (Test)',
           iconAsset: 'assets/icons/test.png',
-          isEnabled: false,
-          isVisible: false,
+          isEnabled: true,
+          isVisible: true,
           isTest: true,
         ),
       ];
     } else {
       return [
         PaymentMethod(
+          id: 'watch_ads',
+          name: 'Ver Anuncios (Gratis)',
+          iconAsset: 'assets/icons/video_ads.png',
+          isEnabled: true,
+          isVisible: true,
+        ),
+        PaymentMethod(
           id: 'stripe',
           name: 'Stripe',
           iconAsset: 'assets/icons/stripe.png',
-          isEnabled: true,
-          isVisible: true,
+          isEnabled: false,
+          isVisible: false,
         ),
         PaymentMethod(
           id: 'paypal',
           name: 'PayPal',
           iconAsset: 'assets/icons/paypal.png',
-          isEnabled: true,
-          isVisible: true,
+          isEnabled: false,
+          isVisible: false,
         ),
         PaymentMethod(
           id: 'google_play',
           name: 'Google Play',
           iconAsset: 'assets/icons/google_play.png',
-          isEnabled: true,
-          isVisible: true,
+          isEnabled: false,
+          isVisible: false,
         ),
         PaymentMethod(
           id: 'test_intl',
@@ -179,6 +239,28 @@ class AppProvider with ChangeNotifier {
 
     // Default error for unknown methods
     return 'Método no implementado';
+  }
+
+  // Ad Logic
+  Future<void> watchAdForLicense() async {
+    // This just prepares tracking, verification happens after ad view callback
+    // Actually, we need a callback from UI.
+    // But we can expose a method to increment.
+  }
+
+  Future<void> incrementAdsWatched() async {
+    _adsWatched++;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('ads_watched', _adsWatched);
+
+    if (_adsWatched >= adsTarget) {
+      // Unlock Selected License
+      setLicenseType(_targetLicenseForAds, activationDate: DateTime.now());
+      // Reset counter
+      _adsWatched = 0;
+      await prefs.setInt('ads_watched', 0);
+    }
+    notifyListeners();
   }
 
   /// Verifies if user has an active Apklis license and restores it
@@ -421,6 +503,14 @@ class AppProvider with ChangeNotifier {
       _licenseType = LicenseType.values[licenseIndex];
     }
 
+    final activationString = prefs.getString('license_activation_date');
+    if (activationString != null) {
+      _licenseActivationDate = DateTime.tryParse(activationString);
+    }
+
+    // Check Expiration
+    _checkLicenseExpiration();
+
     // Fallback locale logic if not set above
     if (_currentLocale == null) {
       final systemLoc = ui.window.locale;
@@ -436,6 +526,13 @@ class AppProvider with ChangeNotifier {
 
     // Initialize NotificationService
     await _notificationService.initialize();
+
+    // Initialize AdService
+    _adsWatched = prefs.getInt('ads_watched') ?? 0;
+    _adService.onAdLoadedListener = notifyListeners;
+    await _adService.initialize();
+    _adService.loadRewardedAd();
+
     if (_notificationsEnabled) {
       await _notificationService.requestPermissions();
       await _notificationService.scheduleAllNotifications(
