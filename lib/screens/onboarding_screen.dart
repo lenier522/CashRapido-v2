@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/localization_service.dart';
 import 'default_license_screen.dart';
+import '../services/notification_service.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -15,6 +16,13 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Request notification permissions when Onboarding starts
+    NotificationService().requestPermissions();
+  }
 
   @override
   Widget build(BuildContext context) {

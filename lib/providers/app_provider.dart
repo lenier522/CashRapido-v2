@@ -534,7 +534,6 @@ class AppProvider with ChangeNotifier {
     _adService.loadRewardedAd();
 
     if (_notificationsEnabled) {
-      await _notificationService.requestPermissions();
       await _notificationService.scheduleAllNotifications(
         _currentLocale?.languageCode ?? 'es',
       );
