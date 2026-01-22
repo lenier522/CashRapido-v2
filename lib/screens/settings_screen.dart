@@ -227,6 +227,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               onTap: () => _showChartTypeDialog(context),
             ),
+            if (provider.isCuba)
+              _buildSettingsTile(
+                context,
+                icon: Icons.sms_outlined,
+                title: "Integración Transfermóvil",
+                subtitle: "Detectar pagos automáticamente (Solo Cuba)",
+                isLocked: !provider.canUseTransferMovil,
+                trailing: Switch(
+                  value: provider.transferMovilEnabled,
+                  activeThumbColor: Theme.of(context).colorScheme.primary,
+                  onChanged: (val) async {
+                    if (!provider.canUseTransferMovil) {
+                      _showLockedFeature(context);
+                      return;
+                    }
+                    try {
+                      await provider.setTransferMovilEnabled(val);
+                    } catch (e) {
+                      if (context.mounted) {
+                        _showSnack(context, e.toString(), isError: true);
+                      }
+                    }
+                  },
+                ),
+              ),
 
             const SizedBox(height: 24),
             _buildSectionTitle(context.t('backup_title')),

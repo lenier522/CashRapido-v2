@@ -413,6 +413,23 @@ class AppProvider with ChangeNotifier {
   bool get canCustomizeCharts =>
       isPromoActive || _licenseType == LicenseType.enterprise;
 
+  // New Feature: TransferMovil Integration (Enterprise Only)
+  bool _transferMovilEnabled = false;
+  bool get transferMovilEnabled => _transferMovilEnabled;
+
+  bool get canUseTransferMovil =>
+      isPromoActive || _licenseType == LicenseType.enterprise;
+
+  Future<void> setTransferMovilEnabled(bool enabled) async {
+    if (enabled && !canUseTransferMovil) {
+      throw Exception("Esta función requiere licencia Empresarial");
+    }
+    _transferMovilEnabled = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('transfermovil_enabled', enabled);
+    notifyListeners();
+  }
+
   // Notifications
   bool _notificationsEnabled = false;
   bool get notificationsEnabled => _notificationsEnabled;
@@ -472,6 +489,7 @@ class AppProvider with ChangeNotifier {
     _appPinHash = prefs.getString('app_pin_hash');
     _appPasswordHash = prefs.getString('app_password_hash');
     _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
+    _transferMovilEnabled = prefs.getBool('transfermovil_enabled') ?? false;
 
     final themeString = prefs.getString('theme_mode');
     if (themeString != null) {
@@ -572,20 +590,35 @@ class AppProvider with ChangeNotifier {
     return true;
   }
 
-  Future<void> addTransaction({
+  Future<String?> addTransaction({
     required double amount,
     required String title,
     required String categoryId,
     required String currency, // 'CUP', 'USD', 'EUR'
     String? cardId, // Optional link to card
+    DateTime? date,
   }) async {
+    // Validate balance before adding expense
+    if (cardId != null && amount < 0) {
+      final cardIndex = _cards.indexWhere((c) => c.id == cardId);
+      if (cardIndex != -1) {
+        final card = _cards[cardIndex];
+        double newBalance = card.balance + amount;
+
+        // Check if expense would cause negative balance
+        if (newBalance < 0) {
+          return "saldo_insuficiente"; // Return error code
+        }
+      }
+    }
+
     final transaction = InternalTransaction(
       id: _uuid.v4(),
       amount: amount,
       title: title,
       categoryId: categoryId,
       currency: currency,
-      date: DateTime.now(),
+      date: date ?? DateTime.now(),
       cardId: cardId, // Save the link
     );
 
@@ -597,14 +630,6 @@ class AppProvider with ChangeNotifier {
       final cardIndex = _cards.indexWhere((c) => c.id == cardId);
       if (cardIndex != -1) {
         final card = _cards[cardIndex];
-        // Logic: If Expense (amount < 0), subtract. If Income (amount > 0), add.
-        // Transaction amount usually comes in as signed?
-        // Let's assume the UI sends:
-        // - Expenses as negative? Or we handle it based on category?
-        // Usually easier if `amount` is signed.
-        // But `AddTransactionModal` usually handles logic.
-        // Let's assume `amount` is the delta to apply.
-
         double newBalance = card.balance + amount;
 
         final updatedCard = AccountCard(
@@ -627,6 +652,7 @@ class AppProvider with ChangeNotifier {
     }
 
     notifyListeners();
+    return null; // Success
   }
 
   Future<void> deleteTransaction(String transactionId) async {
@@ -986,6 +1012,12 @@ class AppProvider with ChangeNotifier {
         name: 'Otros Ingresos',
         iconCode: 0xe482, // attach_money usually
         colorValue: 0xFF607D8B, // BlueGrey
+      ),
+      Category(
+        id: 'cat_transfermovil',
+        name: 'Transfermóvil',
+        iconCode: 0xe5f0, // smartphone (Material Icons)
+        colorValue: 0xFF2196F3, // Blue
       ),
     ];
 

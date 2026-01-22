@@ -7,6 +7,7 @@ import '../services/localization_service.dart';
 import 'all_transactions_screen.dart';
 import 'ai_chat_screen.dart';
 import 'licenses_screen.dart';
+import 'transfermovil_screen.dart';
 import '../widgets/add_transaction_modal.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -374,6 +375,18 @@ class _HomeScreenState extends State<HomeScreen> {
           key: _transferKey,
           isLocked: !provider.canTransfer,
         ),
+        if (provider.isCuba && provider.transferMovilEnabled)
+          _buildActionButton(
+            context,
+            Icons.smartphone, // Transfermóvil Icon
+            "Transfermóvil", // Localization? The user said "Transfermóvil" explicitly in plan, but we should use key if possible. The key 'cat_transfermovil' is for category. I'll use raw string or add new key. Plan used raw name in options.
+            () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TransferMovilScreen()),
+              );
+            },
+          ),
         _buildActionButton(
           context,
           Icons.more_horiz,

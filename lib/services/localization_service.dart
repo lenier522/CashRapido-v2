@@ -234,6 +234,7 @@ class AppLocalizations {
       'cat_entertainment': 'Entretenimiento',
       'cat_bills': 'Facturas',
       'cat_shopping': 'Compras',
+      'cat_transfermovil': 'Transfermóvil',
 
       // Add Category
       'new_category': 'Nueva Categoría',
@@ -748,6 +749,7 @@ class AppLocalizations {
       'cat_entertainment': 'Entertainment',
       'cat_bills': 'Bills',
       'cat_shopping': 'Shopping',
+      'cat_transfermovil': 'Transfermovil',
 
       // Add Category
       'new_category': 'New Category',
@@ -1404,6 +1406,7 @@ class AppLocalizations {
       'cat_other_income': 'Autres Revenus',
       'cat_rent': 'Loyer',
       'cat_investment': 'Investissement',
+      'cat_transfermovil': 'Transfermovil',
 
       'cards': 'Cartes',
       // View All
