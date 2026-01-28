@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:local_auth/local_auth.dart';
 import 'dart:convert';
+import '../services/widget_service.dart';
 import 'package:crypto/crypto.dart';
 import '../models/models.dart';
 import '../models/payment_method.dart';
@@ -118,7 +119,7 @@ class AppProvider with ChangeNotifier {
 
   // Payment System
   // Change this variable to build for different regions
-  final bool _isCuba = true;
+  final bool _isCuba = false;
   bool get isCuba => _isCuba;
 
   List<PaymentMethod> get paymentMethods {
@@ -149,8 +150,8 @@ class AppProvider with ChangeNotifier {
           id: 'test_cuba',
           name: 'Prueba (Test)',
           iconAsset: 'assets/icons/test.png',
-          isEnabled: true,
-          isVisible: true,
+          isEnabled: false,
+          isVisible: false,
           isTest: true,
         ),
       ];
@@ -420,6 +421,10 @@ class AppProvider with ChangeNotifier {
   bool get canUseTransferMovil =>
       isPromoActive || _licenseType == LicenseType.enterprise;
 
+  // Widgets (Enterprise Only)
+  bool get canUseWidgets =>
+      isPromoActive || _licenseType == LicenseType.enterprise;
+
   Future<void> setTransferMovilEnabled(bool enabled) async {
     if (enabled && !canUseTransferMovil) {
       throw Exception("Esta función requiere licencia Empresarial");
@@ -560,6 +565,10 @@ class AppProvider with ChangeNotifier {
     _fetchData();
     _isLoading = false;
     notifyListeners();
+
+    // Initialize and update widgets with current data
+    await WidgetService.initialize();
+    await _updateWidgetsIfNeeded();
   }
 
   void _fetchData() {
@@ -652,7 +661,20 @@ class AppProvider with ChangeNotifier {
     }
 
     notifyListeners();
+
+    // Update balance widget if enabled
+    _updateWidgetsIfNeeded();
+
     return null; // Success
+  }
+
+  /// Update widgets with current main card balance
+  Future<void> _updateWidgetsIfNeeded() async {
+    if (_cards.isEmpty) return;
+
+    // Find main card (first card or explicitly marked main)
+    final mainCard = _cards.first;
+    await WidgetService.updateAllWidgets(mainCard.balance, mainCard.currency);
   }
 
   Future<void> deleteTransaction(String transactionId) async {
@@ -836,6 +858,9 @@ class AppProvider with ChangeNotifier {
         _cards[listIndex] = updatedCard;
       }
       notifyListeners();
+
+      // Update widgets if main card changed
+      await _updateWidgetsIfNeeded();
     }
   }
 
@@ -845,6 +870,9 @@ class AppProvider with ChangeNotifier {
       await _cardBox.deleteAt(index);
       _cards.removeWhere((c) => c.id == cardId);
       notifyListeners();
+
+      // Update widgets since card list changed
+      await _updateWidgetsIfNeeded();
     }
   }
 

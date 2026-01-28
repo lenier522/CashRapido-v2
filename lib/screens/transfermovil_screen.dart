@@ -186,8 +186,9 @@ class _TransferMovilScreenState extends State<TransferMovilScreen> {
     bool isRegistered = provider.transactions.any((t) {
       if (t.categoryId != 'cat_transfermovil') return false;
       final targetAmount = isIncome ? amount : -amount;
-      if (t.amount.toStringAsFixed(2) != targetAmount.toStringAsFixed(2))
+      if (t.amount.toStringAsFixed(2) != targetAmount.toStringAsFixed(2)) {
         return false;
+      }
       return t.date.difference(date).inSeconds.abs() < 60;
     });
 
