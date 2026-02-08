@@ -7,11 +7,18 @@ import 'package:provider/provider.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/main_screen.dart';
 import 'models/models.dart';
+import 'models/product.dart';
+import 'models/business.dart';
+import 'models/sale.dart';
+import 'models/business_expense.dart';
+import 'models/closing.dart';
 import 'providers/app_provider.dart';
 
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'services/localization_service.dart';
+
+import 'providers/business_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +29,14 @@ void main() async {
   Hive.registerAdapter(CategoryAdapter());
   Hive.registerAdapter(InternalTransactionAdapter());
   Hive.registerAdapter(AccountCardAdapter());
+  Hive.registerAdapter(ProductAdapter());
+
+  // Business Module Adapters
+  Hive.registerAdapter(BusinessAdapter());
+  Hive.registerAdapter(SaleAdapter());
+  Hive.registerAdapter(SaleItemAdapter());
+  Hive.registerAdapter(BusinessExpenseAdapter());
+  Hive.registerAdapter(ClosingAdapter());
 
   final prefs = await SharedPreferences.getInstance();
   final bool seenOnboarding = prefs.getBool('seenOnboarding') ?? false;
@@ -38,7 +53,10 @@ void main() async {
 
   runApp(
     MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => AppProvider()..init())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => AppProvider()..init()),
+        ChangeNotifierProvider(create: (_) => BusinessProvider()..init()),
+      ],
       child: MyApp(seenOnboarding: seenOnboarding),
     ),
   );

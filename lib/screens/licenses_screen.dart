@@ -234,6 +234,8 @@ class LicensesScreen extends StatelessWidget {
                       period: context.t('month_short'),
                       features: [
                         context.t('feat_ent_unlimited'),
+                        context.t('feat_ent_business'), // New Business Module
+                        context.t('feat_ent_inventory'), // New Inventory
                         context.t('feat_ent_scanner'),
                         context.t('feat_ent_ai_bio'),
                         context.t('feat_ent_charts_pdf'),

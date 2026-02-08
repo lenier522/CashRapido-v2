@@ -425,6 +425,9 @@ class AppProvider with ChangeNotifier {
   bool get canUseWidgets =>
       isPromoActive || _licenseType == LicenseType.enterprise;
 
+  bool get canUseBusinessModule =>
+      isPromoActive || _licenseType == LicenseType.enterprise;
+
   Future<void> setTransferMovilEnabled(bool enabled) async {
     if (enabled && !canUseTransferMovil) {
       throw Exception("Esta función requiere licencia Empresarial");

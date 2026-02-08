@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'home_screen.dart';
 import 'wallet_screen.dart';
 import 'stats_screen.dart';
 import 'settings_screen.dart';
-import '../widgets/add_transaction_modal.dart';
-import '../services/localization_service.dart';
+import 'business/business_gatekeeper.dart';
+import '../widgets/add_transaction_modal.dart'; // Re-needed for Add Transaction FAB
 import '../services/tour_service.dart';
 import '../services/feedback_service.dart';
 
@@ -22,14 +22,25 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
 
   // Tour GlobalKeys
-  final GlobalKey _fabKey = GlobalKey();
+  final GlobalKey _fabKey =
+      GlobalKey(); // Refers to Business FAB now? Or Add FAB? Let's point to Business as it is primary nav.
   final GlobalKey _navBarKey = GlobalKey();
 
+  // Screen Order: 0: Home, 1: Wallet, 2: Stats, 3: Settings. 4: Business.
   final List<Widget> _screens = const [
     HomeScreen(),
     WalletScreen(),
     StatsScreen(),
     SettingsScreen(),
+    BusinessGatekeeper(), // Index 4
+  ];
+
+  // Icons for 4 tabs
+  final List<IconData> _iconList = [
+    Icons.grid_view,
+    Icons.credit_card,
+    Icons.pie_chart_outline,
+    Icons.settings_outlined,
   ];
 
   @override
@@ -38,7 +49,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkFirstSeen();
-      // Check for feedback prompt on app start
       FeedbackService.checkAndShowFeedback(context);
     });
   }
@@ -52,7 +62,6 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Check for feedback prompt when app resumes from background
       FeedbackService.checkAndShowFeedback(context);
     }
   }
@@ -82,13 +91,16 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    // If currentIndex is 4 (Business), navbar index is -1 (none selected)
+    final int barIndex = _currentIndex == 4 ? -1 : _currentIndex;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Theme.of(context).brightness == Brightness.dark
             ? Brightness.light
             : Brightness.dark,
-        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarColor: Theme.of(context).scaffoldBackgroundColor,
         systemNavigationBarIconBrightness:
             Theme.of(context).brightness == Brightness.dark
             ? Brightness.light
@@ -96,76 +108,75 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       ),
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: IndexedStack(index: _currentIndex, children: _screens),
+
+        // Stack to allow Add Transaction FAB to overlay standard body
+        body: Stack(
+          children: [
+            IndexedStack(index: _currentIndex, children: _screens),
+
+            // "Add Transaction" Button - Positioned in Bottom Right ("Where it was")
+            // Only show if NOT in Business Mode (Business has its own internal actions)
+            if (_currentIndex != 4)
+              Positioned(
+                bottom:
+                    30, // Adjust to avoid collision if needed, but endFloat is usually ~16-30
+                right: 16,
+                child: FloatingActionButton(
+                  heroTag: "fab_add_transaction", // Unique Tag!
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => const AddTransactionModal(),
+                    );
+                  },
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  shape: const CircleBorder(),
+                  child: const Icon(Icons.add, color: Colors.white),
+                ),
+              ),
+          ],
+        ),
+
+        // Central FAB - "Business" ("Negocio en el medio con floating bottom")
         floatingActionButton: FloatingActionButton(
           key: _fabKey,
+          heroTag: "fab_business_center", // Unique Tag!
           onPressed: () {
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (context) => const AddTransactionModal(),
-            );
+            setState(() {
+              _currentIndex = 4; // open Business
+            });
           },
-          backgroundColor: Theme.of(context).colorScheme.primary,
+          backgroundColor: _currentIndex == 4
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).cardColor,
           shape: const CircleBorder(),
-          child: const Icon(Icons.add, color: Colors.white),
+          // Use elevation to define "Floating" feel
+          elevation: 8,
+          child: Icon(
+            Icons.business_center,
+            color: _currentIndex == 4
+                ? Colors.white
+                : Theme.of(context).colorScheme.primary,
+          ),
         ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-        bottomNavigationBar: NavigationBarTheme(
-          data: NavigationBarThemeData(
-            indicatorColor: Theme.of(
-              context,
-            ).colorScheme.primary.withOpacity(0.2),
-            labelTextStyle: WidgetStateProperty.all(
-              GoogleFonts.outfit(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).textTheme.bodyMedium?.color,
-              ),
-            ),
-            iconTheme: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.selected)) {
-                return IconThemeData(
-                  color: Theme.of(context).colorScheme.primary,
-                );
-              }
-              return IconThemeData(
-                color: Theme.of(context).textTheme.bodyMedium?.color,
-              );
-            }),
-          ),
-          child: NavigationBar(
-            key: _navBarKey,
-            height: 70,
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            elevation: 0,
-            selectedIndex: _currentIndex,
-            onDestinationSelected: (index) =>
-                setState(() => _currentIndex = index),
-            destinations: [
-              NavigationDestination(
-                icon: const Icon(Icons.grid_view),
-                selectedIcon: const Icon(Icons.grid_view),
-                label: context.t('nav_home'),
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.credit_card),
-                selectedIcon: const Icon(Icons.credit_card),
-                label: context.t('nav_wallet'),
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.pie_chart_outline),
-                selectedIcon: const Icon(Icons.pie_chart),
-                label: context.t('statistics'),
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.settings_outlined),
-                selectedIcon: const Icon(Icons.settings),
-                label: context.t('settings_title'),
-              ),
-            ],
-          ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+
+        bottomNavigationBar: AnimatedBottomNavigationBar(
+          icons: _iconList,
+          activeIndex: barIndex,
+          gapLocation: GapLocation.center,
+          notchSmoothness: NotchSmoothness.softEdge,
+          leftCornerRadius: 32,
+          rightCornerRadius: 32,
+          onTap: (index) => setState(() {
+            _currentIndex = index;
+          }),
+          backgroundColor: Theme.of(context).cardColor,
+          activeColor: Theme.of(context).colorScheme.primary,
+          inactiveColor: Colors.grey,
+          iconSize: 28,
         ),
       ),
     );

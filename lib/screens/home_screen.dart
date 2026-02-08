@@ -138,6 +138,8 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           children: [
             if (aiButton != null) ...[aiButton, const SizedBox(width: 12)],
+
+            // Notification Icon
             Container(
               height: 48,
               width: 48,
