@@ -119,7 +119,7 @@ class AppProvider with ChangeNotifier {
 
   // Payment System
   // Change this variable to build for different regions
-  final bool _isCuba = false;
+  final bool _isCuba = true;
   bool get isCuba => _isCuba;
 
   List<PaymentMethod> get paymentMethods {
@@ -150,8 +150,8 @@ class AppProvider with ChangeNotifier {
           id: 'test_cuba',
           name: 'Prueba (Test)',
           iconAsset: 'assets/icons/test.png',
-          isEnabled: false,
-          isVisible: false,
+          isEnabled: true,
+          isVisible: true,
           isTest: true,
         ),
       ];

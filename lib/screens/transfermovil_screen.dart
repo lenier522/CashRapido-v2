@@ -16,22 +16,92 @@ class _TransferMovilScreenState extends State<TransferMovilScreen> {
   final SmsQuery _query = SmsQuery();
   bool _isLoading = false;
   List<SmsMessage> _messages = [];
+  PermissionStatus? _permissionStatus;
 
   @override
   void initState() {
     super.initState();
-    _scanSMS();
+    _checkPermissionAndScan();
+  }
+
+  Future<void> _checkPermissionAndScan() async {
+    setState(() => _isLoading = true);
+
+    var status = await Permission.sms.status;
+
+    if (!status.isGranted) {
+      status = await Permission.sms.request();
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _permissionStatus = status;
+    });
+
+    if (status.isGranted) {
+      await _scanSMS();
+    } else if (status.isPermanentlyDenied) {
+      setState(() => _isLoading = false);
+      _showPermissionDialog();
+    } else {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _showPermissionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          "Permiso necesario",
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          "Para leer las confirmaciones de pago, necesitamos acceso a tus SMS. Por favor habilita el permiso en la configuración.",
+          style: GoogleFonts.outfit(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              "Cancelar",
+              style: GoogleFonts.outfit(color: Colors.grey),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              openAppSettings();
+            },
+            child: Text(
+              "Abrir Configuración",
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _scanSMS() async {
-    final status = await Permission.sms.request();
-    if (!status.isGranted) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Permiso de SMS requerido')),
-        );
+    // Assumes permission is already granted or we are retrying
+    if (_permissionStatus != null && !_permissionStatus!.isGranted) {
+      // Double check in case user went to settings and came back
+      var status = await Permission.sms.status;
+      setState(() {
+        _permissionStatus = status;
+      });
+      if (!status.isGranted) {
+        if (status.isPermanentlyDenied) {
+          _showPermissionDialog();
+        } else {
+          final newStatus = await Permission.sms.request();
+          setState(() => _permissionStatus = newStatus);
+          if (!newStatus.isGranted) return;
+        }
+        if (!_permissionStatus!.isGranted) return;
       }
-      return;
     }
 
     setState(() => _isLoading = true);
@@ -45,7 +115,8 @@ class _TransferMovilScreenState extends State<TransferMovilScreen> {
       final validMessages = messages.where((sms) {
         final body = sms.body ?? "";
         return body.contains("La Transferencia fue completada") ||
-            body.contains("Se ha realizado una transferencia a la cuenta");
+            body.contains("Se ha realizado una transferencia a la cuenta") ||
+            body.contains("Pago completado");
       }).toList();
 
       setState(() {
@@ -67,6 +138,90 @@ class _TransferMovilScreenState extends State<TransferMovilScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // If permission is explicitly denied/restricted, show specific UI
+    if (_permissionStatus != null && !_permissionStatus!.isGranted) {
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back_ios,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+            ),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Text(
+            "Transfermóvil",
+            style: GoogleFonts.outfit(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+              fontSize: 22,
+            ),
+          ),
+          centerTitle: true,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.sms_failed_outlined,
+                  size: 64,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  "Permiso Requerido",
+                  style: GoogleFonts.outfit(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  "No podemos leer tus mensajes para importar transacciones sin tu permiso.",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(fontSize: 16, color: Colors.grey),
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (_permissionStatus!.isPermanentlyDenied) {
+                      openAppSettings();
+                    } else {
+                      _checkPermissionAndScan();
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Text(
+                    "Conceder Permiso",
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -94,7 +249,7 @@ class _TransferMovilScreenState extends State<TransferMovilScreen> {
               Icons.refresh,
               color: Theme.of(context).colorScheme.primary,
             ),
-            onPressed: _isLoading ? null : _scanSMS,
+            onPressed: _isLoading ? null : _checkPermissionAndScan,
           ),
         ],
       ),
@@ -165,6 +320,8 @@ class _TransferMovilScreenState extends State<TransferMovilScreen> {
     bool isIncome = body.contains(
       "Se ha realizado una transferencia a la cuenta",
     );
+    bool isPayment = body.contains("Pago completado");
+
     double amount = 0.0;
     String otherParty = "";
 
@@ -176,7 +333,27 @@ class _TransferMovilScreenState extends State<TransferMovilScreen> {
         otherParty =
             "Cuenta ...${accMatch.group(1)?.substring(accMatch.group(1)!.length - 4)}";
       }
+    } else if (isPayment) {
+      // Logic for "Pago completado"
+      // Priority: "Importe pagado", if not found, fallback to "Importe"
+      final paidMatch = RegExp(
+        r"Importe pagado:\s*([\d\.]+)\s*CUP",
+      ).firstMatch(body);
+      if (paidMatch != null) {
+        amount = double.tryParse(paidMatch.group(1) ?? "0") ?? 0.0;
+      } else {
+        final match = RegExp(r"Importe:\s*([\d\.]+)\s*CUP").firstMatch(body);
+        amount = double.tryParse(match?.group(1) ?? "0") ?? 0.0;
+      }
+
+      final entityMatch = RegExp(r"Entidad:\s*(.+)").firstMatch(body);
+      if (entityMatch != null) {
+        otherParty = "A: ${entityMatch.group(1)?.trim()}";
+      } else {
+        otherParty = "Pago de Servicio";
+      }
     } else {
+      // Logic for Standard Transfer Sent
       final match = RegExp(r"Monto:\s*([\d\.]+)").firstMatch(body);
       amount = double.tryParse(match?.group(1) ?? "0") ?? 0.0;
       final benMatch = RegExp(r"Beneficiario:\s*(\S+)").firstMatch(body);
