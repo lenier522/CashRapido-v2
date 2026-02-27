@@ -19,9 +19,11 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'services/localization_service.dart';
 
 import 'providers/business_provider.dart';
+import 'package:flutter_gemma/core/api/flutter_gemma.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await FlutterGemma.initialize();
   await Hive.initFlutter();
   await initializeDateFormatting('es', null);
 

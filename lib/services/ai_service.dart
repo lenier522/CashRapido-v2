@@ -1,6 +1,12 @@
 import 'package:google_generative_ai/google_generative_ai.dart';
 import '../models/models.dart';
 
+import 'package:flutter_gemma/core/api/flutter_gemma.dart';
+import 'package:flutter_gemma/core/message.dart';
+import 'package:flutter_gemma/core/chat.dart';
+import 'package:flutter_gemma/core/model_response.dart';
+import 'package:flutter_gemma/pigeon.g.dart';
+
 class AIService {
   // STRICTLY confidential API Key provided by user for this session.
   // API Keys Rotation List
@@ -20,21 +26,141 @@ class AIService {
   int _currentKeyIndex = 0;
   String? _lastSystemPrompt; // To restore session if needed
 
-  AIService() {
+  final bool useOfflineAI;
+  final String? offlineModelPath;
+  bool _offlineInitialized = false;
+  InferenceChat? _offlineChat;
+
+  AIService({this.useOfflineAI = false, this.offlineModelPath}) {
     _initModel();
   }
 
-  void _initModel() {
-    print("Initializing AI with Key index: $_currentKeyIndex");
-    _model = GenerativeModel(
-      model: _modelName,
-      apiKey: _apiKeys[_currentKeyIndex],
-    );
+  void _initModel() async {
+    if (useOfflineAI) {
+      if (offlineModelPath != null && offlineModelPath!.isNotEmpty) {
+        print("Initializing Offline AI with model path: $offlineModelPath");
+      }
+      // Note: flutter_gemma requires initialization before usage.
+      // We assume it's either initialized globally or here.
+      // But for simplicity, we'll initialize it if needed or just use it.
+      // The actual instantiation is handled by FlutterGemmaPlugin.instance
+    } else {
+      print("Initializing Cloud AI with Key index: $_currentKeyIndex");
+      _model = GenerativeModel(
+        model: _modelName,
+        apiKey: _apiKeys[_currentKeyIndex],
+      );
+    }
   }
 
   void startChat(String contextPrompt) {
     _lastSystemPrompt = contextPrompt;
-    _chatSession = _model.startChat(history: [Content.text(contextPrompt)]);
+    if (!useOfflineAI) {
+      _chatSession = _model.startChat(history: [Content.text(contextPrompt)]);
+    } else {
+      // Async initialization for offline chat is handled when sending messages
+      _offlineChat = null;
+    }
+  }
+
+  Future<void> _ensureOfflineInitialized() async {
+    if (!_offlineInitialized &&
+        offlineModelPath != null &&
+        offlineModelPath!.isNotEmpty) {
+      try {
+        // According to the modern API, we get an active model instance then create a chat
+        final inferenceModel = await FlutterGemma.getActiveModel(
+          maxTokens: 4096,
+          preferredBackend: PreferredBackend.cpu,
+        );
+        _offlineChat = await inferenceModel.createChat(
+          temperature: 1.0,
+          topK: 64,
+          topP: 0.95,
+        );
+
+        // Add system prompt to the chat history if we have one
+        if (_lastSystemPrompt != null) {
+          await _offlineChat!.addQueryChunk(
+            Message.text(text: "System: $_lastSystemPrompt", isUser: true),
+          );
+          // Provide a dummy acknowledge
+          await _offlineChat!.addQueryChunk(
+            Message.text(text: "Understood.", isUser: false),
+          );
+        }
+
+        print("FlutterGemma Initialized and Chat Created");
+        _offlineInitialized = true;
+      } catch (e) {
+        print("Error initializing FlutterGemma: $e");
+      }
+    }
+  }
+
+  // Support for streaming responses (both Cloud and Offline)
+  Stream<String> sendMessageStream(String message) async* {
+    if (useOfflineAI) {
+      if (offlineModelPath == null || offlineModelPath!.isEmpty) {
+        yield "Error: No se ha importado ningún modelo offline. Ve a Configuración para importarlo.";
+        return;
+      }
+
+      await _ensureOfflineInitialized();
+
+      if (_offlineChat == null) {
+        yield "Error: Chat offline no está listo.";
+        return;
+      }
+
+      await _offlineChat!.addQueryChunk(
+        Message.text(text: message, isUser: true),
+      );
+
+      try {
+        final stream = _offlineChat!.generateChatResponseAsync();
+
+        // Accumulate full response to add to history afterwards
+        String fullResponse = "";
+
+        await for (final response in stream) {
+          if (response is TextResponse) {
+            fullResponse += response.token;
+            yield response.token;
+          }
+        }
+
+        if (fullResponse.isNotEmpty) {
+          await _offlineChat!.addQueryChunk(
+            Message.text(text: fullResponse, isUser: false),
+          );
+        }
+      } catch (e) {
+        yield "Error del modelo offline: $e";
+      }
+      return;
+    }
+
+    // Cloud Stream
+    if (_chatSession == null) {
+      if (_lastSystemPrompt != null) {
+        startChat(_lastSystemPrompt!);
+      } else {
+        _chatSession = _model.startChat();
+      }
+    }
+
+    try {
+      final stream = _chatSession!.sendMessageStream(Content.text(message));
+      await for (final chunk in stream) {
+        if (chunk.text != null) {
+          yield chunk.text!;
+        }
+      }
+    } catch (e) {
+      print("Error with Key $_currentKeyIndex: $e");
+      yield "Error de conexión: $e";
+    }
   }
 
   Future<String> sendMessage(String message) async {
@@ -42,6 +168,41 @@ class AIService {
   }
 
   Future<String> _attemptSendMessage(String message, int attempt) async {
+    if (useOfflineAI) {
+      try {
+        if (offlineModelPath == null || offlineModelPath!.isEmpty) {
+          return "Error: No se ha importado ningún modelo offline. Ve a Configuración para importarlo.";
+        }
+
+        await _ensureOfflineInitialized();
+
+        if (_offlineChat == null) {
+          return "Error: Chat offline no está listo.";
+        }
+
+        await _offlineChat!.addQueryChunk(
+          Message.text(text: message, isUser: true),
+        );
+        final response = await _offlineChat!.generateChatResponse();
+
+        String responseText = "";
+        if (response is TextResponse) {
+          responseText = response.token;
+        }
+
+        if (responseText.isNotEmpty) {
+          await _offlineChat!.addQueryChunk(
+            Message.text(text: responseText, isUser: false),
+          );
+          return responseText;
+        }
+
+        return "No pude generar una respuesta offline.";
+      } catch (e) {
+        return "Error del modelo offline: $e";
+      }
+    }
+
     // Ensure session exists
     if (_chatSession == null) {
       if (_lastSystemPrompt != null) {

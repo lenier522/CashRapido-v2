@@ -149,21 +149,281 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             const SizedBox(height: 24),
             _buildSectionTitle(context.t('preferences')),
-            _buildSettingsTile(
-              context,
-              icon: Icons.smart_toy_outlined,
-              title: context.t('enable_ai'),
-              isLocked: !provider.canUseAI,
-              trailing: Switch(
-                value: provider.aiChatEnabled,
-                activeThumbColor: Theme.of(context).colorScheme.primary,
-                onChanged: (val) async {
-                  if (!provider.canUseAI) {
-                    _showLockedFeature(context);
-                    return;
-                  }
-                  await provider.setAIChatEnabled(val);
-                },
+            // AI Section
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 8,
+                    ),
+                    leading: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primary.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.smart_toy_outlined,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 20,
+                          ),
+                        ),
+                        if (!provider.canUseAI)
+                          Positioned(
+                            right: -2,
+                            top: -2,
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                color: Colors.amber,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Theme.of(context).cardColor,
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.lock,
+                                size: 8,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    title: Text(
+                      context.t('enable_ai'),
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                      ),
+                    ),
+                    trailing: Switch(
+                      value: provider.aiChatEnabled,
+                      activeThumbColor: Theme.of(context).colorScheme.primary,
+                      onChanged: (val) async {
+                        if (!provider.canUseAI) {
+                          _showLockedFeature(context);
+                          return;
+                        }
+                        await provider.setAIChatEnabled(val);
+                      },
+                    ),
+                  ),
+                  if (provider.aiChatEnabled && provider.canUseAI) ...[
+                    const Divider(height: 1),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Proveedor de IA",
+                            style: GoogleFonts.outfit(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: RadioListTile<bool>(
+                                  title: const Text("Google Gemini"),
+                                  value: false,
+                                  groupValue: provider.useOfflineAI,
+                                  contentPadding: EdgeInsets.zero,
+                                  onChanged: (val) {
+                                    provider.setUseOfflineAI(val!);
+                                  },
+                                ),
+                              ),
+                              Expanded(
+                                child: RadioListTile<bool>(
+                                  title: const Text("Modelo Offline"),
+                                  value: true,
+                                  groupValue: provider.useOfflineAI,
+                                  contentPadding: EdgeInsets.zero,
+                                  onChanged: (val) {
+                                    provider.setUseOfflineAI(val!);
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (provider.useOfflineAI) ...[
+                            const SizedBox(height: 12),
+                            OutlinedButton.icon(
+                              icon: const Icon(Icons.file_upload),
+                              label: Text(
+                                provider.offlineModelPath != null
+                                    ? "Cambiar Modelo (LiteRT)"
+                                    : "Importar Modelo",
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size(double.infinity, 45),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              onPressed: () async {
+                                try {
+                                  final progressNotifier = ValueNotifier<int>(
+                                    0,
+                                  );
+                                  bool dialogShown = false;
+
+                                  await provider.importOfflineModel(
+                                    onStart: () {
+                                      dialogShown = true;
+                                      showDialog(
+                                        context: context,
+                                        barrierDismissible: false,
+                                        builder: (ctx) => AlertDialog(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                          ),
+                                          title: Text(
+                                            "Importando Modelo",
+                                            style: GoogleFonts.outfit(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          content: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                "Preparando el modelo para uso offline. Esto puede demorar dependiendo del tamaño del archivo.",
+                                                style: GoogleFonts.outfit(),
+                                              ),
+                                              const SizedBox(height: 20),
+                                              ValueListenableBuilder<int>(
+                                                valueListenable:
+                                                    progressNotifier,
+                                                builder: (context, value, child) {
+                                                  return Column(
+                                                    children: [
+                                                      ClipRRect(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              10,
+                                                            ),
+                                                        child: LinearProgressIndicator(
+                                                          value: value / 100,
+                                                          minHeight: 8,
+                                                          backgroundColor:
+                                                              Theme.of(context)
+                                                                  .colorScheme
+                                                                  .primary
+                                                                  .withOpacity(
+                                                                    0.2,
+                                                                  ),
+                                                          valueColor:
+                                                              AlwaysStoppedAnimation<
+                                                                Color
+                                                              >(
+                                                                Theme.of(
+                                                                      context,
+                                                                    )
+                                                                    .colorScheme
+                                                                    .primary,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(
+                                                        height: 10,
+                                                      ),
+                                                      Text(
+                                                        "$value% Completado",
+                                                        style: GoogleFonts.outfit(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color: Theme.of(
+                                                            context,
+                                                          ).colorScheme.primary,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  );
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    onProgress: (p) {
+                                      progressNotifier.value = p;
+                                    },
+                                  );
+
+                                  if (dialogShown && context.mounted) {
+                                    Navigator.of(context).pop();
+                                    dialogShown = false;
+                                    if (provider.offlineModelPath != null) {
+                                      _showSnack(
+                                        context,
+                                        "Modelo importado con éxito",
+                                      );
+                                    }
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    Navigator.of(
+                                      context,
+                                    ).pop(); // pop the dialog
+                                    _showSnack(
+                                      context,
+                                      e.toString(),
+                                      isError: true,
+                                    );
+                                  }
+                                }
+                              },
+                            ),
+                            if (provider.offlineModelPath != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(
+                                  "Modelo cargado correctamente",
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 12,
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
             _buildSettingsTile(

@@ -20,6 +20,8 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import '../services/backup_service.dart';
 import '../licences/apklis.dart';
+import 'package:flutter_gemma/core/api/flutter_gemma.dart';
+import 'package:flutter_gemma/core/model.dart';
 
 class AppProvider with ChangeNotifier {
   late Box<InternalTransaction> _transactionBox;
@@ -71,6 +73,12 @@ class AppProvider with ChangeNotifier {
   // AI Chat
   bool _aiChatEnabled = false;
   bool get aiChatEnabled => _aiChatEnabled;
+
+  bool _useOfflineAI = false;
+  bool get useOfflineAI => _useOfflineAI;
+
+  String? _offlineModelPath;
+  String? get offlineModelPath => _offlineModelPath;
 
   // PIN & Password
   String? _appPinHash;
@@ -492,6 +500,8 @@ class AppProvider with ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     _aiChatEnabled = prefs.getBool('ai_chat_enabled') ?? false;
+    _useOfflineAI = prefs.getBool('use_offline_ai') ?? false;
+    _offlineModelPath = prefs.getString('offline_model_path');
     _chartType = prefs.getString('chart_type') ?? 'Pie';
     _biometricsEnabled = prefs.getBool('biometrics_enabled') ?? false;
     _appPinHash = prefs.getString('app_pin_hash');
@@ -1608,8 +1618,79 @@ class AppProvider with ChangeNotifier {
 
   Future<void> setAIChatEnabled(bool enabled) async {
     _aiChatEnabled = enabled;
-    notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('ai_chat_enabled', enabled);
+    notifyListeners();
+  }
+
+  Future<void> setUseOfflineAI(bool enabled) async {
+    _useOfflineAI = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('use_offline_ai', enabled);
+    notifyListeners();
+  }
+
+  Future<void> importOfflineModel({
+    void Function(int)? onProgress,
+    void Function()? onStart,
+  }) async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.any, // .litertlm is not a standard type
+        allowMultiple: false,
+      );
+
+      if (result != null && result.files.single.path != null) {
+        if (onStart != null) {
+          onStart();
+          // Yield to allow the Flutter UI to render the AlertDialog smoothly
+          await Future.delayed(const Duration(milliseconds: 300));
+        }
+
+        final String originalPath = result.files.single.path!;
+        if (!originalPath.endsWith('.litertlm') &&
+            !originalPath.endsWith('.task')) {
+          throw Exception("El archivo debe ser de tipo .litertlm o .task");
+        }
+
+        // Use custom logic via flutter_gemma installModel which parses correctly inside the plugin
+        final builder = FlutterGemma.installModel(
+          modelType: ModelType.gemmaIt,
+        ).fromFile(originalPath);
+
+        // Run installation concurrently with a smooth fake progress animation.
+        // fromFile doesn't yield progress natively, so this ensures a great UX
+        // without blocking the main UI thread with manual file copies.
+        bool isInstalling = true;
+        final installFuture = builder.install().whenComplete(() {
+          isInstalling = false;
+        });
+
+        if (onProgress != null) {
+          int simulatedProgress = 0;
+          while (isInstalling) {
+            if (simulatedProgress < 95) {
+              simulatedProgress++;
+              onProgress(simulatedProgress);
+            }
+            // Animate smoothly over ~4-5 seconds (50ms * 100)
+            await Future.delayed(const Duration(milliseconds: 50));
+          }
+        }
+
+        await installFuture;
+
+        if (onProgress != null) onProgress(100);
+
+        _offlineModelPath = originalPath;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('offline_model_path', _offlineModelPath!);
+
+        // Ensure flutter_gemma is initialized with the new generic model
+        notifyListeners();
+      }
+    } catch (e) {
+      throw Exception("Error importando el modelo: $e");
+    }
   }
 }

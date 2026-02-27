@@ -15,7 +15,7 @@ class AIChatScreen extends StatefulWidget {
 class _AIChatScreenState extends State<AIChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final AIService _aiService = AIService();
+  late AIService _aiService;
   final List<Map<String, String>> _messages =
       []; // 'role': 'user' | 'model', 'text': '...'
   bool _isTyping = false;
@@ -47,6 +47,11 @@ class _AIChatScreenState extends State<AIChatScreen> {
     final currency = provider.mainCurrency;
     final categories = provider.categories;
 
+    _aiService = AIService(
+      useOfflineAI: provider.useOfflineAI,
+      offlineModelPath: provider.offlineModelPath,
+    );
+
     final systemPrompt = _aiService.buildSystemPrompt(
       cards: provider.cards,
       currency: currency,
@@ -76,22 +81,37 @@ class _AIChatScreenState extends State<AIChatScreen> {
     _scrollToBottom();
 
     try {
-      final response = await _aiService.sendMessage(text);
-      if (mounted) {
+      final stream = _aiService.sendMessageStream(text);
+      bool firstChunkReceived = false;
+
+      await for (final chunk in stream) {
+        if (mounted) {
+          setState(() {
+            if (!firstChunkReceived) {
+              _isTyping = false;
+              _messages.add({'role': 'model', 'text': chunk});
+              firstChunkReceived = true;
+            } else {
+              _messages.last['text'] = _messages.last['text']! + chunk;
+            }
+          });
+          _scrollToBottom();
+        }
+      }
+
+      if (!firstChunkReceived && mounted) {
         setState(() {
-          _messages.add({'role': 'model', 'text': response});
           _isTyping = false;
         });
-        _scrollToBottom();
       }
     } catch (e) {
       if (mounted) {
         setState(() {
+          _isTyping = false;
           _messages.add({
             'role': 'model',
             'text': "${context.t('error_connecting')}: $e",
           });
-          _isTyping = false;
         });
       }
     }
@@ -133,154 +153,260 @@ class _AIChatScreenState extends State<AIChatScreen> {
           color: Theme.of(context).textTheme.bodyLarge?.color,
         ),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length + (_isTyping ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index == _messages.length) {
-                  return _buildTypingIndicator();
-                }
-                final msg = _messages[index];
-                final isUser = msg['role'] == 'user';
-                return _buildMessageBubble(msg['text']!, isUser);
-              },
+      body: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+        ),
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 24,
+                ),
+                itemCount: _messages.length + (_isTyping ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (index == _messages.length) {
+                    return _buildTypingIndicator();
+                  }
+                  final msg = _messages[index];
+                  final isUser = msg['role'] == 'user';
+                  return _buildMessageBubble(msg['text']!, isUser);
+                },
+              ),
             ),
-          ),
-          _buildInputArea(),
-        ],
+            _buildInputArea(),
+            const SizedBox(height: 12),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildMessageBubble(String text, bool isUser) {
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
-        ),
-        decoration: BoxDecoration(
-          color: isUser
-              ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).cardColor,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(20),
-            topRight: const Radius.circular(20),
-            bottomLeft: isUser
-                ? const Radius.circular(20)
-                : const Radius.circular(5),
-            bottomRight: isUser
-                ? const Radius.circular(5)
-                : const Radius.circular(20),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 5,
-              offset: const Offset(0, 2),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        mainAxisAlignment: isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (!isUser) ...[
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.primary.withOpacity(0.1),
+              child: Icon(
+                Icons.smart_toy_rounded,
+                size: 18,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
+            const SizedBox(width: 8),
           ],
-        ),
-        child: Text(
-          text,
-          style: GoogleFonts.outfit(
-            color: isUser
-                ? Colors.white
-                : Theme.of(context).textTheme.bodyLarge?.color,
-            fontSize: 16,
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              decoration: BoxDecoration(
+                gradient: isUser
+                    ? LinearGradient(
+                        colors: [
+                          Theme.of(context).colorScheme.primary,
+                          Theme.of(context).colorScheme.primary.withBlue(255),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
+                color: isUser
+                    ? null
+                    : (isDark ? const Color(0xFF2A2A3C) : Colors.grey.shade100),
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(24),
+                  topRight: const Radius.circular(24),
+                  bottomLeft: Radius.circular(isUser ? 24 : 8),
+                  bottomRight: Radius.circular(isUser ? 8 : 24),
+                ),
+                boxShadow: [
+                  if (isUser)
+                    BoxShadow(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    )
+                  else
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                ],
+              ),
+              child: Text(
+                text,
+                style: GoogleFonts.outfit(
+                  color: isUser
+                      ? Colors.white
+                      : Theme.of(context).textTheme.bodyLarge?.color,
+                  fontSize: 15,
+                  height: 1.4,
+                ),
+              ),
+            ),
           ),
-        ),
+          if (isUser) const SizedBox(width: 24), // Balance spacing for avatar
+        ],
       ),
     );
   }
 
   Widget _buildTypingIndicator() {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: SizedBox(
-          width: 40,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: List.generate(3, (index) {
-              return Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).disabledColor.withOpacity(0.5),
-                  shape: BoxShape.circle,
-                ),
-              );
-            }),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: Theme.of(
+              context,
+            ).colorScheme.primary.withOpacity(0.1),
+            child: Icon(
+              Icons.smart_toy_rounded,
+              size: 18,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
-        ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF2A2A3C) : Colors.grey.shade100,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
+                bottomLeft: Radius.circular(8),
+                bottomRight: Radius.circular(24),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "Pensando",
+                  style: GoogleFonts.outfit(
+                    color: Theme.of(context).textTheme.bodySmall?.color,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 24,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: List.generate(3, (index) {
+                      return Container(
+                        width: 5,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withOpacity(0.5),
+                          shape: BoxShape.circle,
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildInputArea() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF2A2A3C) : Colors.white,
+            borderRadius: BorderRadius.circular(32),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: TextField(
-                  controller: _controller,
-                  textCapitalization: TextCapitalization.sentences,
-                  style: GoogleFonts.outfit(),
-                  decoration: InputDecoration(
-                    hintText: context.t('ask_ai_hint'),
-                    border: InputBorder.none,
-                    hintStyle: TextStyle(
-                      color: Theme.of(context).disabledColor,
+          child: Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 16.0),
+                  child: TextField(
+                    controller: _controller,
+                    textCapitalization: TextCapitalization.sentences,
+                    style: GoogleFonts.outfit(fontSize: 15),
+                    maxLines: null,
+                    decoration: InputDecoration(
+                      hintText: context.t('ask_ai_hint'),
+                      border: InputBorder.none,
+                      hintStyle: TextStyle(
+                        color: Theme.of(context).disabledColor,
+                        fontSize: 15,
+                      ),
                     ),
+                    onSubmitted: (_) => _sendMessage(),
                   ),
-                  onSubmitted: (_) => _sendMessage(),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            GestureDetector(
-              onTap: _sendMessage,
-              child: CircleAvatar(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                child: const Icon(
-                  Icons.send_rounded,
-                  color: Colors.white,
-                  size: 20,
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: _sendMessage,
+                child: Container(
+                  margin: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Theme.of(context).colorScheme.primary,
+                        Theme.of(context).colorScheme.primary.withBlue(255),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.send_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
