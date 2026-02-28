@@ -20,6 +20,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import '../services/backup_service.dart';
 import '../licences/apklis.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter_gemma/core/api/flutter_gemma.dart';
 import 'package:flutter_gemma/core/model.dart';
 
@@ -1630,67 +1631,89 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> importOfflineModel({
-    void Function(int)? onProgress,
-    void Function()? onStart,
-  }) async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.any, // .litertlm is not a standard type
-        allowMultiple: false,
-      );
-
-      if (result != null && result.files.single.path != null) {
-        if (onStart != null) {
-          onStart();
-          // Yield to allow the Flutter UI to render the AlertDialog smoothly
-          await Future.delayed(const Duration(milliseconds: 300));
-        }
-
-        final String originalPath = result.files.single.path!;
-        if (!originalPath.endsWith('.litertlm') &&
-            !originalPath.endsWith('.task')) {
-          throw Exception("El archivo debe ser de tipo .litertlm o .task");
-        }
-
-        // Use custom logic via flutter_gemma installModel which parses correctly inside the plugin
-        final builder = FlutterGemma.installModel(
-          modelType: ModelType.gemmaIt,
-        ).fromFile(originalPath);
-
-        // Run installation concurrently with a smooth fake progress animation.
-        // fromFile doesn't yield progress natively, so this ensures a great UX
-        // without blocking the main UI thread with manual file copies.
-        bool isInstalling = true;
-        final installFuture = builder.install().whenComplete(() {
-          isInstalling = false;
-        });
-
-        if (onProgress != null) {
-          int simulatedProgress = 0;
-          while (isInstalling) {
-            if (simulatedProgress < 95) {
-              simulatedProgress++;
-              onProgress(simulatedProgress);
-            }
-            // Animate smoothly over ~4-5 seconds (50ms * 100)
-            await Future.delayed(const Duration(milliseconds: 50));
-          }
-        }
-
-        await installFuture;
-
-        if (onProgress != null) onProgress(100);
-
-        _offlineModelPath = originalPath;
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('offline_model_path', _offlineModelPath!);
-
-        // Ensure flutter_gemma is initialized with the new generic model
-        notifyListeners();
+  /// Step 1: Shows the native file picker and returns the selected path.
+  /// Returns null if cancelled.
+  Future<String?> pickModelFilePath() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.any,
+      allowMultiple: false,
+    );
+    if (result != null && result.files.single.path != null) {
+      final path = result.files.single.path!;
+      if (!path.endsWith('.litertlm') && !path.endsWith('.task')) {
+        throw Exception("El archivo debe ser de tipo .litertlm o .task");
       }
-    } catch (e) {
-      throw Exception("Error importando el modelo: $e");
+      return path;
     }
+    return null;
+  }
+
+  /// Step 2: Moves the file from [sourcePath] to app's documents directory
+  /// and registers it with flutter_gemma. Yields progress 0-100.
+  Stream<int> installModelFromPath(String sourcePath) async* {
+    yield 5;
+    await Future.delayed(const Duration(milliseconds: 150));
+
+    final appDir = await getApplicationDocumentsDirectory();
+    final fileName = sourcePath.split('/').last;
+    final destPath = '${appDir.path}/$fileName';
+
+    if (sourcePath != destPath) {
+      try {
+        // Fast path: rename is instant on same partition.
+        // FilePicker already copied the file — we just move the result.
+        yield 20;
+        await Future.delayed(const Duration(milliseconds: 200));
+        await File(sourcePath).rename(destPath);
+        yield 60;
+        await Future.delayed(const Duration(milliseconds: 200));
+      } catch (_) {
+        // Fallback: cross-filesystem copy with real progress
+        final file = File(sourcePath);
+        final length = await file.length();
+        final source = file.openRead();
+        final sink = File(destPath).openWrite();
+        int bytesCopied = 0;
+        int lastYielded = 20;
+
+        await for (final chunk in source) {
+          sink.add(chunk);
+          bytesCopied += chunk.length;
+          if (length > 0) {
+            final pct = (20 + (bytesCopied * 40 / length).round()).clamp(
+              20,
+              60,
+            );
+            if (pct != lastYielded) {
+              lastYielded = pct;
+              yield pct;
+            }
+          }
+          await Future.delayed(Duration.zero);
+        }
+        await sink.flush();
+        await sink.close();
+      }
+    } else {
+      yield 60;
+      await Future.delayed(const Duration(milliseconds: 200));
+    }
+
+    // Register with flutter_gemma
+    yield 75;
+    await Future.delayed(const Duration(milliseconds: 150));
+    await FlutterGemma.installModel(
+      modelType: ModelType.gemmaIt,
+    ).fromFile(destPath).install();
+
+    yield 95;
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    _offlineModelPath = destPath;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('offline_model_path', _offlineModelPath!);
+    notifyListeners();
+
+    yield 100;
   }
 }

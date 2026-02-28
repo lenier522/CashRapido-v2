@@ -11,11 +11,11 @@ class AIService {
   // STRICTLY confidential API Key provided by user for this session.
   // API Keys Rotation List
   static const List<String> _apiKeys = [
-    'AIzaSyAUDsE-cisP1tK2E3nJQe2dd1ngMrTO-GE', // Key 1
-    'AIzaSyDi98AhSiTznVtxomUmdLTlnherocK3bvk', // Key 2 (Backup)
-    'AIzaSyDUTAIvoWUD7s0atLmW1K0fbh1SdPgXIJ8', // Key 3 (Backup)
-    'AIzaSyBYNo0y9a0YSyN2ln1Z-a5y6BMlKgaOZ8w', // Key 4 (Backup)
-    'AIzaSyCkuBu1gvRMfOyfYjgprdS59NUCUMkrsgo', // Key 5 (Backup)
+    'AIzaSyD13Lswvo0BpvE_T2a9w7OuotB6LufcIVs', // Key 1
+    'AIzaSyCDOj7bXUEdmT_C16eZGb6P864pwjM_wHY', // Key 2 (Backup)
+    'AIzaSyDLmJ4Nn8okknUh4MOhK7t7pgvxQqIA2k4', // Key 3 (Backup)
+    'AIzaSyA1dwjz58otakuHVwq66ySOGBvcbeXaQs4', // Key 4 (Backup)
+    'AIzaSyDo44qHm9bDrP15WzKxwxaTe8tU3Yp2C4U', // Key 5 (Backup)
   ];
 
   // Model Name (User Preference)

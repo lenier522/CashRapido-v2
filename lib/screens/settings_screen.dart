@@ -1,4 +1,5 @@
 import '../services/localization_service.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -290,113 +291,100 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ),
                               ),
                               onPressed: () async {
-                                try {
-                                  final progressNotifier = ValueNotifier<int>(
-                                    0,
-                                  );
-                                  bool dialogShown = false;
+                                // Progress bar dialog shown IMMEDIATELY on button press.
+                                // Picker opens on top of it — the bar is visible before & after.
+                                final progressNotifier = ValueNotifier<int>(0);
 
-                                  await provider.importOfflineModel(
-                                    onStart: () {
-                                      dialogShown = true;
-                                      showDialog(
-                                        context: context,
-                                        barrierDismissible: false,
-                                        builder: (ctx) => AlertDialog(
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              20,
-                                            ),
-                                          ),
-                                          title: Text(
-                                            "Importando Modelo",
-                                            style: GoogleFonts.outfit(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          content: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                "Preparando el modelo para uso offline. Esto puede demorar dependiendo del tamaño del archivo.",
-                                                style: GoogleFonts.outfit(),
-                                              ),
-                                              const SizedBox(height: 20),
-                                              ValueListenableBuilder<int>(
-                                                valueListenable:
-                                                    progressNotifier,
-                                                builder: (context, value, child) {
-                                                  return Column(
-                                                    children: [
-                                                      ClipRRect(
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              10,
-                                                            ),
-                                                        child: LinearProgressIndicator(
-                                                          value: value / 100,
-                                                          minHeight: 8,
-                                                          backgroundColor:
-                                                              Theme.of(context)
-                                                                  .colorScheme
-                                                                  .primary
-                                                                  .withOpacity(
-                                                                    0.2,
-                                                                  ),
-                                                          valueColor:
-                                                              AlwaysStoppedAnimation<
-                                                                Color
-                                                              >(
-                                                                Theme.of(
-                                                                      context,
-                                                                    )
-                                                                    .colorScheme
-                                                                    .primary,
-                                                              ),
-                                                        ),
-                                                      ),
-                                                      const SizedBox(
-                                                        height: 10,
-                                                      ),
-                                                      Text(
-                                                        "$value% Completado",
-                                                        style: GoogleFonts.outfit(
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          color: Theme.of(
-                                                            context,
-                                                          ).colorScheme.primary,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  );
-                                                },
-                                              ),
-                                            ],
-                                          ),
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (ctx) => PopScope(
+                                    canPop: false,
+                                    child: AlertDialog(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      title: Text(
+                                        "Importando Modelo",
+                                        style: GoogleFonts.outfit(
+                                          fontWeight: FontWeight.bold,
                                         ),
-                                      );
-                                    },
-                                    onProgress: (p) {
-                                      progressNotifier.value = p;
-                                    },
-                                  );
+                                      ),
+                                      content: ValueListenableBuilder<int>(
+                                        valueListenable: progressNotifier,
+                                        builder: (context, progress, _) => Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              progress == 0
+                                                  ? "Selecciona el archivo del modelo..."
+                                                  : "Procesando modelo. Por favor espera.",
+                                              style: GoogleFonts.outfit(),
+                                            ),
+                                            const SizedBox(height: 20),
+                                            ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                              child: LinearProgressIndicator(
+                                                value: progress / 100,
+                                                minHeight: 8,
+                                                backgroundColor:
+                                                    Theme.of(context)
+                                                        .colorScheme
+                                                        .primary
+                                                        .withOpacity(0.2),
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                      Color
+                                                    >(
+                                                      Theme.of(
+                                                        context,
+                                                      ).colorScheme.primary,
+                                                    ),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 10),
+                                            Text(
+                                              "$progress% Completado",
+                                              style: GoogleFonts.outfit(
+                                                fontWeight: FontWeight.bold,
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.primary,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
 
-                                  if (dialogShown && context.mounted) {
-                                    Navigator.of(context).pop();
-                                    dialogShown = false;
-                                    if (provider.offlineModelPath != null) {
-                                      _showSnack(
-                                        context,
-                                        "Modelo importado con éxito",
-                                      );
+                                try {
+                                  final path = await provider
+                                      .pickModelFilePath();
+                                  if (path == null) {
+                                    if (context.mounted) {
+                                      Navigator.of(context).pop();
                                     }
+                                    return;
+                                  }
+
+                                  await for (final p
+                                      in provider.installModelFromPath(path)) {
+                                    progressNotifier.value = p;
+                                  }
+
+                                  if (context.mounted) {
+                                    Navigator.of(context).pop();
+                                    _showSnack(
+                                      context,
+                                      "Modelo importado con éxito",
+                                    );
                                   }
                                 } catch (e) {
                                   if (context.mounted) {
-                                    Navigator.of(
-                                      context,
-                                    ).pop(); // pop the dialog
+                                    Navigator.of(context).pop();
                                     _showSnack(
                                       context,
                                       e.toString(),
@@ -406,6 +394,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 }
                               },
                             ),
+
                             if (provider.offlineModelPath != null)
                               Padding(
                                 padding: const EdgeInsets.only(top: 8),

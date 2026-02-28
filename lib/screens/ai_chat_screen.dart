@@ -70,6 +70,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
   }
 
   Future<void> _sendMessage() async {
+    if (_isTyping) return; // Prevent multiple requests at once
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
