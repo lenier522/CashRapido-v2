@@ -159,7 +159,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
   final TextEditingController _activationCodeController = TextEditingController();
 
   // Hardware Lock State
-  bool _isMacVerified = true;
+  bool _isMacValid = true;
+  bool _isDeviceAuthorized = true;
   bool _isCheckingMac = true;
   String? _hardwareLockError;
 
@@ -193,38 +194,49 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
     // --- HARDWARE LOCK FOR WINDOWS ---
     if (!kIsWeb && Platform.isWindows) {
+      bool macMatch = false;
+      try {
+        final result = await Process.run('getmac', []);
+        final String output =
+            result.stdout.toString().toUpperCase().replaceAll(':', '-');
+        
+        // 1. Check if any of the allowed MACs exist in the getmac output
+        for (String allowedMac in _allowedMacAddresses) {
+          if (output.contains(allowedMac)) {
+            macMatch = true;
+            break;
+          }
+        }
+      } catch (e) {
+        debugPrint("Error reading MAC address: \$e");
+        _hardwareLockError = e.toString();
+      }
+
+      // If MAC is not valid, hard block.
+      if (!macMatch) {
+        if (mounted) {
+          setState(() {
+            _isMacValid = false;
+            _isCheckingMac = false;
+            _isLoading = false;
+          });
+        }
+        return; 
+      }
+
+      // If MAC is valid, check if they have provided an activation code yet
       final prefs = await SharedPreferences.getInstance();
       final bool isManuallyActivated = prefs.getBool('windows_activated') ?? false;
 
       if (!isManuallyActivated) {
-        bool macMatch = false;
-        try {
-          final result = await Process.run('getmac', []);
-          final String output =
-              result.stdout.toString().toUpperCase().replaceAll(':', '-');
-          
-          // Check if any of the allowed MACs exist in the getmac output
-          for (String allowedMac in _allowedMacAddresses) {
-            if (output.contains(allowedMac)) {
-              macMatch = true;
-              break;
-            }
-          }
-        } catch (e) {
-          debugPrint("Error reading MAC address: \$e");
-          _hardwareLockError = e.toString();
+        if (mounted) {
+          setState(() {
+            _isDeviceAuthorized = false;
+            _isCheckingMac = false;
+            _isLoading = false;
+          });
         }
-
-        if (!macMatch) {
-          if (mounted) {
-            setState(() {
-              _isMacVerified = false;
-              _isCheckingMac = false;
-              _isLoading = false;
-            });
-          }
-          return; // Stop authentication, show lock screen
-        }
+        return; // Wait for activation code
       }
     }
 
@@ -316,7 +328,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
       // Successfully activated, resume normal startup
       setState(() {
-        _isMacVerified = true;
+        _isDeviceAuthorized = true;
         // Resume _checkAuthentication to handle PIN/Passwords normally
         _checkAuthentication();
       });
@@ -340,7 +352,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    if (!_isMacVerified) {
+    if (!_isMacValid) {
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Center(
@@ -361,7 +373,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  "Esta aplicación no está autorizada para ejecutarse en este equipo por defecto. Por favor, contacte al desarrollador para adquirir un código de activación o licenciar su dirección física.",
+                  "Esta aplicación no está autorizada para ejecutarse en este equipo. La dirección física (MAC) no está registrada.",
                   textAlign: TextAlign.center,
                   style: GoogleFonts.outfit(
                     fontSize: 16,
@@ -376,6 +388,41 @@ class _AuthWrapperState extends State<AuthWrapper> {
                       style: const TextStyle(color: Colors.grey, fontSize: 12),
                     ),
                   ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (!_isDeviceAuthorized) {
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.vpn_key, size: 80, color: Colors.blueAccent),
+                const SizedBox(height: 24),
+                Text(
+                  "Activación Requerida",
+                  style: GoogleFonts.outfit(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blueAccent,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  "Este equipo está registrado pero requiere un código de activación inicial para comenzar a usar CashRapido.",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    fontSize: 16,
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
+                  ),
+                ),
                 const SizedBox(height: 48),
                 SizedBox(
                   width: 300,
@@ -395,7 +442,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
                   icon: const Icon(Icons.check_circle_outline),
                   label: const Text("Activar Equipo"),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
+                    backgroundColor: Colors.blueAccent,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 32,
