@@ -600,7 +600,7 @@ class AppProvider with ChangeNotifier {
       }
 
       _fetchData();
-    } catch (e, stacktrace) {
+    } catch (e) {
       print(
         'Critical error during AppProvider initialization: \$e\\n\$stacktrace',
       );

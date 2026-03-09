@@ -13,7 +13,7 @@ import 'models/sale.dart';
 import 'models/business_expense.dart';
 import 'models/closing.dart';
 import 'providers/app_provider.dart';
-import 'dart:io' show Platform;
+import 'dart:io' show Platform, Process;
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:intl/date_symbol_data_local.dart';
@@ -157,6 +157,11 @@ class _AuthWrapperState extends State<AuthWrapper> {
   final TextEditingController _pinController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  // Hardware Lock State
+  bool _isMacVerified = true;
+  bool _isCheckingMac = true;
+  final String _allowedMacAddress = "A0-B1-C2-D3-E4-F5"; // CHANGE THIS TO THE TARGET MAC
+
   @override
   void initState() {
     super.initState();
@@ -170,6 +175,39 @@ class _AuthWrapperState extends State<AuthWrapper> {
     while (provider.isLoading) {
       await Future.delayed(const Duration(milliseconds: 100));
     }
+
+    // --- HARDWARE LOCK FOR WINDOWS ---
+    if (!kIsWeb && Platform.isWindows) {
+      bool macMatch = false;
+      try {
+        final result = await Process.run('getmac', []);
+        final String output = result.stdout.toString().toUpperCase();
+        // Check if the allowed MAC exists anywhere in the getmac output
+        if (output.contains(_allowedMacAddress.toUpperCase())) {
+          macMatch = true;
+        }
+      } catch (e) {
+        debugPrint("Error reading MAC address: \$e");
+      }
+
+      if (!macMatch) {
+        if (mounted) {
+          setState(() {
+            _isMacVerified = false;
+            _isCheckingMac = false;
+            _isLoading = false;
+          });
+        }
+        return; // Stop authentication, show lock screen
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _isCheckingMac = false;
+      });
+    }
+    // ---------------------------------
 
     // Check what auth methods are enabled
     final bool biometricsEnabled = provider.biometricsEnabled;
@@ -246,8 +284,43 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
+    if (_isLoading || _isCheckingMac) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (!_isMacVerified) {
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.block, size: 80, color: Colors.redAccent),
+                const SizedBox(height: 24),
+                Text(
+                  "Licencia de Equipo Inválida",
+                  style: GoogleFonts.outfit(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.redAccent,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  "Esta aplicación no está autorizada para ejecutarse en este equipo. Por favor, contacte al administrador o desarrollador para adquirir una licencia válida.",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    fontSize: 16,
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     }
 
     if (!_isAuthenticated) {
