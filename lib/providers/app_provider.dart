@@ -21,8 +21,7 @@ import 'dart:ui' as ui;
 import '../services/backup_service.dart';
 import '../licences/apklis.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:flutter_gemma/core/api/flutter_gemma.dart';
-import 'package:flutter_gemma/core/model.dart';
+import '../services/gemma_manager.dart';
 
 class AppProvider with ChangeNotifier {
   late Box<InternalTransaction> _transactionBox;
@@ -1702,9 +1701,7 @@ class AppProvider with ChangeNotifier {
     // Register with flutter_gemma
     yield 75;
     await Future.delayed(const Duration(milliseconds: 150));
-    await FlutterGemma.installModel(
-      modelType: ModelType.gemmaIt,
-    ).fromFile(destPath).install();
+    await GemmaManager.installModel(destPath);
 
     yield 95;
     await Future.delayed(const Duration(milliseconds: 300));
