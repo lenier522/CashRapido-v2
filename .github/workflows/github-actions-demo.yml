@@ -19,6 +19,10 @@ jobs:
         run: |
           (Get-Content pubspec.yaml) -notmatch 'flutter_gemma' | Set-Content pubspec.yaml
 
+      - name: Use desktop AI Service
+        run: |
+          "export 'ai_service_desktop.dart';" | Out-File -Encoding utf8 lib/services/ai_service.dart
+
       - name: Get dependencies
         run: flutter pub get
 
