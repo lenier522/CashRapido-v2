@@ -156,7 +156,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
   String _authMethod = ''; // 'biometric', 'pin', 'password', or ''
   final TextEditingController _pinController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _activationCodeController = TextEditingController();
+  final TextEditingController _activationCodeController =
+      TextEditingController();
 
   // Hardware Lock State
   bool _isMacValid = true;
@@ -166,7 +167,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   // 1. MAC addresses authorized by the user for Windows clients
   final List<String> _allowedMacAddresses = [
-    "2A-D8-58-4C-7A-8E".replaceAll(':', '-').toUpperCase(),
+    "6C-02-E0-C4-3B-C7".replaceAll(':', '-').toUpperCase(),
+    "18-47-3D-86-5C-C9".replaceAll(':', '-').toUpperCase(),
+    "18-47-3D-86-5C-CA".replaceAll(':', '-').toUpperCase(),
     // Add more MACs here...
   ];
 
@@ -197,9 +200,11 @@ class _AuthWrapperState extends State<AuthWrapper> {
       bool macMatch = false;
       try {
         final result = await Process.run('getmac', []);
-        final String output =
-            result.stdout.toString().toUpperCase().replaceAll(':', '-');
-        
+        final String output = result.stdout.toString().toUpperCase().replaceAll(
+          ':',
+          '-',
+        );
+
         // 1. Check if any of the allowed MACs exist in the getmac output
         for (String allowedMac in _allowedMacAddresses) {
           if (output.contains(allowedMac)) {
@@ -221,12 +226,13 @@ class _AuthWrapperState extends State<AuthWrapper> {
             _isLoading = false;
           });
         }
-        return; 
+        return;
       }
 
       // If MAC is valid, check if they have provided an activation code yet
       final prefs = await SharedPreferences.getInstance();
-      final bool isManuallyActivated = prefs.getBool('windows_activated') ?? false;
+      final bool isManuallyActivated =
+          prefs.getBool('windows_activated') ?? false;
 
       if (!isManuallyActivated) {
         if (mounted) {
@@ -332,16 +338,16 @@ class _AuthWrapperState extends State<AuthWrapper> {
         // Resume _checkAuthentication to handle PIN/Passwords normally
         _checkAuthentication();
       });
-      
+
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('¡Equipo Activado Exitosamente!')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('¡Equipo Activado Exitosamente!')),
+        );
       }
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Código de activación inválido')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Código de activación inválido')),
+      );
       _activationCodeController.clear();
     }
   }
@@ -381,7 +387,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
                   ),
                 ),
                 if (_hardwareLockError != null)
-                   Padding(
+                  Padding(
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
                       "Error de Diagnóstico: \$_hardwareLockError",
