@@ -488,108 +488,139 @@ class AppProvider with ChangeNotifier {
   final Uuid _uuid = const Uuid();
 
   Future<void> init() async {
-    _transactionBox = await Hive.openBox<InternalTransaction>('transactions');
-    _categoryBox = await Hive.openBox<Category>('categories');
-    _cardBox = await Hive.openBox<AccountCard>('cards');
+    try {
+      _transactionBox = await Hive.openBox<InternalTransaction>('transactions');
+      _categoryBox = await Hive.openBox<Category>('categories');
+      _cardBox = await Hive.openBox<AccountCard>('cards');
 
-    // Ensure Default Categories exist
-    await _seedDefaultCategories();
+      // Ensure Default Categories exist
+      await _seedDefaultCategories();
 
-    // Initialize Default Wallet if empty (Optional, for easy start)
-    if (_cardBox.isEmpty) {
-      await _seedDefaultCards();
-    }
+      // Initialize Default Wallet if empty (Optional, for easy start)
+      if (_cardBox.isEmpty) {
+        await _seedDefaultCards();
+      }
 
-    if (_cardBox.isEmpty) {
-      await _seedDefaultCards();
-    }
+      if (_cardBox.isEmpty) {
+        await _seedDefaultCards();
+      }
 
-    final prefs = await SharedPreferences.getInstance();
-    _aiChatEnabled = prefs.getBool('ai_chat_enabled') ?? false;
-    _useOfflineAI = prefs.getBool('use_offline_ai') ?? false;
-    _offlineModelPath = prefs.getString('offline_model_path');
-    _chartType = prefs.getString('chart_type') ?? 'Pie';
-    _biometricsEnabled = prefs.getBool('biometrics_enabled') ?? false;
-    _appPinHash = prefs.getString('app_pin_hash');
-    _appPasswordHash = prefs.getString('app_password_hash');
-    _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
-    _transferMovilEnabled = prefs.getBool('transfermovil_enabled') ?? false;
+      final prefs = await SharedPreferences.getInstance();
+      _aiChatEnabled = prefs.getBool('ai_chat_enabled') ?? false;
+      _useOfflineAI = prefs.getBool('use_offline_ai') ?? false;
+      _offlineModelPath = prefs.getString('offline_model_path');
+      _chartType = prefs.getString('chart_type') ?? 'Pie';
+      _biometricsEnabled = prefs.getBool('biometrics_enabled') ?? false;
+      _appPinHash = prefs.getString('app_pin_hash');
+      _appPasswordHash = prefs.getString('app_password_hash');
+      _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
+      _transferMovilEnabled = prefs.getBool('transfermovil_enabled') ?? false;
 
-    final themeString = prefs.getString('theme_mode');
-    if (themeString != null) {
-      _themeMode = ThemeMode.values.firstWhere(
-        (e) => e.toString() == themeString,
-        orElse: () => ThemeMode.system,
+      final themeString = prefs.getString('theme_mode');
+      if (themeString != null) {
+        _themeMode = ThemeMode.values.firstWhere(
+          (e) => e.toString() == themeString,
+          orElse: () => ThemeMode.system,
+        );
+      }
+
+      // Load Locale
+      final String? langCode = prefs.getString('app_language');
+      if (langCode != null) {
+        _currentLocale = Locale(langCode);
+      } // else ... existing fallback logic
+
+      // Load Currency
+      _mainCurrency = prefs.getString('main_currency') ?? 'CUP';
+
+      final customCurrenciesJson = prefs.getStringList('custom_currencies');
+      if (customCurrenciesJson != null) {
+        _customCurrencies = customCurrenciesJson
+            .map((e) => Currency.fromJson(jsonDecode(e)))
+            .toList();
+      }
+
+      // Load License
+      final licenseIndex = prefs.getInt('license_type') ?? 0;
+      if (licenseIndex >= 0 && licenseIndex < LicenseType.values.length) {
+        _licenseType = LicenseType.values[licenseIndex];
+      }
+
+      final activationString = prefs.getString('license_activation_date');
+      if (activationString != null) {
+        _licenseActivationDate = DateTime.tryParse(activationString);
+      }
+
+      // Check Expiration
+      _checkLicenseExpiration();
+
+      // Fallback locale logic if not set above
+      if (_currentLocale == null) {
+        final systemLoc = ui.window.locale;
+        if (['es', 'en', 'fr'].contains(systemLoc.languageCode)) {
+          _currentLocale = Locale(systemLoc.languageCode);
+        } else {
+          _currentLocale = const Locale('es');
+        }
+      }
+
+      // Load Custom Banks
+      _customBanks = prefs.getStringList('custom_banks') ?? [];
+
+      // Initialize NotificationService
+      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+        try {
+          await _notificationService.initialize();
+        } catch (e) {
+          print('Notification init error: \$e');
+        }
+      }
+
+      // Initialize AdService
+      _adsWatched = prefs.getInt('ads_watched') ?? 0;
+      _adService.onAdLoadedListener = notifyListeners;
+      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+        try {
+          await _adService.initialize();
+          _adService.loadRewardedAd();
+        } catch (e) {
+          print('AdService init error: \$e');
+        }
+      }
+
+      if (_notificationsEnabled &&
+          (!kIsWeb && (Platform.isAndroid || Platform.isIOS))) {
+        try {
+          await _notificationService.scheduleAllNotifications(
+            _currentLocale?.languageCode ?? 'es',
+          );
+        } catch (e) {
+          print('Notification schedule error: \$e');
+        }
+      }
+
+      _fetchData();
+    } catch (e, stacktrace) {
+      print(
+        'Critical error during AppProvider initialization: \$e\\n\$stacktrace',
       );
-    }
+      try {
+        _fetchData();
+      } catch (_) {}
+    } finally {
+      _isLoading = false;
+      notifyListeners();
 
-    // Load Locale
-    final String? langCode = prefs.getString('app_language');
-    if (langCode != null) {
-      _currentLocale = Locale(langCode);
-    } // else ... existing fallback logic
-
-    // Load Currency
-    _mainCurrency = prefs.getString('main_currency') ?? 'CUP';
-
-    final customCurrenciesJson = prefs.getStringList('custom_currencies');
-    if (customCurrenciesJson != null) {
-      _customCurrencies = customCurrenciesJson
-          .map((e) => Currency.fromJson(jsonDecode(e)))
-          .toList();
-    }
-
-    // Load License
-    final licenseIndex = prefs.getInt('license_type') ?? 0;
-    if (licenseIndex >= 0 && licenseIndex < LicenseType.values.length) {
-      _licenseType = LicenseType.values[licenseIndex];
-    }
-
-    final activationString = prefs.getString('license_activation_date');
-    if (activationString != null) {
-      _licenseActivationDate = DateTime.tryParse(activationString);
-    }
-
-    // Check Expiration
-    _checkLicenseExpiration();
-
-    // Fallback locale logic if not set above
-    if (_currentLocale == null) {
-      final systemLoc = ui.window.locale;
-      if (['es', 'en', 'fr'].contains(systemLoc.languageCode)) {
-        _currentLocale = Locale(systemLoc.languageCode);
-      } else {
-        _currentLocale = const Locale('es');
+      // Initialize and update widgets with current data
+      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+        try {
+          await WidgetService.initialize();
+          await _updateWidgetsIfNeeded();
+        } catch (e) {
+          print('WidgetService init error: \$e');
+        }
       }
     }
-
-    // Load Custom Banks
-    _customBanks = prefs.getStringList('custom_banks') ?? [];
-
-    // Initialize NotificationService
-    if (kIsWeb || !Platform.isWindows) {
-      await _notificationService.initialize();
-    }
-
-    // Initialize AdService
-    _adsWatched = prefs.getInt('ads_watched') ?? 0;
-    _adService.onAdLoadedListener = notifyListeners;
-    await _adService.initialize();
-    _adService.loadRewardedAd();
-
-    if (_notificationsEnabled && (kIsWeb || !Platform.isWindows)) {
-      await _notificationService.scheduleAllNotifications(
-        _currentLocale?.languageCode ?? 'es',
-      );
-    }
-
-    _fetchData();
-    _isLoading = false;
-    notifyListeners();
-
-    // Initialize and update widgets with current data
-    await WidgetService.initialize();
-    await _updateWidgetsIfNeeded();
   }
 
   void _fetchData() {

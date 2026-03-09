@@ -187,19 +187,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
       return;
     }
 
-    // Priority: Windows Desktop bypasses biometrics
-    if (!kIsWeb && Platform.isWindows) {
-      if (mounted) {
-        setState(() {
-          _isAuthenticated = true;
-          _isLoading = false;
-        });
-      }
-      return;
-    }
-
     // Priority: Biometrics > PIN > Password
-    if (biometricsEnabled) {
+    if (biometricsEnabled && (!Platform.isWindows || kIsWeb)) {
       bool authenticated = false;
       try {
         authenticated = await provider.authenticate();
