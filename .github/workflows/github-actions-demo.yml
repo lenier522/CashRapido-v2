@@ -22,6 +22,7 @@ jobs:
       - name: Use desktop AI Service
         run: |
           "export 'ai_service_desktop.dart';" | Out-File -Encoding utf8 lib/services/ai_service.dart
+          "export 'gemma_manager_desktop.dart';" | Out-File -Encoding utf8 lib/services/gemma_manager.dart
 
       - name: Get dependencies
         run: flutter pub get
