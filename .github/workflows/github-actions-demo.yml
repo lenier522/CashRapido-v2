@@ -20,6 +20,12 @@ jobs:
       - name: Enable Windows Desktop
         run: flutter config --enable-windows-desktop
 
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
       - name: Install dependencies
         run: flutter pub get
 
