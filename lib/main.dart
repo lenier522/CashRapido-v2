@@ -13,6 +13,8 @@ import 'models/sale.dart';
 import 'models/business_expense.dart';
 import 'models/closing.dart';
 import 'providers/app_provider.dart';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -176,6 +178,17 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
     // If nothing is set, allow access
     if (!biometricsEnabled && !hasPinSet && !hasPasswordSet) {
+      if (mounted) {
+        setState(() {
+          _isAuthenticated = true;
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
+    // Priority: Windows Desktop bypasses biometrics
+    if (!kIsWeb && Platform.isWindows) {
       if (mounted) {
         setState(() {
           _isAuthenticated = true;

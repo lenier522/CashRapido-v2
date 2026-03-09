@@ -1,4 +1,6 @@
 import '../services/localization_service.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -69,40 +71,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildSectionTitle(context.t('account_security')),
-            _buildSettingsTile(
-              context,
-              icon: Icons.fingerprint,
-              title: context.t('biometrics'),
-              isLocked: !provider.canUseBiometrics,
-              trailing: Switch(
-                value: provider.biometricsEnabled,
-                activeThumbColor: Theme.of(context).colorScheme.primary,
-                onChanged: (val) async {
-                  if (!provider.canUseBiometrics) {
-                    _showLockedFeature(context);
-                    return;
-                  }
-                  if (val) {
-                    final authenticated = await provider.authenticate();
-                    if (authenticated) {
-                      await provider.setBiometricsEnabled(true);
-                      if (context.mounted) {
-                        _showSnack(context, context.t('biometrics_enabled'));
+            if (!kIsWeb && (Platform.isAndroid || Platform.isIOS))
+              _buildSettingsTile(
+                context,
+                icon: Icons.fingerprint,
+                title: context.t('biometrics'),
+                isLocked: !provider.canUseBiometrics,
+                trailing: Switch(
+                  value: provider.biometricsEnabled,
+                  activeThumbColor: Theme.of(context).colorScheme.primary,
+                  onChanged: (val) async {
+                    if (!provider.canUseBiometrics) {
+                      _showLockedFeature(context);
+                      return;
+                    }
+                    if (val) {
+                      final authenticated = await provider.authenticate();
+                      if (authenticated) {
+                        await provider.setBiometricsEnabled(true);
+                        if (context.mounted) {
+                          _showSnack(context, context.t('biometrics_enabled'));
+                        }
+                      } else {
+                        if (context.mounted) {
+                          _showSnack(context, context.t('auth_failed'));
+                        }
                       }
                     } else {
+                      await provider.setBiometricsEnabled(false);
                       if (context.mounted) {
-                        _showSnack(context, context.t('auth_failed'));
+                        _showSnack(context, context.t('biometrics_disabled'));
                       }
                     }
-                  } else {
-                    await provider.setBiometricsEnabled(false);
-                    if (context.mounted) {
-                      _showSnack(context, context.t('biometrics_disabled'));
-                    }
-                  }
-                },
+                  },
+                ),
               ),
-            ),
             _buildSettingsTile(
               context,
               icon: Icons.lock_outline,
@@ -476,7 +479,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               onTap: () => _showChartTypeDialog(context),
             ),
-            if (provider.isCuba)
+            if (provider.isCuba && (!kIsWeb && !Platform.isWindows))
               _buildSettingsTile(
                 context,
                 icon: Icons.sms_outlined,

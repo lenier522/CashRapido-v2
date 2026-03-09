@@ -7,6 +7,8 @@ import '../models/models.dart';
 import '../screens/card_scanner_screen.dart';
 import '../screens/licenses_screen.dart';
 import '../services/localization_service.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 
 class AddCardScreen extends StatefulWidget {
   final AccountCard? cardToEdit;
@@ -218,7 +220,11 @@ class _AddCardScreenState extends State<AddCardScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          if (widget.cardToEdit == null && !_isCash) // Only for new cards
+          if (widget.cardToEdit == null &&
+              !_isCash &&
+              (!kIsWeb &&
+                  (Platform.isAndroid ||
+                      Platform.isIOS))) // Only for new cards on mobile
             Stack(
               clipBehavior: Clip.none,
               children: [

@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/localization_service.dart';
 import 'default_license_screen.dart';
 import '../services/notification_service.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -20,8 +22,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   void initState() {
     super.initState();
-    // Request notification permissions when Onboarding starts
-    NotificationService().requestPermissions();
+    // Request notification permissions when Onboarding starts (except on Windows)
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      NotificationService().requestPermissions();
+    }
   }
 
   @override

@@ -132,7 +132,7 @@ class AppProvider with ChangeNotifier {
 
   List<PaymentMethod> get paymentMethods {
     if (_isCuba) {
-      return [
+      final cubaMethods = [
         PaymentMethod(
           id: 'apklis',
           name: 'Apklis',
@@ -163,6 +163,12 @@ class AppProvider with ChangeNotifier {
           isTest: true,
         ),
       ];
+      if (kIsWeb || Platform.isWindows) {
+        cubaMethods.removeWhere(
+          (m) => m.id == 'apklis' || m.id == 'transfermovil',
+        );
+      }
+      return cubaMethods;
     } else {
       return [
         PaymentMethod(
@@ -561,7 +567,9 @@ class AppProvider with ChangeNotifier {
     _customBanks = prefs.getStringList('custom_banks') ?? [];
 
     // Initialize NotificationService
-    await _notificationService.initialize();
+    if (kIsWeb || !Platform.isWindows) {
+      await _notificationService.initialize();
+    }
 
     // Initialize AdService
     _adsWatched = prefs.getInt('ads_watched') ?? 0;
@@ -569,7 +577,7 @@ class AppProvider with ChangeNotifier {
     await _adService.initialize();
     _adService.loadRewardedAd();
 
-    if (_notificationsEnabled) {
+    if (_notificationsEnabled && (kIsWeb || !Platform.isWindows)) {
       await _notificationService.scheduleAllNotifications(
         _currentLocale?.languageCode ?? 'es',
       );

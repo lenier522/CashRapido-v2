@@ -9,6 +9,8 @@ import 'ai_chat_screen.dart';
 import 'licenses_screen.dart';
 import 'transfermovil_screen.dart';
 import '../widgets/add_transaction_modal.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -377,7 +379,9 @@ class _HomeScreenState extends State<HomeScreen> {
           key: _transferKey,
           isLocked: !provider.canTransfer,
         ),
-        if (provider.isCuba && provider.transferMovilEnabled)
+        if (provider.isCuba &&
+            provider.transferMovilEnabled &&
+            (!kIsWeb && !Platform.isWindows))
           _buildActionButton(
             context,
             Icons.smartphone, // Transfermóvil Icon
@@ -807,10 +811,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 mainAxisSpacing: 10,
                 crossAxisSpacing: 10,
                 children: [
-                  _buildMoreOptionItem(
-                    Icons.qr_code_scanner,
-                    context.t('action_scan'),
-                  ),
+                  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS))
+                    _buildMoreOptionItem(
+                      Icons.qr_code_scanner,
+                      context.t('action_scan'),
+                    ),
                   _buildMoreOptionItem(
                     Icons.history,
                     context.t('action_history'),
