@@ -156,11 +156,26 @@ class _AuthWrapperState extends State<AuthWrapper> {
   String _authMethod = ''; // 'biometric', 'pin', 'password', or ''
   final TextEditingController _pinController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _activationCodeController = TextEditingController();
 
   // Hardware Lock State
   bool _isMacVerified = true;
   bool _isCheckingMac = true;
-  final String _allowedMacAddress = "A0-B1-C2-D3-E4-F5"; // CHANGE THIS TO THE TARGET MAC
+  String? _hardwareLockError;
+
+  // 1. MAC addresses authorized by the user for Windows clients
+  final List<String> _allowedMacAddresses = [
+    "2A-D8-58-4C-7A-8E".replaceAll(':', '-').toUpperCase(),
+    // Add more MACs here...
+  ];
+
+  // 2. Predefined Activation Codes for manual unlocking
+  final List<String> _validActivationCodes = [
+    "CASH-W1ND-8XQ9",
+    "RAPIDO-PC1-V2",
+    "ADMIN-ROOT-X7",
+    // Add more codes here...
+  ];
 
   @override
   void initState() {
@@ -178,27 +193,38 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
     // --- HARDWARE LOCK FOR WINDOWS ---
     if (!kIsWeb && Platform.isWindows) {
-      bool macMatch = false;
-      try {
-        final result = await Process.run('getmac', []);
-        final String output = result.stdout.toString().toUpperCase();
-        // Check if the allowed MAC exists anywhere in the getmac output
-        if (output.contains(_allowedMacAddress.toUpperCase())) {
-          macMatch = true;
-        }
-      } catch (e) {
-        debugPrint("Error reading MAC address: \$e");
-      }
+      final prefs = await SharedPreferences.getInstance();
+      final bool isManuallyActivated = prefs.getBool('windows_activated') ?? false;
 
-      if (!macMatch) {
-        if (mounted) {
-          setState(() {
-            _isMacVerified = false;
-            _isCheckingMac = false;
-            _isLoading = false;
-          });
+      if (!isManuallyActivated) {
+        bool macMatch = false;
+        try {
+          final result = await Process.run('getmac', []);
+          final String output =
+              result.stdout.toString().toUpperCase().replaceAll(':', '-');
+          
+          // Check if any of the allowed MACs exist in the getmac output
+          for (String allowedMac in _allowedMacAddresses) {
+            if (output.contains(allowedMac)) {
+              macMatch = true;
+              break;
+            }
+          }
+        } catch (e) {
+          debugPrint("Error reading MAC address: \$e");
+          _hardwareLockError = e.toString();
         }
-        return; // Stop authentication, show lock screen
+
+        if (!macMatch) {
+          if (mounted) {
+            setState(() {
+              _isMacVerified = false;
+              _isCheckingMac = false;
+              _isLoading = false;
+            });
+          }
+          return; // Stop authentication, show lock screen
+        }
       }
     }
 
@@ -282,6 +308,32 @@ class _AuthWrapperState extends State<AuthWrapper> {
     }
   }
 
+  Future<void> _validateActivationCode() async {
+    final code = _activationCodeController.text.trim().toUpperCase();
+    if (_validActivationCodes.contains(code)) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('windows_activated', true);
+
+      // Successfully activated, resume normal startup
+      setState(() {
+        _isMacVerified = true;
+        // Resume _checkAuthentication to handle PIN/Passwords normally
+        _checkAuthentication();
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('¡Equipo Activado Exitosamente!')));
+      }
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Código de activación inválido')));
+      _activationCodeController.clear();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading || _isCheckingMac) {
@@ -300,7 +352,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
                 const Icon(Icons.block, size: 80, color: Colors.redAccent),
                 const SizedBox(height: 24),
                 Text(
-                  "Licencia de Equipo Inválida",
+                  "Equipo No Autorizado",
                   style: GoogleFonts.outfit(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -309,11 +361,46 @@ class _AuthWrapperState extends State<AuthWrapper> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  "Esta aplicación no está autorizada para ejecutarse en este equipo. Por favor, contacte al administrador o desarrollador para adquirir una licencia válida.",
+                  "Esta aplicación no está autorizada para ejecutarse en este equipo por defecto. Por favor, contacte al desarrollador para adquirir un código de activación o licenciar su dirección física.",
                   textAlign: TextAlign.center,
                   style: GoogleFonts.outfit(
                     fontSize: 16,
                     color: Theme.of(context).textTheme.bodyMedium?.color,
+                  ),
+                ),
+                if (_hardwareLockError != null)
+                   Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      "Error de Diagnóstico: \$_hardwareLockError",
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                  ),
+                const SizedBox(height: 48),
+                SizedBox(
+                  width: 300,
+                  child: TextField(
+                    controller: _activationCodeController,
+                    decoration: const InputDecoration(
+                      labelText: 'Código de Activación',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.key),
+                    ),
+                    onSubmitted: (_) => _validateActivationCode(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: _validateActivationCode,
+                  icon: const Icon(Icons.check_circle_outline),
+                  label: const Text("Activar Equipo"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 16,
+                    ),
                   ),
                 ),
               ],
@@ -428,6 +515,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   void dispose() {
     _pinController.dispose();
     _passwordController.dispose();
+    _activationCodeController.dispose();
     super.dispose();
   }
 }

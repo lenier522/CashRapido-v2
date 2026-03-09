@@ -112,6 +112,11 @@ class AppProvider with ChangeNotifier {
   }
 
   void _checkLicenseExpiration() {
+    // Windows logic uses MAC address and Activation Codes, ignoring traditional Android/iOS Licenses.
+    if (!kIsWeb && Platform.isWindows) {
+      return;
+    }
+
     if (_licenseType == LicenseType.free) return;
 
     if (_licenseActivationDate != null) {
