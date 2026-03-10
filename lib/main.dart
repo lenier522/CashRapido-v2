@@ -170,6 +170,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
     "6C-02-E0-C4-3B-C7".replaceAll(':', '-').toUpperCase(),
     "18-47-3D-86-5C-C9".replaceAll(':', '-').toUpperCase(),
     "18-47-3D-86-5C-CA".replaceAll(':', '-').toUpperCase(),
+    "C8-9C-DC-31-B7-27".replaceAll(':', '-').toUpperCase(),
     // Add more MACs here...
   ];
 

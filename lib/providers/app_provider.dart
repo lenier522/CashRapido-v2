@@ -90,7 +90,12 @@ class AppProvider with ChangeNotifier {
   // Licenses & Restrictions
   // Licenses & Restrictions
   LicenseType _licenseType = LicenseType.free;
-  LicenseType get licenseType => _licenseType;
+  LicenseType get licenseType {
+    if (!kIsWeb && Platform.isWindows) {
+      return LicenseType.enterprise; // Fully unlocked on Windows after MAC/Code Activation
+    }
+    return _licenseType;
+  }
   DateTime? _licenseActivationDate;
   DateTime? get licenseActivationDate => _licenseActivationDate;
 

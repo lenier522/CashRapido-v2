@@ -632,24 +632,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 );
               },
             ),
-            _buildSettingsTile(
-              context,
-              icon: Icons.workspace_premium_outlined,
-              title: context.t('paid_licenses'),
-              trailing: Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: Theme.of(context).disabledColor,
+            if (kIsWeb || !Platform.isWindows)
+              _buildSettingsTile(
+                context,
+                icon: Icons.workspace_premium_outlined,
+                title: context.t('paid_licenses'),
+                trailing: Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Theme.of(context).disabledColor,
+                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LicensesScreen(),
+                    ),
+                  );
+                },
               ),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const LicensesScreen(),
-                  ),
-                );
-              },
-            ),
             _buildSettingsTile(
               context,
               icon: Icons.code,
