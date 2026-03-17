@@ -54,10 +54,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
     final currency = provider.mainCurrency;
     final categories = provider.categories;
 
-    _aiService = AIService(
-      useOfflineAI: provider.useOfflineAI,
-      offlineModelPath: provider.offlineModelPath,
-    );
+    _aiService = AIService();
 
     final systemPrompt = _aiService.buildSystemPrompt(
       cards: provider.cards,

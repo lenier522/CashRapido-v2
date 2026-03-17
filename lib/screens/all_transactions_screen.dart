@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../models/models.dart';
 import '../services/localization_service.dart';
+import '../utils/icon_constants.dart';
 
 class AllTransactionsScreen extends StatefulWidget {
   final String? initialCardId;
@@ -145,10 +146,7 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
                         );
                         iconColor = Color(cat.colorValue);
                         bgColor = iconColor.withAlpha(25); // ~0.1 opacity
-                        icon = IconData(
-                          cat.iconCode,
-                          fontFamily: 'MaterialIcons',
-                        );
+                        icon = IconConstants.getCategoryIcon(cat.iconCode);
                       } catch (e) {
                         // ignore
                       }

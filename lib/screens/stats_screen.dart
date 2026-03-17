@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../models/models.dart';
 import '../services/localization_service.dart';
 import 'licenses_screen.dart';
+import '../utils/icon_constants.dart';
 
 enum TimeRange { day, week, month, year, custom }
 
@@ -318,7 +319,7 @@ class _StatsScreenState extends State<StatsScreen> {
                   '${_showIncome ? '+' : '-'}\$${entry.value.toStringAsFixed(2)}',
                   '${percentage.toStringAsFixed(1)}%',
                   Color(category.colorValue),
-                  IconData(category.iconCode, fontFamily: 'MaterialIcons'),
+                  IconConstants.getCategoryIcon(category.iconCode),
                 ),
               );
             }
@@ -788,7 +789,7 @@ class _StatsScreenState extends State<StatsScreen> {
                     ),
                   ],
                 ),
-                child: const Icon(Icons.lock, size: 8, color: Colors.white),
+                child: const Icon(Icons.lock, size: 8, color: Colors.white), 
               ),
             ),
         ],
@@ -1046,7 +1047,7 @@ class _StatsScreenState extends State<StatsScreen> {
                   return SideTitleWidget(
                     meta: meta,
                     child: Icon(
-                      IconData(cat.iconCode, fontFamily: 'MaterialIcons'),
+                      IconConstants.getCategoryIcon(cat.iconCode), // Changed to use IconConstants
                       color: Theme.of(
                         context,
                       ).iconTheme.color?.withOpacity(0.7),

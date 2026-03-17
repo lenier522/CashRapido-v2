@@ -210,7 +210,7 @@ class _BusinessFormScreenState extends State<BusinessFormScreen> {
                           : [],
                     ),
                     child: Icon(
-                      IconData(entry.value, fontFamily: 'MaterialIcons'),
+                      BusinessIconHelper.legacyIconsMap[entry.key] ?? Icons.store,
                       color: isSelected ? _selectedColor : Colors.grey[400],
                       size: 28,
                     ),

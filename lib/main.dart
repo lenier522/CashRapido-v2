@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -21,13 +22,13 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'services/localization_service.dart';
 
 import 'providers/business_provider.dart';
-import 'services/gemma_manager.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await GemmaManager.initialize();
   await Hive.initFlutter();
   await initializeDateFormatting('es', null);
+  await dotenv.load(fileName: ".env");
 
   // Register Adapters
   Hive.registerAdapter(CategoryAdapter());

@@ -1,16 +1,17 @@
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/models.dart';
 
 class AIService {
   // STRICTLY confidential API Key provided by user for this session.
-  // API Keys Rotation List
-  static const List<String> _apiKeys = [
-    'AIzaSyD13Lswvo0BpvE_T2a9w7OuotB6LufcIVs', // Key 1
-    'AIzaSyCDOj7bXUEdmT_C16eZGb6P864pwjM_wHY', // Key 2 (Backup)
-    'AIzaSyDLmJ4Nn8okknUh4MOhK7t7pgvxQqIA2k4', // Key 3 (Backup)
-    'AIzaSyA1dwjz58otakuHVwq66ySOGBvcbeXaQs4', // Key 4 (Backup)
-    'AIzaSyDo44qHm9bDrP15WzKxwxaTe8tU3Yp2C4U', // Key 5 (Backup)
-  ];
+  // API Keys Rotation List from .env
+  static final List<String> _apiKeys = [
+    dotenv.get('GEMINI_API_KEY_1', fallback: ''),
+    dotenv.get('GEMINI_API_KEY_2', fallback: ''),
+    dotenv.get('GEMINI_API_KEY_3', fallback: ''),
+    dotenv.get('GEMINI_API_KEY_4', fallback: ''),
+    dotenv.get('GEMINI_API_KEY_5', fallback: ''),
+  ].where((k) => k.isNotEmpty).toList();
 
   // Model Name (User Preference)
   static const String _modelName = 'gemini-2.5-flash-lite';
@@ -20,10 +21,7 @@ class AIService {
   int _currentKeyIndex = 0;
   String? _lastSystemPrompt;
 
-  final bool useOfflineAI;
-  final String? offlineModelPath;
-
-  AIService({this.useOfflineAI = false, this.offlineModelPath}) {
+  AIService() {
     _initModel();
   }
 
@@ -37,18 +35,10 @@ class AIService {
 
   void startChat(String contextPrompt) {
     _lastSystemPrompt = contextPrompt;
-    if (!useOfflineAI) {
-      _chatSession = _model.startChat(history: [Content.text(contextPrompt)]);
-    }
+    _chatSession = _model.startChat(history: [Content.text(contextPrompt)]);
   }
 
   Stream<String> sendMessageStream(String message) async* {
-    if (useOfflineAI) {
-      yield "Error: El chat offline con Gemma no está soportado en la versión de Windows por ahora.";
-      return;
-    }
-
-    // Cloud Stream
     if (_chatSession == null) {
       if (_lastSystemPrompt != null) {
         startChat(_lastSystemPrompt!);
@@ -75,10 +65,6 @@ class AIService {
   }
 
   Future<String> _attemptSendMessage(String message, int attempt) async {
-    if (useOfflineAI) {
-      return "Error: El chat offline con Gemma no está soportado en la versión de Windows por ahora.";
-    }
-
     // Ensure session exists
     if (_chatSession == null) {
       if (_lastSystemPrompt != null) {

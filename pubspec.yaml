@@ -32,7 +32,6 @@ dependencies:
   provider: ^6.1.5+1
   uuid: ^4.5.2
   camera: ^0.10.5+9
-  google_mlkit_text_recognition: ^0.13.0
   permission_handler: ^11.3.1
   local_auth: ^3.0.0
   crypto: ^3.0.7
@@ -62,7 +61,7 @@ dependencies:
   google_mobile_ads: ^7.0.0
   home_widget: ^0.6.0
   animated_bottom_navigation_bar: ^1.4.0
-  flutter_gemma: ^0.12.4
+  flutter_dotenv: ^6.0.0
 
 dev_dependencies:
   flutter_test:
@@ -90,6 +89,7 @@ flutter:
 
   assets:
     - assets/animations/
+    - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

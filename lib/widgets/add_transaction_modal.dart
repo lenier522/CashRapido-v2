@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../models/models.dart';
 import '../screens/add_category_screen.dart';
+import '../utils/icon_constants.dart';
 
 class AddTransactionModal extends StatefulWidget {
   final InternalTransaction? transactionToEdit;
@@ -480,7 +481,7 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
                   }
                   return _buildCategorySelector(
                     displayName,
-                    IconData(cat.iconCode, fontFamily: 'MaterialIcons'),
+                    IconConstants.getCategoryIcon(cat.iconCode),
                     Color(cat.colorValue),
                     _selectedCategoryId == cat.id,
                     () => setState(() => _selectedCategoryId = cat.id),

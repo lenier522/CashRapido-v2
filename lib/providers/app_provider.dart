@@ -20,8 +20,6 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import '../services/backup_service.dart';
 import '../licences/apklis.dart';
-import 'package:path_provider/path_provider.dart';
-import '../services/gemma_manager.dart';
 
 class AppProvider with ChangeNotifier {
   late Box<InternalTransaction> _transactionBox;
@@ -73,12 +71,6 @@ class AppProvider with ChangeNotifier {
   // AI Chat
   bool _aiChatEnabled = false;
   bool get aiChatEnabled => _aiChatEnabled;
-
-  bool _useOfflineAI = false;
-  bool get useOfflineAI => _useOfflineAI;
-
-  String? _offlineModelPath;
-  String? get offlineModelPath => _offlineModelPath;
 
   // PIN & Password
   String? _appPinHash;
@@ -139,7 +131,7 @@ class AppProvider with ChangeNotifier {
 
   // Payment System
   // Change this variable to build for different regions
-  final bool _isCuba = true;
+  final bool _isCuba = false;
   bool get isCuba => _isCuba;
 
   List<PaymentMethod> get paymentMethods {
@@ -519,8 +511,7 @@ class AppProvider with ChangeNotifier {
 
       final prefs = await SharedPreferences.getInstance();
       _aiChatEnabled = prefs.getBool('ai_chat_enabled') ?? false;
-      _useOfflineAI = prefs.getBool('use_offline_ai') ?? false;
-      _offlineModelPath = prefs.getString('offline_model_path');
+
       _chartType = prefs.getString('chart_type') ?? 'Pie';
       _biometricsEnabled = prefs.getBool('biometrics_enabled') ?? false;
       _appPinHash = prefs.getString('app_pin_hash');
@@ -1701,96 +1692,5 @@ class AppProvider with ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('ai_chat_enabled', enabled);
     notifyListeners();
-  }
-
-  Future<void> setUseOfflineAI(bool enabled) async {
-    _useOfflineAI = enabled;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('use_offline_ai', enabled);
-    notifyListeners();
-  }
-
-  /// Step 1: Shows the native file picker and returns the selected path.
-  /// Returns null if cancelled.
-  Future<String?> pickModelFilePath() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.any,
-      allowMultiple: false,
-    );
-    if (result != null && result.files.single.path != null) {
-      final path = result.files.single.path!;
-      if (!path.endsWith('.litertlm') && !path.endsWith('.task')) {
-        throw Exception("El archivo debe ser de tipo .litertlm o .task");
-      }
-      return path;
-    }
-    return null;
-  }
-
-  /// Step 2: Moves the file from [sourcePath] to app's documents directory
-  /// and registers it with flutter_gemma. Yields progress 0-100.
-  Stream<int> installModelFromPath(String sourcePath) async* {
-    yield 5;
-    await Future.delayed(const Duration(milliseconds: 150));
-
-    final appDir = await getApplicationDocumentsDirectory();
-    final fileName = sourcePath.split('/').last;
-    final destPath = '${appDir.path}/$fileName';
-
-    if (sourcePath != destPath) {
-      try {
-        // Fast path: rename is instant on same partition.
-        // FilePicker already copied the file — we just move the result.
-        yield 20;
-        await Future.delayed(const Duration(milliseconds: 200));
-        await File(sourcePath).rename(destPath);
-        yield 60;
-        await Future.delayed(const Duration(milliseconds: 200));
-      } catch (_) {
-        // Fallback: cross-filesystem copy with real progress
-        final file = File(sourcePath);
-        final length = await file.length();
-        final source = file.openRead();
-        final sink = File(destPath).openWrite();
-        int bytesCopied = 0;
-        int lastYielded = 20;
-
-        await for (final chunk in source) {
-          sink.add(chunk);
-          bytesCopied += chunk.length;
-          if (length > 0) {
-            final pct = (20 + (bytesCopied * 40 / length).round()).clamp(
-              20,
-              60,
-            );
-            if (pct != lastYielded) {
-              lastYielded = pct;
-              yield pct;
-            }
-          }
-          await Future.delayed(Duration.zero);
-        }
-        await sink.flush();
-        await sink.close();
-      }
-    } else {
-      yield 60;
-      await Future.delayed(const Duration(milliseconds: 200));
-    }
-
-    // Register with flutter_gemma
-    yield 75;
-    await Future.delayed(const Duration(milliseconds: 150));
-    await GemmaManager.installModel(destPath);
-
-    yield 95;
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    _offlineModelPath = destPath;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('offline_model_path', _offlineModelPath!);
-    notifyListeners();
-
-    yield 100;
   }
 }

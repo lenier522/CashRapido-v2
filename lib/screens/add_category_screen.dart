@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../services/localization_service.dart';
+import '../utils/icon_constants.dart';
 
 class AddCategoryScreen extends StatefulWidget {
   const AddCategoryScreen({super.key});
@@ -137,10 +138,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
                         ],
                       ),
                       child: Icon(
-                        IconData(
-                          _selectedIconCode,
-                          fontFamily: 'MaterialIcons',
-                        ),
+                        IconConstants.getCategoryIcon(_selectedIconCode),
                         size: 40,
                         color: Colors.white,
                       ),
@@ -225,7 +223,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
-                          IconData(code, fontFamily: 'MaterialIcons'),
+                          IconConstants.getCategoryIcon(code),
                           color: isSelected
                               ? Colors.white
                               : Theme.of(context).disabledColor,

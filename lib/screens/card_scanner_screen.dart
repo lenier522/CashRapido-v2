@@ -1,10 +1,11 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'dart:convert';
 import '../services/localization_service.dart';
-// import 'package:flutter/foundation.dart'; // Removed
 
 class CardScannerScreen extends StatefulWidget {
   const CardScannerScreen({super.key});
@@ -13,11 +14,12 @@ class CardScannerScreen extends StatefulWidget {
   State<CardScannerScreen> createState() => _CardScannerScreenState();
 }
 
-class _CardScannerScreenState extends State<CardScannerScreen> {
+class _CardScannerScreenState extends State<CardScannerScreen> with SingleTickerProviderStateMixin {
   CameraController? _controller;
   bool _isProcessing = false;
-  final TextRecognizer _textRecognizer = TextRecognizer();
   late String _statusText;
+  late AnimationController _animationController;
+  late Animation<double> _animation;
 
   @override
   void didChangeDependencies() {
@@ -29,6 +31,13 @@ class _CardScannerScreenState extends State<CardScannerScreen> {
   void initState() {
     super.initState();
     _initializeCamera();
+    
+    _animationController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat(reverse: true);
+    
+    _animation = Tween<double>(begin: 0, end: 1).animate(_animationController);
   }
 
   Future<void> _initializeCamera() async {
@@ -50,86 +59,85 @@ class _CardScannerScreenState extends State<CardScannerScreen> {
     await _controller!.initialize();
     if (!mounted) return;
     setState(() {});
-
-    _scanLoop();
   }
 
-  Future<void> _scanLoop() async {
-    while (mounted && _controller != null && _controller!.value.isInitialized) {
-      if (_isProcessing) {
-        await Future.delayed(const Duration(milliseconds: 500));
-        continue;
-      }
+  Future<void> _captureAndScan() async {
+    if (_controller == null ||
+        !_controller!.value.isInitialized ||
+        _isProcessing) {
+      return;
+    }
 
-      await Future.delayed(const Duration(seconds: 1)); // Throttle
-      if (!mounted) break;
+    setState(() {
       _isProcessing = true;
+      _statusText = "Analizando tarjeta con IA...";
+    });
 
-      try {
-        final image = await _controller!.takePicture();
-        final inputImage = InputImage.fromFilePath(image.path);
+    try {
+      final image = await _controller!.takePicture();
+      final bytes = await image.readAsBytes();
 
-        final recognizedText = await _textRecognizer.processImage(inputImage);
-        final cardData = _extractCardData(recognizedText);
+      final model = GenerativeModel(
+        model: 'gemini-2.5-flash-lite',
+        apiKey: dotenv.get('GEMINI_API_KEY_1', fallback: ''),
+      );
 
-        if (cardData['number'] != null) {
-          if (mounted) Navigator.pop(context, cardData);
-          break; // Stop loop
+      final prompt = '''
+Extrae la siguiente información de la imagen de esta tarjeta:
+1. Número de la tarjeta (16 dígitos, a veces separados por espacios)
+2. Fecha de expiración (MM/YY)
+3. Nombre del titular (Si aparece)
+
+Responde ÚNICAMENTE con un objeto JSON estricto en este formato exacto:
+{"number": "1234 5678 1234 5678", "expiry": "12/26", "holder": "JUAN PEREZ"}
+Si no encuentras algún dato, usa null. NO agregues ni una palabra más al texto ni formato de markdown.
+''';
+
+      final response = await model.generateContent([
+        Content.multi([TextPart(prompt), DataPart('image/jpeg', bytes)]),
+      ]);
+
+      final String responseText = response.text ?? "{}";
+
+      // Limpiar formato markdown si la IA fue terca
+      final String cleanJson = responseText
+          .replaceAll('```json', '')
+          .replaceAll('```', '')
+          .trim();
+
+      final Map<String, dynamic> data = jsonDecode(cleanJson);
+
+      final String? number = data['number'] as String?;
+      final String? expiry = data['expiry'] as String?;
+      final String? holder = data['holder'] as String?;
+
+      if (number != null && number.isNotEmpty && number != "null") {
+        if (mounted) {
+          Navigator.pop(context, {
+            'number': number,
+            'expiry': expiry,
+            'holder': holder,
+          });
         }
-      } catch (e) {
-        // Ignore errors
-      } finally {
+      } else {
+        setState(() {
+          _statusText = "Tarjeta no detectada. Acércala más.";
+          _isProcessing = false;
+        });
+      }
+    } catch (e) {
+      print("Error escaneando tarjeta con IA: $e");
+      setState(() {
+        _statusText = "Reintenta alinear mejor la tarjeta.";
         _isProcessing = false;
-      }
+      });
     }
-  }
-
-  Map<String, String?> _extractCardData(RecognizedText text) {
-    String? number;
-    String? expiry;
-    String? holder;
-
-    final RegExp cardRegex = RegExp(r'\d{4}\s\d{4}\s\d{4}\s\d{4}');
-    final RegExp expiryRegex = RegExp(r'\d{2}/\d{2}');
-
-    // Sort blocks by position (roughly)
-    text.blocks.sort((a, b) => a.boundingBox.top.compareTo(b.boundingBox.top));
-
-    for (var block in text.blocks) {
-      final txt = block.text;
-
-      // Detect Number
-      if (number == null && cardRegex.hasMatch(txt)) {
-        number = cardRegex.firstMatch(txt)?.group(0);
-      }
-
-      // Detect Expiry
-      if (expiry == null && expiryRegex.hasMatch(txt)) {
-        // Basic check for valid date logic if needed
-        expiry = expiryRegex.firstMatch(txt)?.group(0);
-      }
-
-      // Heuristic for Holder: Uppercase line that isn't date or number and has length
-      if (holder == null &&
-          number != txt &&
-          !txt.contains(RegExp(r'\d')) &&
-          txt.length > 5 &&
-          txt == txt.toUpperCase()) {
-        holder = txt;
-      }
-    }
-
-    if (number != null) {
-      return {'number': number, 'expiry': expiry, 'holder': holder};
-    }
-
-    return {'number': null};
   }
 
   @override
   void dispose() {
     _controller?.dispose();
-    _textRecognizer.close();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -150,9 +158,8 @@ class _CardScannerScreenState extends State<CardScannerScreen> {
         children: [
           CameraPreview(_controller!),
 
-          // Overlay
           Container(
-            decoration: ShapeDecoration(
+            decoration: const ShapeDecoration(
               shape: _ScannerOverlayShape(
                 borderColor: Colors.deepPurple,
                 borderRadius: 10,
@@ -162,6 +169,43 @@ class _CardScannerScreenState extends State<CardScannerScreen> {
                 cutOutHeight: 200, // Card ratio roughly
               ),
             ),
+          ),
+
+          // Scanning Animation (Laser Line)
+          AnimatedBuilder(
+            animation: _animation,
+            builder: (context, child) {
+              return Center(
+                child: Container(
+                  width: 300,
+                  height: 200,
+                  alignment: Alignment.topCenter,
+                  child: Transform.translate(
+                    offset: Offset(0, _animation.value * 200),
+                    child: Container(
+                      height: 2,
+                      width: 300,
+                      decoration: BoxDecoration(
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.deepPurpleAccent.withOpacity(0.5),
+                            blurRadius: 10,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.transparent,
+                            Colors.deepPurpleAccent.withOpacity(0.8),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
 
           SafeArea(
@@ -180,11 +224,22 @@ class _CardScannerScreenState extends State<CardScannerScreen> {
                         ),
                         onPressed: () => Navigator.pop(context),
                       ),
-                      Text(
-                        _statusText,
-                        style: GoogleFonts.outfit(
-                          color: Colors.white,
-                          fontSize: 18,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          _statusText,
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 48), // Balance
@@ -192,11 +247,37 @@ class _CardScannerScreenState extends State<CardScannerScreen> {
                   ),
                 ),
                 const Spacer(),
-                Text(
-                  context.t('align_card_instruction'),
-                  style: const TextStyle(color: Colors.white70),
-                ),
-                const SizedBox(height: 50),
+                if (_isProcessing)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 50.0),
+                    child: CircularProgressIndicator(color: Colors.white),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 50.0),
+                    child: ElevatedButton.icon(
+                      onPressed: _captureAndScan,
+                      icon: const Icon(Icons.camera_alt, color: Colors.white),
+                      label: Text(
+                        "Capturar Tarjeta",
+                        style: GoogleFonts.outfit(
+                          fontSize: 18,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
