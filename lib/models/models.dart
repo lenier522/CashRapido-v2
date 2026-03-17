@@ -167,7 +167,7 @@ class Currency {
   }
 }
 
-@HiveType(typeId: 3)
+@HiveType(typeId: 15)
 class ChatMessage extends HiveObject {
   @HiveField(0)
   final String role; // 'user' or 'model'
@@ -185,7 +185,7 @@ class ChatMessage extends HiveObject {
   });
 }
 
-@HiveType(typeId: 4)
+@HiveType(typeId: 16)
 class ChatConversation extends HiveObject {
   @HiveField(0)
   final String id;

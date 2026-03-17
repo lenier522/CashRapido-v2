@@ -173,7 +173,7 @@ class AccountCardAdapter extends TypeAdapter<AccountCard> {
 
 class ChatMessageAdapter extends TypeAdapter<ChatMessage> {
   @override
-  final int typeId = 3;
+  final int typeId = 15;
 
   @override
   ChatMessage read(BinaryReader reader) {
@@ -213,7 +213,7 @@ class ChatMessageAdapter extends TypeAdapter<ChatMessage> {
 
 class ChatConversationAdapter extends TypeAdapter<ChatConversation> {
   @override
-  final int typeId = 4;
+  final int typeId = 16;
 
   @override
   ChatConversation read(BinaryReader reader) {

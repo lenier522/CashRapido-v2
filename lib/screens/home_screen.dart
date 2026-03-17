@@ -12,7 +12,6 @@ import '../widgets/add_transaction_modal.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' show Platform;
 import '../utils/tour_keys.dart';
-import 'info_screens.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -135,36 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             if (aiButton != null) ...[aiButton, const SizedBox(width: 12)],
 
-            // Help Center Icon
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const HelpCenterScreen()),
-                );
-              },
-              child: Container(
-                key: TourKeys.helpCenterKey,
-                height: 48,
-                width: 48,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.help_outline_rounded,
-                  color: Theme.of(context).iconTheme.color,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
+
 
             // Notification Icon
             Container(

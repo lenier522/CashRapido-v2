@@ -76,26 +76,6 @@ class FeatureTour {
   List<TargetFocus> _createTargets() {
     List<TargetFocus> targets = [];
 
-    // 0. Help Center
-    targets.add(
-      TargetFocus(
-        identify: "helpCenterTarget",
-        keyTarget: TourKeys.helpCenterKey,
-        enableOverlayTab: true,
-        enableTargetTab: false,
-        contents: [
-          TargetContent(
-            align: ContentAlign.bottom,
-            builder: (context, controller) {
-              return _buildTourContent(
-                "Centro de Ayuda",
-                "Toda la ayuda y soporte que necesitas está justo aquí.",
-              );
-            },
-          ),
-        ],
-      ),
-    );
 
     // 0.1 Balance Card
     targets.add(

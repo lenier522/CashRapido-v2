@@ -92,10 +92,12 @@ class AppProvider with ChangeNotifier {
   LicenseType _licenseType = LicenseType.free;
   LicenseType get licenseType {
     if (!kIsWeb && Platform.isWindows) {
-      return LicenseType.enterprise; // Fully unlocked on Windows after MAC/Code Activation
+      return LicenseType
+          .enterprise; // Fully unlocked on Windows after MAC/Code Activation
     }
     return _licenseType;
   }
+
   DateTime? _licenseActivationDate;
   DateTime? get licenseActivationDate => _licenseActivationDate;
 
@@ -168,8 +170,8 @@ class AppProvider with ChangeNotifier {
           id: 'test_cuba',
           name: 'Prueba (Test)',
           iconAsset: 'assets/icons/test.png',
-          isEnabled: true,
-          isVisible: true,
+          isEnabled: false,
+          isVisible: false,
           isTest: true,
         ),
       ];
@@ -1255,7 +1257,7 @@ class AppProvider with ChangeNotifier {
               t.date.year == now.year,
         )
         .fold(0.0, (sum, item) => sum + item.amount.abs());
-    
+
     _spentCache[cacheKey] = spent;
     return spent;
   }
@@ -1278,7 +1280,7 @@ class AppProvider with ChangeNotifier {
               t.date.year == now.year,
         )
         .fold(0.0, (sum, item) => sum + item.amount);
-    
+
     _incomeCache[cacheKey] = income;
     return income;
   }
