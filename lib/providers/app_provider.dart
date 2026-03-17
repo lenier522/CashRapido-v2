@@ -640,6 +640,16 @@ class AppProvider with ChangeNotifier {
 
     // Sort transactions by date desc
     _transactions.sort((a, b) => b.date.compareTo(a.date));
+    _invalidateCaches();
+  }
+
+  // --- Caching ---
+  final Map<String, double> _spentCache = {};
+  final Map<String, double> _incomeCache = {};
+
+  void _invalidateCaches() {
+    _spentCache.clear();
+    _incomeCache.clear();
   }
 
   // --- Transactions ---
@@ -695,6 +705,7 @@ class AppProvider with ChangeNotifier {
 
     await _transactionBox.add(transaction);
     _transactions.insert(0, transaction);
+    _invalidateCaches();
 
     // Update Card Balance if linked
     if (cardId != null) {
@@ -767,6 +778,7 @@ class AppProvider with ChangeNotifier {
     }
 
     _transactions.removeAt(index);
+    _invalidateCaches();
     notifyListeners();
   }
 
@@ -842,6 +854,7 @@ class AppProvider with ChangeNotifier {
       await _transactionBox.put(key, updatedTx);
     }
     _transactions[index] = updatedTx;
+    _invalidateCaches();
     notifyListeners();
   }
 
@@ -1225,8 +1238,13 @@ class AppProvider with ChangeNotifier {
   }
 
   double getSpentThisMonth(String currency, {String? cardId}) {
+    final cacheKey = "\${currency}_\${cardId ?? 'all'}";
+    if (_spentCache.containsKey(cacheKey)) {
+      return _spentCache[cacheKey]!;
+    }
+
     final now = DateTime.now();
-    return _transactions
+    final spent = _transactions
         .where(
           (t) =>
               t.currency == currency &&
@@ -1237,11 +1255,19 @@ class AppProvider with ChangeNotifier {
               t.date.year == now.year,
         )
         .fold(0.0, (sum, item) => sum + item.amount.abs());
+    
+    _spentCache[cacheKey] = spent;
+    return spent;
   }
 
   double getIncomeThisMonth(String currency, {String? cardId}) {
+    final cacheKey = "\${currency}_\${cardId ?? 'all'}";
+    if (_incomeCache.containsKey(cacheKey)) {
+      return _incomeCache[cacheKey]!;
+    }
+
     final now = DateTime.now();
-    return _transactions
+    final income = _transactions
         .where(
           (t) =>
               t.currency == currency &&
@@ -1252,6 +1278,9 @@ class AppProvider with ChangeNotifier {
               t.date.year == now.year,
         )
         .fold(0.0, (sum, item) => sum + item.amount);
+    
+    _incomeCache[cacheKey] = income;
+    return income;
   }
 
   Future<void> setChartType(String type) async {

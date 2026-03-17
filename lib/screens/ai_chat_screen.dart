@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:uuid/uuid.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
 import '../services/ai_service.dart';
 import '../providers/app_provider.dart';
 import '../services/localization_service.dart';
+import '../models/models.dart';
 
 class AIChatScreen extends StatefulWidget {
   const AIChatScreen({super.key});
@@ -20,6 +24,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
       []; // 'role': 'user' | 'model', 'text': '...'
   bool _isTyping = false;
   bool _contextInitialized = false;
+  
+  ChatConversation? _currentConversation;
+  final Uuid _uuid = const Uuid();
 
   @override
   void initState() {
@@ -60,13 +67,61 @@ class _AIChatScreenState extends State<AIChatScreen> {
       appSettings: appSettings,
     );
 
-    _aiService.startChat(systemPrompt);
+    Iterable<Content>? pastHistory;
+    if (_currentConversation != null && _currentConversation!.messages.isNotEmpty) {
+      pastHistory = _currentConversation!.messages.map((m) {
+        return m.role == 'user' 
+            ? Content.text(m.text) 
+            : Content.model([TextPart(m.text)]);
+      }).toList();
+    }
+
+    _aiService.startChat(systemPrompt, pastHistory: pastHistory);
     _contextInitialized = true;
 
-    // Add welcome message
+    // Add welcome message only if it's a new chat
+    if (_currentConversation == null || _currentConversation!.messages.isEmpty) {
+      setState(() {
+        _messages.add({'role': 'model', 'text': context.t('ai_welcome_message')});
+      });
+    }
+  }
+
+  void _loadConversation(ChatConversation? conversation) {
     setState(() {
-      _messages.add({'role': 'model', 'text': context.t('ai_welcome_message')});
+      _currentConversation = conversation;
+      _messages.clear();
+      _contextInitialized = false;
+      
+      if (conversation != null) {
+        for (var msg in conversation.messages) {
+          _messages.add({'role': msg.role, 'text': msg.text});
+        }
+      }
     });
+    _initializeChat();
+  }
+
+  Future<void> _saveMessage(String text, String role) async {
+    final box = Hive.box<ChatConversation>('ai_chats');
+    if (_currentConversation == null) {
+      _currentConversation = ChatConversation(
+        id: _uuid.v4(),
+        title: text.length > 30 ? '${text.substring(0, 30)}...' : text,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        messages: [],
+      );
+      await box.put(_currentConversation!.id, _currentConversation!);
+    }
+    
+    _currentConversation!.messages.add(ChatMessage(
+      role: role,
+      text: text,
+      timestamp: DateTime.now(),
+    ));
+    _currentConversation!.updatedAt = DateTime.now();
+    await _currentConversation!.save();
   }
 
   Future<void> _sendMessage() async {
@@ -81,9 +136,13 @@ class _AIChatScreenState extends State<AIChatScreen> {
     });
     _scrollToBottom();
 
+    _scrollToBottom();
+    await _saveMessage(text, 'user');
+
     try {
       final stream = _aiService.sendMessageStream(text);
       bool firstChunkReceived = false;
+      String fullModelResponse = "";
 
       await for (final chunk in stream) {
         if (mounted) {
@@ -91,14 +150,18 @@ class _AIChatScreenState extends State<AIChatScreen> {
             if (!firstChunkReceived) {
               _isTyping = false;
               _messages.add({'role': 'model', 'text': chunk});
+              fullModelResponse = chunk;
               firstChunkReceived = true;
             } else {
               _messages.last['text'] = _messages.last['text']! + chunk;
+              fullModelResponse += chunk;
             }
           });
           _scrollToBottom();
         }
       }
+
+      await _saveMessage(fullModelResponse, 'model');
 
       if (!firstChunkReceived && mounted) {
         setState(() {
@@ -154,6 +217,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
           color: Theme.of(context).textTheme.bodyLarge?.color,
         ),
       ),
+      drawer: _buildDrawer(),
       body: Container(
         decoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
@@ -298,42 +362,80 @@ class _AIChatScreenState extends State<AIChatScreen> {
                 bottomRight: Radius.circular(24),
               ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  "Pensando",
-                  style: GoogleFonts.outfit(
-                    color: Theme.of(context).textTheme.bodySmall?.color,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 24,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(3, (index) {
-                      return Container(
-                        width: 5,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withOpacity(0.5),
-                          shape: BoxShape.circle,
-                        ),
-                      );
-                    }),
-                  ),
-                ),
-              ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrawer() {
+    final box = Hive.box<ChatConversation>('ai_chats');
+    return Drawer(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      child: Column(
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(color: Theme.of(context).cardColor),
+            child: Center(
+              child: Text(
+                'Historial de Chats',
+                style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.add_comment_rounded),
+            title: Text('Nuevo Chat', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+            onTap: () {
+              Navigator.pop(context);
+              _loadConversation(null);
+            },
+          ),
+          const Divider(),
+          Expanded(
+            child: ValueListenableBuilder(
+              valueListenable: box.listenable(),
+              builder: (context, Box<ChatConversation> chatsBox, _) {
+                final chats = chatsBox.values.toList()
+                  ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+                if (chats.isEmpty) {
+                  return const Center(child: Text('No hay conversaciones aún.'));
+                }
+                return ListView.builder(
+                  itemCount: chats.length,
+                  itemBuilder: (context, index) {
+                    final chat = chats[index];
+                    return ListTile(
+                      title: Text(chat.title, maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.outfit(fontSize: 15),
+                      ),
+                      subtitle: Text(
+                        "\${chat.updatedAt.day}/\${chat.updatedAt.month}/\${chat.updatedAt.year}",
+                        style: GoogleFonts.outfit(fontSize: 12),
+                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      selected: _currentConversation?.id == chat.id,
+                      selectedTileColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _loadConversation(chat);
+                      },
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
+                        onPressed: () => chat.delete(),
+                      ),
+                    );
+                  },
+                );
+              },
             ),
           ),
         ],
       ),
     );
   }
+
+
 
   Widget _buildInputArea() {
     final isDark = Theme.of(context).brightness == Brightness.dark;

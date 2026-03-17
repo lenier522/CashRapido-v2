@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'localization_service.dart';
+import '../utils/tour_keys.dart';
 
 class FeatureTour {
   final BuildContext context;
@@ -72,9 +73,73 @@ class FeatureTour {
 
     tutorialCoachMark.show(context: context);
   }
-
   List<TargetFocus> _createTargets() {
     List<TargetFocus> targets = [];
+
+    // 0. Help Center
+    targets.add(
+      TargetFocus(
+        identify: "helpCenterTarget",
+        keyTarget: TourKeys.helpCenterKey,
+        enableOverlayTab: true,
+        enableTargetTab: false,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) {
+              return _buildTourContent(
+                "Centro de Ayuda",
+                "Toda la ayuda y soporte que necesitas está justo aquí.",
+              );
+            },
+          ),
+        ],
+      ),
+    );
+
+    // 0.1 Balance Card
+    targets.add(
+      TargetFocus(
+        identify: "balanceCardTarget",
+        keyTarget: TourKeys.balanceCardKey,
+        enableOverlayTab: true,
+        enableTargetTab: false,
+        shape: ShapeLightFocus.RRect,
+        radius: 16,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) {
+              return _buildTourContent(
+                "Tu Dinero Consolidado",
+                "Aquí verás el resumen global de todas tus tarjetas y cuentas en diferentes monedas.",
+              );
+            },
+          ),
+        ],
+      ),
+    );
+
+    // 0.2 Quick Actions - Transfer
+    targets.add(
+      TargetFocus(
+        identify: "transferTarget",
+        keyTarget: TourKeys.transferActionKey,
+        enableOverlayTab: true,
+        enableTargetTab: false,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) {
+              return _buildTourContent(
+                "Acciones Mágicas",
+                "Usa esta zona para transferir y realizar acciones sobre tu dinero al instante.",
+              );
+            },
+          ),
+        ],
+      ),
+    );
 
     // 1. FAB - Add Transaction
     targets.add(

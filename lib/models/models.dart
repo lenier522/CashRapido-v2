@@ -167,4 +167,48 @@ class Currency {
   }
 }
 
+@HiveType(typeId: 3)
+class ChatMessage extends HiveObject {
+  @HiveField(0)
+  final String role; // 'user' or 'model'
+
+  @HiveField(1)
+  final String text;
+
+  @HiveField(2)
+  final DateTime timestamp;
+
+  ChatMessage({
+    required this.role,
+    required this.text,
+    required this.timestamp,
+  });
+}
+
+@HiveType(typeId: 4)
+class ChatConversation extends HiveObject {
+  @HiveField(0)
+  final String id;
+
+  @HiveField(1)
+  final String title;
+
+  @HiveField(2)
+  final DateTime createdAt;
+
+  @HiveField(3)
+  DateTime updatedAt;
+
+  @HiveField(4)
+  final List<ChatMessage> messages;
+
+  ChatConversation({
+    required this.id,
+    required this.title,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.messages,
+  });
+}
+
 enum LicenseType { free, personal, pro, enterprise }

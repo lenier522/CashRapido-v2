@@ -11,6 +11,8 @@ import 'transfermovil_screen.dart';
 import '../widgets/add_transaction_modal.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' show Platform;
+import '../utils/tour_keys.dart';
+import 'info_screens.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,14 +23,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String? _selectedCardId;
-
-  // Tutorial Keys (used by MainScreen tour)
-  final GlobalKey _aiKey = GlobalKey();
-  final GlobalKey _balanceKey = GlobalKey();
-  final GlobalKey _transferKey = GlobalKey();
-  final GlobalKey _scanKey = GlobalKey();
-  final GlobalKey _cardSelectorKey = GlobalKey();
-  final GlobalKey _transactionsKey = GlobalKey();
 
   @override
   void initState() {
@@ -102,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
         child: Container(
-          key: _aiKey,
+          key: TourKeys.aiButtonKey,
           height: 48,
           width: 48,
           decoration: BoxDecoration(
@@ -140,6 +134,37 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           children: [
             if (aiButton != null) ...[aiButton, const SizedBox(width: 12)],
+
+            // Help Center Icon
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HelpCenterScreen()),
+                );
+              },
+              child: Container(
+                key: TourKeys.helpCenterKey,
+                height: 48,
+                width: 48,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.help_outline_rounded,
+                  color: Theme.of(context).iconTheme.color,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
 
             // Notification Icon
             Container(
@@ -200,7 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     return Container(
-      key: _balanceKey,
+      key: TourKeys.balanceCardKey,
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -227,7 +252,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // Card Selector
               Flexible(
                 child: Container(
-                  key: _cardSelectorKey,
+                  key: TourKeys.cardSelectorKey,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 6,
@@ -376,7 +401,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _showLockedFeatureDialog(context);
             }
           },
-          key: _transferKey,
+          key: TourKeys.transferActionKey,
           isLocked: !provider.canTransfer,
         ),
         if (provider.isCuba &&
@@ -402,7 +427,7 @@ class _HomeScreenState extends State<HomeScreen> {
             provider,
             () => _showMoreOptions(context),
           ),
-          key: _scanKey,
+          key: TourKeys.scanKey,
           isLocked: !provider.canUseMoreActions,
         ),
       ],
@@ -867,7 +892,7 @@ class _HomeScreenState extends State<HomeScreen> {
     transactions = transactions.take(5).toList();
 
     return Column(
-      key: _transactionsKey,
+      key: TourKeys.transactionsKey,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(

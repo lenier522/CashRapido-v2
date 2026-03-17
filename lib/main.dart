@@ -42,6 +42,13 @@ void main() async {
   Hive.registerAdapter(BusinessExpenseAdapter());
   Hive.registerAdapter(ClosingAdapter());
 
+  // AI Chat Adapters
+  Hive.registerAdapter(ChatMessageAdapter());
+  Hive.registerAdapter(ChatConversationAdapter());
+
+  // Open Boxes
+  await Hive.openBox<ChatConversation>('ai_chats');
+
   final prefs = await SharedPreferences.getInstance();
   final bool seenOnboarding = prefs.getBool('seenOnboarding') ?? false;
 

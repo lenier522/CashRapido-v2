@@ -53,10 +53,14 @@ class AIService {
     }
   }
 
-  void startChat(String contextPrompt) {
+  void startChat(String contextPrompt, {Iterable<Content>? pastHistory}) {
     _lastSystemPrompt = contextPrompt;
     if (!useOfflineAI) {
-      _chatSession = _model.startChat(history: [Content.text(contextPrompt)]);
+      List<Content> history = [Content.text(contextPrompt)];
+      if (pastHistory != null) {
+        history.addAll(pastHistory);
+      }
+      _chatSession = _model.startChat(history: history);
     } else {
       // Async initialization for offline chat is handled when sending messages
       _offlineChat = null;

@@ -174,7 +174,7 @@ class HelpCenterScreen extends StatelessWidget {
       child: Text(
         title,
         style: GoogleFonts.outfit(
-          fontSize: 16,
+          fontSize: 18,
           fontWeight: FontWeight.bold,
           color: Theme.of(context).colorScheme.primary,
         ),
@@ -189,14 +189,14 @@ class HelpCenterScreen extends StatelessWidget {
         tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         title: Text(
           question,
-          style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13),
+          style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 16),
         ),
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: Text(
               answer,
-              style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[600]),
+              style: GoogleFonts.outfit(fontSize: 14, color: Colors.grey[600]),
             ),
           ),
         ],
