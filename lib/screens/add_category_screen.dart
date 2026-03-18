@@ -14,6 +14,7 @@ class AddCategoryScreen extends StatefulWidget {
 
 class _AddCategoryScreenState extends State<AddCategoryScreen> {
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _budgetController = TextEditingController();
   int _selectedIconCode = 0xe532; // Default restaurant
   int _selectedColorValue = 0xFFFFA726; // Default Orange
 
@@ -83,10 +84,14 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
       return;
     }
 
+    final budgetText = _budgetController.text.replaceAll(RegExp(r'[^0-9.]'), '');
+    final budget = double.tryParse(budgetText);
+
     Provider.of<AppProvider>(context, listen: false).addCategory(
       name: _nameController.text,
       iconCode: _selectedIconCode,
       colorValue: _selectedColorValue,
+      monthlyBudget: budget != null && budget > 0 ? budget : null,
     );
 
     Navigator.pop(context);
@@ -180,6 +185,35 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
                   ),
                   hintText: context.t('cat_name_hint'),
                   hintStyle: TextStyle(color: Theme.of(context).hintColor),
+                ),
+                style: TextStyle(
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Budget Input
+              Text(
+                context.t('monthly_budget'),
+                style: GoogleFonts.outfit(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _budgetController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  hintText: context.t('monthly_budget_hint'),
+                  hintStyle: TextStyle(color: Theme.of(context).hintColor),
+                  prefixIcon: const Icon(Icons.attach_money),
                 ),
                 style: TextStyle(
                   color: Theme.of(context).textTheme.bodyLarge?.color,

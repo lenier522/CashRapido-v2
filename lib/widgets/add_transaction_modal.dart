@@ -167,6 +167,35 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
         currency: _selectedCurrency,
         cardId: _selectedCardId,
       );
+
+      // Check Budget Alerts
+      if (amount < 0) {
+        final category = provider.categories.firstWhere(
+          (c) => c.id == _selectedCategoryId,
+          orElse: () => provider.categories.first,
+        );
+        if (category.monthlyBudget != null && category.monthlyBudget! > 0) {
+          final spentNow = provider.getSpentForCategoryThisMonth(category.id);
+          final ratio = spentNow / category.monthlyBudget!;
+          
+          if (ratio >= 1.0) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('${context.t('budget_alert_100')} ${category.name}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          } else if (ratio >= 0.8) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('${context.t('budget_alert_80')} ${category.name}'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
+        }
+      }
+
       Navigator.pop(context);
     }
   }

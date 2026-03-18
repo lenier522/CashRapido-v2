@@ -226,6 +226,10 @@ class AppLocalizations {
 
       // Category
       'category_name_placeholder': 'Nombre Categoría',
+      'monthly_budget': 'Presupuesto Mensual',
+      'monthly_budget_hint': 'Ej. 100.00 (Opcional)',
+      'budget_alert_80': 'Has superado el 80% del presupuesto de',
+      'budget_alert_100': 'Has superado el 100% del presupuesto de',
 
       // Settings Extended
       'sync_drive_title': 'Sincronizar con Google Drive',
@@ -822,6 +826,10 @@ class AppLocalizations {
 
       // Category
       'category_name_placeholder': 'Category Name',
+      'monthly_budget': 'Monthly Budget',
+      'monthly_budget_hint': 'E.g. 100.00 (Optional)',
+      'budget_alert_80': 'You have exceeded 80% of the budget for',
+      'budget_alert_100': 'You have exceeded 100% of the budget for',
 
       // Settings Extended
       'sync_drive_title': 'Sync with Google Drive',

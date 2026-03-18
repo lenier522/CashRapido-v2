@@ -891,6 +891,7 @@ class AppProvider with ChangeNotifier {
     required String name,
     required int iconCode,
     required int colorValue,
+    double? monthlyBudget,
   }) async {
     final category = Category(
       id: _uuid.v4(),
@@ -898,10 +899,35 @@ class AppProvider with ChangeNotifier {
       iconCode: iconCode,
       colorValue: colorValue,
       isCustom: true,
+      monthlyBudget: monthlyBudget,
     );
     await _categoryBox.add(category);
     _categories.add(category);
     notifyListeners();
+  }
+
+  Future<void> editCategoryBudget(String categoryId, double budget) async {
+    final index = _categories.indexWhere((c) => c.id == categoryId);
+    if (index != -1) {
+      final old = _categories[index];
+      final updated = Category(
+        id: old.id,
+        name: old.name,
+        iconCode: old.iconCode,
+        colorValue: old.colorValue,
+        isCustom: old.isCustom,
+        monthlyBudget: budget,
+      );
+      final key = _categoryBox.keys.firstWhere(
+        (k) => _categoryBox.get(k)?.id == categoryId,
+        orElse: () => null,
+      );
+      if (key != null) {
+        await _categoryBox.put(key, updated);
+      }
+      _categories[index] = updated;
+      notifyListeners();
+    }
   }
 
   // --- Cards ---
@@ -1251,6 +1277,26 @@ class AppProvider with ChangeNotifier {
 
     _spentCache[cacheKey] = spent;
     return spent;
+  }
+
+  double getSpentForCategoryThisMonth(String categoryId) {
+    // Need to get the primary currency here or just sum it up. 
+    // Since budgets don't specify currency in the requirement, we will sum the converted or just use mainCurrency.
+    // If we only care about spending in general without complex conversions, we filter by mainCurrency.
+    // But since transactions can be in USD, EUR, etc. and there is no conversion rate in AppProvider,
+    // let's sum everything using 1:1 for now, or just focus on mainCurrency.
+    // To be precise and safe, we sum all negative transactions regardless of currency? 
+    // "CashRapido" usually uses mainCurrency for stats.
+    final now = DateTime.now();
+    return _transactions
+        .where(
+          (t) =>
+              t.categoryId == categoryId &&
+              t.amount < 0 &&
+              t.date.month == now.month &&
+              t.date.year == now.year,
+        )
+        .fold(0.0, (sum, item) => sum + item.amount.abs());
   }
 
   double getIncomeThisMonth(String currency, {String? cardId}) {

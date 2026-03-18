@@ -19,12 +19,16 @@ class Category extends HiveObject {
   @HiveField(4)
   final bool isCustom;
 
+  @HiveField(5)
+  final double? monthlyBudget;
+
   Category({
     required this.id,
     required this.name,
     required this.iconCode,
     required this.colorValue,
     this.isCustom = false,
+    this.monthlyBudget,
   });
 }
 

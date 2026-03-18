@@ -314,12 +314,24 @@ class _StatsScreenState extends State<StatsScreen> {
               final category = _getCategory(context, categories, entry.key);
               final percentage = (entry.value / totalExpense) * 100;
               categoryListItems.add(
-                _buildCategoryItem(
-                  category.name,
-                  '${_showIncome ? '+' : '-'}\$${entry.value.toStringAsFixed(2)}',
-                  '${percentage.toStringAsFixed(1)}%',
-                  Color(category.colorValue),
-                  IconConstants.getCategoryIcon(category.iconCode),
+                GestureDetector(
+                  onTap: () {
+                    final p = Provider.of<AppProvider>(context, listen: false);
+                    if (p.canCreateCategory) {
+                      _showEditBudgetDialog(context, category, p);
+                    } else {
+                      _showLockedFeature(context);
+                    }
+                  },
+                  child: _buildCategoryItem(
+                    category.name,
+                    '${_showIncome ? '+' : '-'}\$${entry.value.toStringAsFixed(2)}',
+                    '${percentage.toStringAsFixed(1)}%',
+                    Color(category.colorValue),
+                    IconConstants.getCategoryIcon(category.iconCode),
+                    monthlyBudget: _timeRange == TimeRange.month && !_showIncome ? category.monthlyBudget : null,
+                    currentSpent: entry.value,
+                  ),
                 ),
               );
             }
@@ -797,13 +809,54 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
+  void _showEditBudgetDialog(BuildContext context, Category category, AppProvider provider) {
+    final controller = TextEditingController(
+      text: category.monthlyBudget != null && category.monthlyBudget! > 0 
+          ? category.monthlyBudget!.toStringAsFixed(2) 
+          : '',
+    );
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          '${context.t('monthly_budget')} - ${category.name}',
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+        ),
+        content: TextField(
+          controller: controller,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: InputDecoration(
+            hintText: context.t('monthly_budget_hint'),
+            prefixIcon: const Icon(Icons.attach_money),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(context.t('cancel')),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final val = double.tryParse(controller.text.replaceAll(RegExp(r'[^0-9.]'), ''));
+              provider.editCategoryBudget(category.id, val ?? 0.0);
+              Navigator.pop(ctx);
+            },
+            child: Text(context.t('save')),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCategoryItem(
     String title,
     String amount,
     String percentage,
     Color color,
-    IconData icon,
-  ) {
+    IconData icon, {
+    double? monthlyBudget,
+    double? currentSpent,
+  }) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       padding: const EdgeInsets.all(16),
@@ -850,6 +903,65 @@ class _StatsScreenState extends State<StatsScreen> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
+                if (monthlyBudget != null && monthlyBudget > 0 && currentSpent != null) ...[
+                  const SizedBox(height: 8),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      double progress = currentSpent / monthlyBudget;
+                      if (progress > 1.0) progress = 1.0;
+                      Color progressColor = Colors.green;
+                      if (progress >= 1.0) {
+                        progressColor = Colors.red;
+                      } else if (progress >= 0.8) {
+                        progressColor = Colors.orange;
+                      }
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '${context.t('monthly_budget')}: \$${monthlyBudget.toStringAsFixed(2)}',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 10,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              Text(
+                                '${(progress * 100).toStringAsFixed(0)}%',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: progressColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            height: 6,
+                            width: constraints.maxWidth,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                            child: FractionallySizedBox(
+                              alignment: Alignment.centerLeft,
+                              widthFactor: progress,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: progressColor,
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ],
               ],
             ),
           ),
@@ -882,6 +994,7 @@ class _StatsScreenState extends State<StatsScreen> {
           iconCode: category.iconCode,
           colorValue: category.colorValue,
           isCustom: category.isCustom,
+          monthlyBudget: category.monthlyBudget,
         );
       }
       return category;
