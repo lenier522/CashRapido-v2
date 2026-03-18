@@ -192,6 +192,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -217,10 +218,23 @@ class _AIChatScreenState extends State<AIChatScreen> {
       drawer: _buildDrawer(),
       body: Container(
         decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
+          gradient: LinearGradient(
+            colors: isDark
+                ? [
+                    const Color(0xFF0E1020),
+                    Theme.of(context).scaffoldBackgroundColor,
+                  ]
+                : [
+                    const Color(0xFFF6F9FF),
+                    Theme.of(context).scaffoldBackgroundColor,
+                  ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
         ),
         child: Column(
           children: [
+            _buildAssistantHeaderCard(),
             Expanded(
               child: ListView.builder(
                 controller: _scrollController,
@@ -310,6 +324,13 @@ class _AIChatScreenState extends State<AIChatScreen> {
                       offset: const Offset(0, 4),
                     ),
                 ],
+                border: Border.all(
+                  color: isUser
+                      ? Colors.transparent
+                      : (isDark
+                          ? Colors.white.withOpacity(0.06)
+                          : Colors.black.withOpacity(0.05)),
+                ),
               ),
               child: Text(
                 text,
@@ -358,9 +379,35 @@ class _AIChatScreenState extends State<AIChatScreen> {
                 bottomLeft: Radius.circular(8),
                 bottomRight: Radius.circular(24),
               ),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withOpacity(0.06)
+                    : Colors.black.withOpacity(0.05),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildTypingDot(context, 0.35),
+                const SizedBox(width: 5),
+                _buildTypingDot(context, 0.65),
+                const SizedBox(width: 5),
+                _buildTypingDot(context, 1),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTypingDot(BuildContext context, double opacity) {
+    return Container(
+      width: 7,
+      height: 7,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary.withOpacity(opacity),
+        shape: BoxShape.circle,
       ),
     );
   }
@@ -475,39 +522,101 @@ class _AIChatScreenState extends State<AIChatScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              GestureDetector(
-                onTap: _sendMessage,
-                child: Container(
-                  margin: const EdgeInsets.all(4),
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Theme.of(context).colorScheme.primary,
-                        Theme.of(context).colorScheme.primary.withBlue(255),
-                      ],
-                    ),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _controller,
+                builder: (context, value, _) {
+                  final hasText = value.text.trim().isNotEmpty;
+                  final enabled = hasText && !_isTyping;
+                  return AnimatedOpacity(
+                    duration: const Duration(milliseconds: 150),
+                    opacity: enabled ? 1 : 0.55,
+                    child: GestureDetector(
+                      onTap: enabled ? _sendMessage : null,
+                      child: Container(
+                        margin: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Theme.of(context).colorScheme.primary,
+                              Theme.of(context).colorScheme.primary.withBlue(
+                                255,
+                              ),
+                            ],
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          _isTyping
+                              ? Icons.hourglass_top_rounded
+                              : Icons.send_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.send_rounded,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
+                    ),
+                  );
+                },
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildAssistantHeaderCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withOpacity(0.04)
+            : Theme.of(context).cardColor.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withOpacity(0.08)
+              : Colors.black.withOpacity(0.06),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.14),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.auto_awesome_rounded,
+              color: Theme.of(context).colorScheme.primary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Asistente financiero activo',
+              style: GoogleFonts.outfit(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).textTheme.bodyMedium?.color,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
