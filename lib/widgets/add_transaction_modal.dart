@@ -535,23 +535,23 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
             ],
           ),
           const SizedBox(height: 12),
-          Container(
-            height: 230,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              color: Theme.of(context).scaffoldBackgroundColor.withValues(
-                alpha: 0.5,
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                color: Theme.of(context).scaffoldBackgroundColor.withValues(
+                  alpha: 0.5,
+                ),
+                border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
               ),
-              border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
-            ),
-            child: GridView.builder(
+              child: GridView.builder(
               itemCount: categories.length + 1,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 4,
                 mainAxisSpacing: 10,
                 crossAxisSpacing: 10,
-                childAspectRatio: 0.78,
+                childAspectRatio: 0.65,
               ),
               itemBuilder: (context, index) {
                 if (index == categories.length) {
@@ -604,7 +604,8 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
               },
             ),
           ),
-          const Spacer(),
+        ),
+        const SizedBox(height: 20),
           // Save Button
           SizedBox(
             width: double.infinity,
