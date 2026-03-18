@@ -6,8 +6,11 @@ import '../models/models.dart';
 import '../services/localization_service.dart';
 import 'all_transactions_screen.dart';
 import 'ai_chat_screen.dart';
+import 'card_scanner_screen.dart';
+import 'info_screens.dart';
 import 'licenses_screen.dart';
 import 'transfermovil_screen.dart';
+import 'wallet_screen.dart';
 import '../widgets/add_transaction_modal.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' show Platform;
@@ -810,18 +813,29 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildMoreOptionItem(
                       Icons.qr_code_scanner,
                       context.t('action_scan'),
+                      () => _navigateFromMoreOptions(
+                        context,
+                        const CardScannerScreen(),
+                      ),
                     ),
                   _buildMoreOptionItem(
                     Icons.history,
                     context.t('action_history'),
+                    () => _navigateFromMoreOptions(
+                      context,
+                      AllTransactionsScreen(initialCardId: _selectedCardId),
+                    ),
                   ),
                   _buildMoreOptionItem(
                     Icons.bar_chart,
                     context.t('action_balances'),
+                    () => _navigateFromMoreOptions(context, const WalletScreen()),
                   ),
                   _buildMoreOptionItem(
                     Icons.help_outline,
                     context.t('action_help'),
+                    () =>
+                        _navigateFromMoreOptions(context, const HelpCenterScreen()),
                   ),
                 ],
               ),
@@ -832,20 +846,32 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildMoreOptionItem(IconData icon, String label) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.deepPurple.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
+  void _navigateFromMoreOptions(BuildContext context, Widget destination) {
+    Navigator.pop(context);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => destination),
+    );
+  }
+
+  Widget _buildMoreOptionItem(IconData icon, String label, VoidCallback onTap) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.deepPurple.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: Colors.deepPurple),
           ),
-          child: Icon(icon, color: Colors.deepPurple),
-        ),
-        const SizedBox(height: 8),
-        Text(label, style: GoogleFonts.outfit(fontSize: 12)),
-      ],
+          const SizedBox(height: 8),
+          Text(label, style: GoogleFonts.outfit(fontSize: 12)),
+        ],
+      ),
     );
   }
 

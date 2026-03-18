@@ -489,66 +489,119 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
             ),
           ),
           const SizedBox(height: 30),
-          // Category Selection
-          Text(
-            context.t('category_label'),
-            style: GoogleFonts.outfit(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 110,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                ...categories.map((cat) {
-                  String displayName = cat.name;
-                  if (cat.id.startsWith('cat_')) {
-                    displayName = context.t(cat.id);
-                  }
-                  return _buildCategorySelector(
-                    displayName,
-                    IconConstants.getCategoryIcon(cat.iconCode),
-                    Color(cat.colorValue),
-                    _selectedCategoryId == cat.id,
-                    () => setState(() => _selectedCategoryId = cat.id),
-                  );
-                }),
-                // Add Custom Category Button
-                _buildCategorySelector(
-                  context.t('create'),
-                  Icons.add, // Always show Add icon
-                  Colors.grey,
-                  false,
-                  () {
-                    if (provider.canCreateCategory) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const AddCategoryScreen(),
-                        ),
-                      );
-                    } else {
-                      showDialog(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: Text(context.t('feature_locked_title')),
-                          content: Text(context.t('feature_locked_desc')),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx),
-                              child: Text(context.t('close')),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                  },
-                  isLocked: !provider.canCreateCategory, // Pass locked state
+          // Category Selection (Modern Grid)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                context.t('category_label'),
+                style: GoogleFonts.outfit(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
                 ),
-              ],
+              ),
+              if (_selectedCategoryId.isNotEmpty && categories.isNotEmpty)
+                Builder(
+                  builder: (_) {
+                    final selected = categories.firstWhere(
+                      (cat) => cat.id == _selectedCategoryId,
+                      orElse: () => categories.first,
+                    );
+                    String selectedName = selected.name;
+                    if (selected.id.startsWith('cat_')) {
+                      selectedName = context.t(selected.id);
+                    }
+
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Color(selected.colorValue).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        selectedName,
+                        style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            height: 230,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: Theme.of(context).scaffoldBackgroundColor.withValues(
+                alpha: 0.5,
+              ),
+              border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
+            ),
+            child: GridView.builder(
+              itemCount: categories.length + 1,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 0.78,
+              ),
+              itemBuilder: (context, index) {
+                if (index == categories.length) {
+                  return _buildCategorySelector(
+                    label: context.t('create'),
+                    icon: Icons.add,
+                    color: Colors.grey,
+                    isSelected: false,
+                    onTap: () {
+                      if (provider.canCreateCategory) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AddCategoryScreen(),
+                          ),
+                        );
+                      } else {
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: Text(context.t('feature_locked_title')),
+                            content: Text(context.t('feature_locked_desc')),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: Text(context.t('close')),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                    },
+                    isLocked: !provider.canCreateCategory,
+                    isAddButton: true,
+                  );
+                }
+
+                final cat = categories[index];
+                String displayName = cat.name;
+                if (cat.id.startsWith('cat_')) {
+                  displayName = context.t(cat.id);
+                }
+                return _buildCategorySelector(
+                  label: displayName,
+                  icon: IconConstants.getCategoryIcon(cat.iconCode),
+                  color: Color(cat.colorValue),
+                  isSelected: _selectedCategoryId == cat.id,
+                  onTap: () => setState(() => _selectedCategoryId = cat.id),
+                );
+              },
             ),
           ),
           const Spacer(),
@@ -584,80 +637,97 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
     );
   }
 
-  Widget _buildCategorySelector(
-    String label,
-    IconData icon,
-    Color color,
-    bool isSelected,
-    VoidCallback onTap, {
+  Widget _buildCategorySelector({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required bool isSelected,
+    required VoidCallback onTap,
     bool isLocked = false,
+    bool isAddButton = false,
   }) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(right: 16),
-        child: SizedBox(
-          width: 72, // Fixed width for consistent spacing
-          child: Column(
-            children: [
-              Stack(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: isSelected ? color : Colors.grey[100],
-                      shape: BoxShape.circle,
-                      border: isSelected
-                          ? Border.all(color: color, width: 2)
-                          : null,
-                    ),
+      borderRadius: BorderRadius.circular(18),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          color: isSelected
+              ? color.withValues(alpha: 0.18)
+              : Theme.of(context).cardColor,
+          border: Border.all(
+            color: isSelected
+                ? color.withValues(alpha: 0.8)
+                : Colors.grey.withValues(alpha: 0.2),
+            width: isSelected ? 1.4 : 1,
+          ),
+          boxShadow: [
+            if (isSelected)
+              BoxShadow(
+                color: color.withValues(alpha: 0.22),
+                blurRadius: 12,
+                offset: const Offset(0, 5),
+              ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(11),
+                  decoration: BoxDecoration(
+                    color: isAddButton
+                        ? Colors.grey.withValues(alpha: 0.15)
+                        : color.withValues(alpha: isSelected ? 0.95 : 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 20,
+                    color: isAddButton
+                        ? Theme.of(context).hintColor
+                        : (isSelected ? Colors.white : color),
+                  ),
+                ),
+                if (isSelected)
+                  const Positioned(
+                    right: -2,
+                    top: -2,
                     child: Icon(
-                      icon,
-                      color: isSelected ? Colors.white : Colors.grey,
+                      Icons.check_circle,
+                      size: 14,
+                      color: Colors.green,
                     ),
                   ),
-                  if (isLocked)
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.amber, // Warning/Lock color
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 4,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.lock,
-                          size: 10,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                ],
+                if (isLocked)
+                  const Positioned(
+                    right: -2,
+                    bottom: -2,
+                    child: Icon(Icons.lock, size: 12, color: Colors.amber),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.outfit(
+                fontSize: 11.5,
+                height: 1.15,
+                color: isSelected
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).textTheme.bodySmall?.color,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               ),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                textAlign: TextAlign.center, // Center text
-                maxLines: 2, // Allow 2 lines for longer names
-                overflow: TextOverflow.ellipsis, // Truncate if too long
-                style: GoogleFonts.outfit(
-                  fontSize: 12, // Slightly smaller font
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).disabledColor,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
