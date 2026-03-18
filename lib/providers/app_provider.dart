@@ -131,7 +131,7 @@ class AppProvider with ChangeNotifier {
 
   // Payment System
   // Change this variable to build for different regions
-  final bool _isCuba = false;
+  final bool _isCuba = true;
   bool get isCuba => _isCuba;
 
   List<PaymentMethod> get paymentMethods {
@@ -1280,12 +1280,12 @@ class AppProvider with ChangeNotifier {
   }
 
   double getSpentForCategoryThisMonth(String categoryId) {
-    // Need to get the primary currency here or just sum it up. 
+    // Need to get the primary currency here or just sum it up.
     // Since budgets don't specify currency in the requirement, we will sum the converted or just use mainCurrency.
     // If we only care about spending in general without complex conversions, we filter by mainCurrency.
     // But since transactions can be in USD, EUR, etc. and there is no conversion rate in AppProvider,
     // let's sum everything using 1:1 for now, or just focus on mainCurrency.
-    // To be precise and safe, we sum all negative transactions regardless of currency? 
+    // To be precise and safe, we sum all negative transactions regardless of currency?
     // "CashRapido" usually uses mainCurrency for stats.
     final now = DateTime.now();
     return _transactions
