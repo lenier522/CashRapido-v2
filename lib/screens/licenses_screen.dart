@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:artpay_lib/artpay_lib.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cashrapido/services/localization_service.dart';
@@ -722,6 +723,27 @@ class LicensesScreen extends StatelessWidget {
                                   Navigator.of(innerContext).pop();
                                   provider.setAdTargetLicense(targetLicense);
                                   _showAdWatcherDialog(context, targetLicense);
+                                  return;
+                                }
+
+                                if (method.id == 'art_pay') {
+                                  Navigator.of(innerContext).pop();
+                                  ArtPayPayment.handlePayment(
+                                    context: context,
+                                    targetLicenseName: targetLicense.name,
+
+                                    onSuccess: (result) {
+                                      provider.setLicenseType(
+                                        targetLicense,
+                                        expirationDate: result.accessExpiresAt,
+                                      );
+                                    },
+
+                                    onError: (error) {
+                                      print("Error: $error");
+                                    },
+                                  );
+
                                   return;
                                 }
 

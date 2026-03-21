@@ -93,18 +93,31 @@ class AppProvider with ChangeNotifier {
   DateTime? _licenseActivationDate;
   DateTime? get licenseActivationDate => _licenseActivationDate;
 
-  void setLicenseType(LicenseType type, {DateTime? activationDate}) {
+  void setLicenseType(LicenseType type, {DateTime? expirationDate}) {
     _licenseType = type;
-    _licenseActivationDate = activationDate;
+    if (type != LicenseType.free) {
+      if (expirationDate != null) {
+        // Art-Pay provides exact expiration date
+        _licenseActivationDate = expirationDate;
+      } else {
+        // Legacy: activation date is now. Real expiration is +30 days
+        _licenseActivationDate = DateTime.now();
+      }
+    } else {
+      _licenseActivationDate = null;
+    }
+
     SharedPreferences.getInstance().then((prefs) {
       prefs.setInt('license_type', type.index);
-      if (activationDate != null) {
-        prefs.setString(
-          'license_activation_date',
-          activationDate.toIso8601String(),
-        );
+      if (expirationDate != null) {
+        prefs.setString('license_expiration_date', expirationDate.toIso8601String());
+        prefs.remove('license_activation_date');
+      } else if (_licenseActivationDate != null) {
+        prefs.setString('license_activation_date', _licenseActivationDate!.toIso8601String());
+        prefs.remove('license_expiration_date');
       } else {
         prefs.remove('license_activation_date');
+        prefs.remove('license_expiration_date');
       }
     });
     notifyListeners();
@@ -119,10 +132,8 @@ class AppProvider with ChangeNotifier {
     if (_licenseType == LicenseType.free) return;
 
     if (_licenseActivationDate != null) {
-      final expirationDate = _licenseActivationDate!.add(
-        const Duration(days: 30),
-      );
-      if (DateTime.now().isAfter(expirationDate)) {
+      // _licenseActivationDate now holds the exact expiration date because we parse it in _init()
+      if (DateTime.now().isAfter(_licenseActivationDate!)) {
         // Expired
         setLicenseType(LicenseType.free);
       }
@@ -165,6 +176,13 @@ class AppProvider with ChangeNotifier {
           isEnabled: false,
           isVisible: false,
           isTest: true,
+        ),
+        PaymentMethod(
+          id: 'art_pay',
+          name: 'Art-Pay (.lic)',
+          iconAsset: 'assets/icons/art_pay.png', // Fallback to Icons.payment if not found
+          isEnabled: true,
+          isVisible: true,
         ),
       ];
       if (kIsWeb || Platform.isWindows) {
@@ -210,6 +228,13 @@ class AppProvider with ChangeNotifier {
           isEnabled: false,
           isVisible: false,
           isTest: true,
+        ),
+        PaymentMethod(
+          id: 'art_pay',
+          name: 'Art-Pay (.lic)',
+          iconAsset: 'assets/icons/art_pay.png', // Fallback to Icons.payment if not found
+          isEnabled: true,
+          isVisible: true,
         ),
       ];
     }
@@ -274,7 +299,7 @@ class AppProvider with ChangeNotifier {
 
     if (_adsWatched >= adsTarget) {
       // Unlock Selected License
-      setLicenseType(_targetLicenseForAds, activationDate: DateTime.now());
+      setLicenseType(_targetLicenseForAds, expirationDate: DateTime.now().add(const Duration(days: 30)));
       // Reset counter
       _adsWatched = 0;
       await prefs.setInt('ads_watched', 0);
@@ -549,9 +574,17 @@ class AppProvider with ChangeNotifier {
         _licenseType = LicenseType.values[licenseIndex];
       }
 
-      final activationString = prefs.getString('license_activation_date');
-      if (activationString != null) {
-        _licenseActivationDate = DateTime.tryParse(activationString);
+      final exactExpirationString = prefs.getString('license_expiration_date');
+      if (exactExpirationString != null) {
+        _licenseActivationDate = DateTime.tryParse(exactExpirationString);
+      } else {
+        final activationString = prefs.getString('license_activation_date');
+        if (activationString != null) {
+          final parsedActivation = DateTime.tryParse(activationString);
+          if (parsedActivation != null) {
+            _licenseActivationDate = parsedActivation.add(const Duration(days: 30));
+          }
+        }
       }
 
       // Check Expiration
