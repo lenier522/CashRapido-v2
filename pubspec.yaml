@@ -64,7 +64,8 @@ dependencies:
   animated_bottom_navigation_bar: ^1.4.0
   flutter_dotenv: ^6.0.0
   http: ^1.6.0
-  artpay_lib: ^0.0.1
+  artpay_lib: ^0.0.2
+
 
 dev_dependencies:
   flutter_test:
