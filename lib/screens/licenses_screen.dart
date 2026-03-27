@@ -728,9 +728,22 @@ class LicensesScreen extends StatelessWidget {
 
                                 if (method.id == 'art_pay') {
                                   Navigator.of(innerContext).pop();
+
+                                  // IDs de productos creados en el panel Art-Pay
+                                  const Map<LicenseType, String>
+                                  productTokens = {
+                                    LicenseType.personal:
+                                        '00113e86-6bed-4e1c-a38e-d3130a536878',
+                                    LicenseType.pro:
+                                        '1d9f9688-6ac6-42b1-8274-334c64e2a875',
+                                    LicenseType.enterprise:
+                                        'c5f52c39-f316-4bb6-8d91-914089fc1c78',
+                                  };
+
                                   ArtPayPayment.handlePayment(
                                     context: context,
-                                    targetLicenseName: targetLicense.name,
+                                    expectedProductToken:
+                                        productTokens[targetLicense] ?? '',
 
                                     onSuccess: (result) {
                                       provider.setLicenseType(
@@ -740,7 +753,7 @@ class LicensesScreen extends StatelessWidget {
                                     },
 
                                     onError: (error) {
-                                      print("Error: $error");
+                                      debugPrint("ArtPay Error: $error");
                                     },
                                   );
 

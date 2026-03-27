@@ -4,10 +4,7 @@
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
-    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
-    <uses-permission android:name="android.permission.READ_PHONE_NUMBERS"/>
-    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
-    <uses-permission android:name="android.permission.READ_PHONE_NUMBERS"/>
+    <!-- Phone permissions removed for privacy and simplified activation -->
     <!-- Notification Permissions -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
@@ -114,5 +111,11 @@
             <action android:name="android.intent.action.VIEW" /> 
             <data android:scheme="apklis" /> 
         </intent> 
+    </queries>
+
+    <!-- Requiere visibilidad para consultar el JWT token y la presencia de Billetera Art-Pay -->
+    <queries>
+        <provider android:authorities="cu.lenier.billetera_artpay.provider" />
+        <package android:name="cu.lenier.billetera_artpay" />
     </queries>
 </manifest>
