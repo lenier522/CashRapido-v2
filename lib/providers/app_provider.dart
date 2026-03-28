@@ -110,10 +110,16 @@ class AppProvider with ChangeNotifier {
     SharedPreferences.getInstance().then((prefs) {
       prefs.setInt('license_type', type.index);
       if (expirationDate != null) {
-        prefs.setString('license_expiration_date', expirationDate.toIso8601String());
+        prefs.setString(
+          'license_expiration_date',
+          expirationDate.toIso8601String(),
+        );
         prefs.remove('license_activation_date');
       } else if (_licenseActivationDate != null) {
-        prefs.setString('license_activation_date', _licenseActivationDate!.toIso8601String());
+        prefs.setString(
+          'license_activation_date',
+          _licenseActivationDate!.toIso8601String(),
+        );
         prefs.remove('license_expiration_date');
       } else {
         prefs.remove('license_activation_date');
@@ -159,15 +165,15 @@ class AppProvider with ChangeNotifier {
           id: 'transfermovil',
           name: 'Transfermóvil',
           iconAsset: 'assets/icons/transfermovil.png',
-          isEnabled: true,
-          isVisible: true,
+          isEnabled: false,
+          isVisible: false,
         ),
         PaymentMethod(
           id: 'enzona',
           name: 'EnZona',
           iconAsset: 'assets/icons/enzona.png',
-          isEnabled: true,
-          isVisible: true,
+          isEnabled: false,
+          isVisible: false,
         ),
         PaymentMethod(
           id: 'test_cuba',
@@ -180,7 +186,8 @@ class AppProvider with ChangeNotifier {
         PaymentMethod(
           id: 'art_pay',
           name: 'Art-Pay (.lic)',
-          iconAsset: 'assets/icons/art_pay.png', // Fallback to Icons.payment if not found
+          iconAsset:
+              'assets/icons/art_pay.png', // Fallback to Icons.payment if not found
           isEnabled: true,
           isVisible: true,
         ),
@@ -232,7 +239,8 @@ class AppProvider with ChangeNotifier {
         PaymentMethod(
           id: 'art_pay',
           name: 'Art-Pay (.lic)',
-          iconAsset: 'assets/icons/art_pay.png', // Fallback to Icons.payment if not found
+          iconAsset:
+              'assets/icons/art_pay.png', // Fallback to Icons.payment if not found
           isEnabled: true,
           isVisible: true,
         ),
@@ -299,7 +307,10 @@ class AppProvider with ChangeNotifier {
 
     if (_adsWatched >= adsTarget) {
       // Unlock Selected License
-      setLicenseType(_targetLicenseForAds, expirationDate: DateTime.now().add(const Duration(days: 30)));
+      setLicenseType(
+        _targetLicenseForAds,
+        expirationDate: DateTime.now().add(const Duration(days: 30)),
+      );
       // Reset counter
       _adsWatched = 0;
       await prefs.setInt('ads_watched', 0);
@@ -582,7 +593,9 @@ class AppProvider with ChangeNotifier {
         if (activationString != null) {
           final parsedActivation = DateTime.tryParse(activationString);
           if (parsedActivation != null) {
-            _licenseActivationDate = parsedActivation.add(const Duration(days: 30));
+            _licenseActivationDate = parsedActivation.add(
+              const Duration(days: 30),
+            );
           }
         }
       }

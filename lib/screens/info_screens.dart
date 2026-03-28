@@ -136,6 +136,11 @@ class HelpCenterScreen extends StatelessWidget {
           ),
           _buildHelpItem(
             context,
+            context.t('help_q_artpay'),
+            context.t('help_a_artpay'),
+          ),
+          _buildHelpItem(
+            context,
             context.t('help_q_restore_purchase'),
             context.t('help_a_restore_purchase'),
           ),

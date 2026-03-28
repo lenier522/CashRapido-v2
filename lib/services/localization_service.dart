@@ -151,6 +151,9 @@ class AppLocalizations {
       'help_q_license_types': '¿Qué tipos de licencias existen?',
       'help_a_license_types':
           'Personal (Gratis), Pro y Enterprise. Cada una desbloquea más tarjetas, gráficos y sincronización.',
+      'help_q_artpay': '¿Cómo pagar con ArtPay?',
+      'help_a_artpay':
+          '1. Regístrate en https://artpay.net.cu\n2. Recarga tu saldo en la plataforma web.\n3. Al adquirir una licencia en CashRapido, selecciona "ArtPay" como método de pago.\n4. Sigue las instrucciones y confirma el pago desde tu cuenta.',
       'help_q_restore_purchase': '¿Cómo restauro mi compra?',
       'help_a_restore_purchase':
           'Ve a Configuración -> Licencias -> Verificar Licencia. La app comprobará tu compra en Apklis automáticamente.',
@@ -730,6 +733,9 @@ class AppLocalizations {
       'help_q_license_types': 'What license types are available?',
       'help_a_license_types':
           'Personal (Free), Pro, and Enterprise. Each unlocks more cards, charts, and cloud sync.',
+      'help_q_artpay': 'How to pay with ArtPay?',
+      'help_a_artpay':
+          '1. Register at https://artpay.net.cu\n2. Top up your balance on the web platform.\n3. When buying a license in CashRapido, choose "ArtPay" as payment method.\n4. Follow the instructions and confirm the payment from your account.',
       'help_q_restore_purchase': 'How do I restore my purchase?',
       'help_a_restore_purchase':
           'Go to Settings -> Licenses -> Verify License. The app will check your Apklis purchase automatically.',
