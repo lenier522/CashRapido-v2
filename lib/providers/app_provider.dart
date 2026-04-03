@@ -20,6 +20,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import '../services/backup_service.dart';
 import '../licences/apklis.dart';
+import '../licences/license_type.dart';
 
 class AppProvider with ChangeNotifier {
   late Box<InternalTransaction> _transactionBox;
@@ -48,18 +49,42 @@ class AppProvider with ChangeNotifier {
   int _adsWatched = 0;
   int get adsWatched => _adsWatched;
 
-  LicenseType _targetLicenseForAds = LicenseType.personal; // Default
+  LicenseType _targetLicenseForAds = LicenseType.monthlyPersonal; // Default
 
+  /// Obtiene la cantidad de anuncios necesarios para desbloquear una licencia
+  /// - Semanales: 3, 5, 7 anuncios (Personal, Pro, Enterprise)
+  /// - Mensuales: 10, 25, 35 anuncios (Personal, Pro, Enterprise)
+  /// - Anuales: 50, 100, 150 anuncios (Personal, Pro, Enterprise)
   int get adsTarget {
-    switch (_targetLicenseForAds) {
-      case LicenseType.personal:
-        return 10;
-      case LicenseType.pro:
-        return 25;
-      case LicenseType.enterprise:
-        return 35;
-      default:
-        return 10;
+    final level = _targetLicenseForAds.level;
+    final period = _targetLicenseForAds.period;
+
+    // Base de anuncios por nivel
+    int baseAds;
+    switch (level) {
+      case LicenseLevel.personal:
+        baseAds = 10;
+        break;
+      case LicenseLevel.pro:
+        baseAds = 25;
+        break;
+      case LicenseLevel.enterprise:
+        baseAds = 35;
+        break;
+      case LicenseLevel.free:
+        return 0;
+    }
+
+    // Multiplicador por período
+    switch (period) {
+      case LicensePeriod.weekly:
+        return (baseAds * 0.3).ceil(); // 30% de anuncios
+      case LicensePeriod.monthly:
+        return baseAds; // 100% de anuncios
+      case LicensePeriod.annual:
+        return baseAds * 5; // 500% de anuncios (más económico a largo plazo)
+      case LicensePeriod.lifetime:
+        return 0;
     }
   }
 
@@ -85,7 +110,7 @@ class AppProvider with ChangeNotifier {
   LicenseType get licenseType {
     if (!kIsWeb && Platform.isWindows) {
       return LicenseType
-          .enterprise; // Fully unlocked on Windows after MAC/Code Activation
+          .monthlyEnterprise; // Fully unlocked on Windows after MAC/Code Activation
     }
     return _licenseType;
   }
@@ -97,11 +122,14 @@ class AppProvider with ChangeNotifier {
     _licenseType = type;
     if (type != LicenseType.free) {
       if (expirationDate != null) {
-        // Art-Pay provides exact expiration date
+        // Art-Pay/Apklis provides exact expiration date
         _licenseActivationDate = expirationDate;
       } else {
-        // Legacy: activation date is now. Real expiration is +30 days
-        _licenseActivationDate = DateTime.now();
+        // Legacy: activation date is now. Expiration is based on license duration
+        final durationDays = type.durationDays;
+        _licenseActivationDate = DateTime.now().add(
+          Duration(days: durationDays),
+        );
       }
     } else {
       _licenseActivationDate = null;
@@ -241,8 +269,8 @@ class AppProvider with ChangeNotifier {
           name: 'Art-Pay (.lic)',
           iconAsset:
               'assets/icons/art_pay.png', // Fallback to Icons.payment if not found
-          isEnabled: true,
-          isVisible: true,
+          isEnabled: false,
+          isVisible: false,
         ),
       ];
     }
@@ -260,23 +288,7 @@ class AppProvider with ChangeNotifier {
     }
 
     if (methodId == 'apklis') {
-      // Map LicenseType to string for ApklisService
-      String licenseTypeStr;
-      switch (targetLicense) {
-        case LicenseType.personal:
-          licenseTypeStr = 'personal';
-          break;
-        case LicenseType.pro:
-          licenseTypeStr = 'pro';
-          break;
-        case LicenseType.enterprise:
-          licenseTypeStr = 'enterprise';
-          break;
-        default:
-          licenseTypeStr = 'personal';
-      }
-
-      final status = await ApklisService.purchase(licenseTypeStr);
+      final status = await ApklisService.purchase(targetLicense);
 
       // Check for strict success ONLY
       if (status.paid) {
@@ -285,8 +297,7 @@ class AppProvider with ChangeNotifier {
       }
 
       // Return the specific error from Apklis
-      // This includes "Ya pagaste una licencia" if user already has one
-      return status.error ?? 'Error desconocido de Apklis';
+      return ApklisService.humanizeError(status.error);
     }
 
     // Default error for unknown methods
@@ -306,10 +317,12 @@ class AppProvider with ChangeNotifier {
     await prefs.setInt('ads_watched', _adsWatched);
 
     if (_adsWatched >= adsTarget) {
-      // Unlock Selected License
+      // Unlock Selected License with proper duration
       setLicenseType(
         _targetLicenseForAds,
-        expirationDate: DateTime.now().add(const Duration(days: 30)),
+        expirationDate: DateTime.now().add(
+          Duration(days: _targetLicenseForAds.durationDays),
+        ),
       );
       // Reset counter
       _adsWatched = 0;
@@ -327,55 +340,19 @@ class AppProvider with ChangeNotifier {
       if (!status.paid) {
         // User doesn't have an active license
         // Clean up the error message if it comes as JSON
-        String errorMsg = status.error ?? 'No se encontró licencia activa';
-
-        // Try to extract detail from JSON format: {"detail":"Mensaje"}
-        try {
-          if (errorMsg.trim().startsWith('{')) {
-            final detailMatch = RegExp(
-              r'"detail"\s*:\s*"([^"]+)"',
-            ).firstMatch(errorMsg);
-            if (detailMatch != null) {
-              errorMsg = detailMatch.group(1) ?? errorMsg;
-            }
-          }
-        } catch (_) {
-          // If parsing fails, use the original message
-        }
-
-        // Clean up remaining JSON artifacts
-        errorMsg = errorMsg
-            .replaceAll('"}"', '')
-            .replaceAll('{"', '')
-            .replaceAll('"', '');
+        String errorMsg = ApklisService.humanizeError(status.error);
 
         return errorMsg;
       }
 
       // User has a paid license, now determine which tier
-      String? licenseType = ApklisService.getLicenseTypeFromUUID(
-        status.license,
-      );
+      final licenseType = ApklisService.getLicenseTypeFromUUID(status.license);
 
-      licenseType ??= 'pro';
-
-      // Map string to LicenseType enum and activate
-      LicenseType targetLicense;
-      switch (licenseType) {
-        case 'personal':
-          targetLicense = LicenseType.personal;
-          break;
-        case 'pro':
-          targetLicense = LicenseType.pro;
-          break;
-        case 'enterprise':
-          targetLicense = LicenseType.enterprise;
-          break;
-        default:
-          targetLicense = LicenseType.pro;
+      if (licenseType == null) {
+        return 'Licencia no reconocida. Contacta con soporte.';
       }
 
-      setLicenseType(targetLicense);
+      setLicenseType(licenseType);
       return null; // Success
     } catch (e) {
       // Clean up error message
@@ -404,14 +381,15 @@ class AppProvider with ChangeNotifier {
 
   int get maxCards {
     if (isPromoActive) return 999;
-    switch (_licenseType) {
-      case LicenseType.free:
+    final level = _licenseType.level;
+    switch (level) {
+      case LicenseLevel.free:
         return 1;
-      case LicenseType.personal:
+      case LicenseLevel.personal:
         return 3; // 2 + 1 free
-      case LicenseType.pro:
+      case LicenseLevel.pro:
         return 4; // Requested: 4 cards for Pro
-      case LicenseType.enterprise:
+      case LicenseLevel.enterprise:
         return 999;
     }
   }
@@ -424,63 +402,68 @@ class AppProvider with ChangeNotifier {
   bool get isPromoActive =>
       DateTime.now().isBefore(DateTime(2026, 1, 11)); // Promo ended
 
-  // Features unlocked at PERSONAL level
-  bool get canTransfer => isPromoActive || _licenseType != LicenseType.free;
+  // Features unlocked at PERSONAL level or higher
+  bool get canTransfer =>
+      isPromoActive || _licenseType.level != LicenseLevel.free;
   bool get canSecurizeCard =>
-      isPromoActive || _licenseType != LicenseType.free; // Lock/Limit
+      isPromoActive || _licenseType.level != LicenseLevel.free; // Lock/Limit
   bool get canViewDetailedStats =>
-      isPromoActive || _licenseType != LicenseType.free; // Day/Week/Year/Range
+      isPromoActive ||
+      _licenseType.level != LicenseLevel.free; // Day/Week/Year/Range
   bool get canChangePassword =>
-      isPromoActive || _licenseType != LicenseType.free;
-  bool get canAddCurrency => isPromoActive || _licenseType != LicenseType.free;
-  bool get canImportData => isPromoActive || _licenseType != LicenseType.free;
+      isPromoActive || _licenseType.level != LicenseLevel.free;
+  bool get canAddCurrency =>
+      isPromoActive || _licenseType.level != LicenseLevel.free;
+  bool get canImportData =>
+      isPromoActive || _licenseType.level != LicenseLevel.free;
 
-  // Features locked at PERSONAL (Pro only)
+  // Features locked at Pro level or higher
   bool get canExportData =>
-      isPromoActive || _licenseType.index >= LicenseType.pro.index;
+      isPromoActive || _licenseType.level.index >= LicenseLevel.pro.index;
   bool get canSyncDrive =>
-      isPromoActive || _licenseType == LicenseType.enterprise;
-  bool get canUseAI => isPromoActive || _licenseType == LicenseType.enterprise;
+      isPromoActive || _licenseType.level == LicenseLevel.enterprise;
+  bool get canUseAI =>
+      isPromoActive || _licenseType.level == LicenseLevel.enterprise;
   bool get canUseBiometrics =>
-      isPromoActive || _licenseType == LicenseType.enterprise;
+      isPromoActive || _licenseType.level == LicenseLevel.enterprise;
 
   // Enterprise Only
   bool get canUseScanner =>
-      isPromoActive || _licenseType == LicenseType.enterprise;
+      isPromoActive || _licenseType.level == LicenseLevel.enterprise;
   bool get canUseMoreActions =>
-      isPromoActive || _licenseType == LicenseType.enterprise;
+      isPromoActive || _licenseType.level == LicenseLevel.enterprise;
   bool get canExportPDF =>
-      isPromoActive || _licenseType == LicenseType.enterprise;
+      isPromoActive || _licenseType.level == LicenseLevel.enterprise;
 
-  // Features locked at PERSONAL (Pro only) - Newly Requested
+  // Features locked at Pro level or higher
   bool get canChangeCardPIN =>
-      isPromoActive || _licenseType.index >= LicenseType.pro.index;
+      isPromoActive || _licenseType.level.index >= LicenseLevel.pro.index;
   bool get canChangeAppPIN =>
-      isPromoActive || _licenseType.index >= LicenseType.pro.index;
+      isPromoActive || _licenseType.level.index >= LicenseLevel.pro.index;
   bool get canCreateCategory =>
-      isPromoActive || _licenseType.index >= LicenseType.pro.index;
+      isPromoActive || _licenseType.level.index >= LicenseLevel.pro.index;
   bool get canFilterStatsAccount =>
-      isPromoActive || _licenseType.index >= LicenseType.pro.index;
+      isPromoActive || _licenseType.level.index >= LicenseLevel.pro.index;
   bool get canManageBanks =>
-      isPromoActive || _licenseType.index >= LicenseType.pro.index;
+      isPromoActive || _licenseType.level.index >= LicenseLevel.pro.index;
   bool get canExportExcel =>
-      isPromoActive || _licenseType.index >= LicenseType.pro.index;
+      isPromoActive || _licenseType.level.index >= LicenseLevel.pro.index;
   bool get canCustomizeCharts =>
-      isPromoActive || _licenseType == LicenseType.enterprise;
+      isPromoActive || _licenseType.level == LicenseLevel.enterprise;
 
   // New Feature: TransferMovil Integration (Enterprise Only)
   bool _transferMovilEnabled = false;
   bool get transferMovilEnabled => _transferMovilEnabled;
 
   bool get canUseTransferMovil =>
-      isPromoActive || _licenseType == LicenseType.enterprise;
+      isPromoActive || _licenseType.level == LicenseLevel.enterprise;
 
   // Widgets (Enterprise Only)
   bool get canUseWidgets =>
-      isPromoActive || _licenseType == LicenseType.enterprise;
+      isPromoActive || _licenseType.level == LicenseLevel.enterprise;
 
   bool get canUseBusinessModule =>
-      isPromoActive || _licenseType == LicenseType.enterprise;
+      isPromoActive || _licenseType.level == LicenseLevel.enterprise;
 
   Future<void> setTransferMovilEnabled(bool enabled) async {
     if (enabled && !canUseTransferMovil) {
@@ -507,6 +490,18 @@ class AppProvider with ChangeNotifier {
   // Currency
   String _mainCurrency = 'CUP';
   String get mainCurrency => _mainCurrency;
+
+  Map<String, double> _exchangeRates = {};
+  Map<String, double> get exchangeRates => _exchangeRates;
+
+  double getExchangeRate(String currencyCode) => _exchangeRates[currencyCode] ?? 1.0;
+
+  Future<void> setExchangeRate(String currencyCode, double rate) async {
+    _exchangeRates[currencyCode] = rate;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('exchange_rates', jsonEncode(_exchangeRates));
+    notifyListeners();
+  }
 
   List<Currency> _customCurrencies = [];
   List<Currency> get customCurrencies => _customCurrencies;
@@ -571,6 +566,24 @@ class AppProvider with ChangeNotifier {
 
       // Load Currency
       _mainCurrency = prefs.getString('main_currency') ?? 'CUP';
+      // Load Custom Exchange Rates
+      final ratesJson = prefs.getString('exchange_rates');
+      if (ratesJson != null) {
+        try {
+          final decoded = jsonDecode(ratesJson) as Map<String, dynamic>;
+          _exchangeRates = decoded.map((key, value) => MapEntry(key, (value as num).toDouble()));
+        } catch (e) {
+          _exchangeRates = {};
+        }
+      } else {
+        // Fallback for previous single setting or defaults
+        final oldRate = prefs.getDouble('exchange_rate');
+        if (oldRate != null) {
+          _exchangeRates = {'USD': oldRate};
+        } else {
+          _exchangeRates = {'USD': 320.0, 'EUR': 340.0, 'MLC': 270.0}; // Default example rates
+        }
+      }
 
       final customCurrenciesJson = prefs.getStringList('custom_currencies');
       if (customCurrenciesJson != null) {
@@ -580,7 +593,7 @@ class AppProvider with ChangeNotifier {
       }
 
       // Load License
-      final licenseIndex = prefs.getInt('license_type') ?? 0;
+      final licenseIndex = prefs.getInt('license_type') ?? LicenseType.free.index;
       if (licenseIndex >= 0 && licenseIndex < LicenseType.values.length) {
         _licenseType = LicenseType.values[licenseIndex];
       }
@@ -593,8 +606,12 @@ class AppProvider with ChangeNotifier {
         if (activationString != null) {
           final parsedActivation = DateTime.tryParse(activationString);
           if (parsedActivation != null) {
+            // Use dynamic duration based on license type
+            final durationDays = _licenseType.durationDays > 0
+                ? _licenseType.durationDays
+                : 30; // Default fallback
             _licenseActivationDate = parsedActivation.add(
-              const Duration(days: 30),
+              Duration(days: durationDays),
             );
           }
         }
@@ -1621,6 +1638,8 @@ class AppProvider with ChangeNotifier {
       transactions: _transactions,
       categories: _categories,
       cards: _cards,
+      exchangeRates: _exchangeRates,
+      mainCurrency: _mainCurrency,
     );
   }
 
@@ -1629,6 +1648,8 @@ class AppProvider with ChangeNotifier {
       transactions: _transactions,
       categories: _categories,
       cards: _cards,
+      exchangeRates: _exchangeRates,
+      mainCurrency: _mainCurrency,
     );
   }
 

@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../models/business.dart';
 import '../models/product.dart';
@@ -24,6 +26,10 @@ class BusinessProvider with ChangeNotifier {
 
   // Current Active Business
   String? _activeBusinessId;
+
+  // Currency Settings
+  String _mainCurrency = 'CUP';
+  Map<String, double> _exchangeRates = {};
 
   bool _isLoading = true;
 
@@ -76,6 +82,25 @@ class BusinessProvider with ChangeNotifier {
     _expenseBox = await Hive.openBox<BusinessExpense>('business_expenses');
     _closingBox = await Hive.openBox<Closing>('closings');
 
+    final prefs = await SharedPreferences.getInstance();
+    _mainCurrency = prefs.getString('main_currency') ?? 'CUP';
+    final ratesJson = prefs.getString('exchange_rates');
+    if (ratesJson != null) {
+      try {
+        final decoded = jsonDecode(ratesJson) as Map<String, dynamic>;
+        _exchangeRates = decoded.map((key, value) => MapEntry(key, (value as num).toDouble()));
+      } catch (e) {
+        _exchangeRates = {};
+      }
+    } else {
+      final oldRate = prefs.getDouble('exchange_rate');
+      if (oldRate != null) {
+        _exchangeRates = {'USD': oldRate};
+      } else {
+        _exchangeRates = {'USD': 320.0, 'EUR': 340.0, 'MLC': 270.0};
+      }
+    }
+
     _fetchData();
     _isLoading = false;
     notifyListeners();
@@ -92,6 +117,23 @@ class BusinessProvider with ChangeNotifier {
     if (_businesses.isNotEmpty && _activeBusinessId == null) {
       _activeBusinessId = _businesses.first.id;
     }
+  }
+
+  void updateCurrencyConfig(String currency, Map<String, double> rates) {
+    _mainCurrency = currency;
+    _exchangeRates = rates;
+    notifyListeners();
+  }
+
+  double _convertAmount(double amount, String currency) {
+    if (currency == _mainCurrency) return amount;
+    
+    final rateToMain = _exchangeRates[currency];
+    if (rateToMain != null && rateToMain > 0) {
+      return amount * rateToMain;
+    }
+    
+    return amount;
   }
 
   // ========== BUSINESS MANAGEMENT ==========
@@ -437,7 +479,7 @@ class BusinessProvider with ChangeNotifier {
     );
     final expenseTotal = periodExpenses.fold<double>(
       0.0,
-      (sum, e) => sum + e.amount,
+      (sum, e) => sum + _convertAmount(e.amount, e.currency),
     );
 
     final profit = income - expenseTotal;
@@ -464,7 +506,7 @@ class BusinessProvider with ChangeNotifier {
 
   // Total Expenses (all time)
   double get totalExpenses {
-    return expenses.fold<double>(0.0, (sum, e) => sum + e.amount);
+    return expenses.fold<double>(0.0, (sum, e) => sum + _convertAmount(e.amount, e.currency));
   }
 
   // Total Profit (all time)

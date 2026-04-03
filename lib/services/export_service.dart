@@ -22,6 +22,33 @@ class ExportService {
     return trans.amount > 0 ? 'Ingreso' : 'Gasto';
   }
 
+  double _convertCurrency(
+    double amount,
+    String fromCurrency,
+    String toCurrency,
+    Map<String, double> rates,
+    String mainCurrency,
+  ) {
+    if (fromCurrency == toCurrency) return amount;
+
+    double amountInMain = amount;
+    if (fromCurrency != mainCurrency) {
+      final rateToMain = rates[fromCurrency];
+      if (rateToMain != null && rateToMain > 0) {
+        amountInMain = amount * rateToMain;
+      }
+    }
+
+    if (toCurrency != mainCurrency) {
+      final rateFromMain = rates[toCurrency];
+      if (rateFromMain != null && rateFromMain > 0) {
+        return amountInMain / rateFromMain;
+      }
+    }
+
+    return amountInMain;
+  }
+
   // --- Constants ---
   static const _primaryColor = PdfColors.deepPurple;
 
@@ -33,6 +60,8 @@ class ExportService {
     required List<InternalTransaction> transactions,
     required List<Category> categories,
     required List<AccountCard> cards,
+    required Map<String, double> exchangeRates,
+    required String mainCurrency,
   }) async {
     final xlsio.Workbook workbook = xlsio.Workbook();
 
@@ -66,40 +95,51 @@ class ExportService {
     dashboardSheet.getRangeByName('A$dashRow').cellStyle.fontColor = '#4527A0';
     dashRow += 2;
 
-    // Global Stats by Currency
-    final currencies = cards.map((c) => c.currency).toSet().toList();
-    if (currencies.isEmpty) currencies.add('USD');
+    // Global Stats Consolidated in Main Currency
+    double totalIncome = 0.0;
+    double totalExpense = 0.0;
 
-    for (var currency in currencies) {
-      final currencyTrans = transactions.where((t) => t.currency == currency);
-      final income = currencyTrans
-          .where(
-            (t) => t.amount > 0 && !t.title.toLowerCase().contains('transfer'),
-          )
-          .fold(0.0, (s, t) => s + t.amount);
-      final expense = currencyTrans
-          .where((t) => t.amount < 0)
-          .fold(0.0, (s, t) => s + t.amount.abs());
-      final balance = income - expense;
-
-      dashboardSheet.getRangeByName('A$dashRow').setText('Moneda: $currency');
-      dashboardSheet.getRangeByName('A$dashRow').cellStyle = subHeaderStyle;
-      dashRow++;
-
-      // Header row
-      dashboardSheet.getRangeByName('A$dashRow').setText('Total Ingresos');
-      dashboardSheet.getRangeByName('B$dashRow').setText('Total Gastos');
-      dashboardSheet.getRangeByName('C$dashRow').setText('Balance Neto');
-      dashboardSheet.getRangeByName('A$dashRow:C$dashRow').cellStyle =
-          headerStyle;
-      dashRow++;
-
-      // Value row
-      dashboardSheet.getRangeByName('A$dashRow').setNumber(income);
-      dashboardSheet.getRangeByName('B$dashRow').setNumber(expense);
-      dashboardSheet.getRangeByName('C$dashRow').setNumber(balance);
-      dashRow += 3;
+    for (var t in transactions) {
+      if (!t.title.toLowerCase().contains('transfer')) {
+        final amtMain = _convertCurrency(
+          t.amount,
+          t.currency,
+          mainCurrency,
+          exchangeRates,
+          mainCurrency,
+        );
+        if (amtMain > 0) {
+          totalIncome += amtMain;
+        } else {
+          totalExpense += amtMain.abs();
+        }
+      }
     }
+    final totalBalance = totalIncome - totalExpense;
+
+    dashboardSheet
+        .getRangeByName('A$dashRow')
+        .setText('Resumen Consolidado (en $mainCurrency)');
+    dashboardSheet.getRangeByName('A$dashRow').cellStyle = subHeaderStyle;
+    dashRow++;
+
+    dashboardSheet
+        .getRangeByName('A$dashRow')
+        .setText('Total Ingresos ($mainCurrency)');
+    dashboardSheet
+        .getRangeByName('B$dashRow')
+        .setText('Total Gastos ($mainCurrency)');
+    dashboardSheet
+        .getRangeByName('C$dashRow')
+        .setText('Balance Neto ($mainCurrency)');
+    dashboardSheet.getRangeByName('A$dashRow:C$dashRow').cellStyle =
+        headerStyle;
+    dashRow++;
+
+    dashboardSheet.getRangeByName('A$dashRow').setNumber(totalIncome);
+    dashboardSheet.getRangeByName('B$dashRow').setNumber(totalExpense);
+    dashboardSheet.getRangeByName('C$dashRow').setNumber(totalBalance);
+    dashRow += 3;
     dashboardSheet.autoFitColumn(1);
     dashboardSheet.autoFitColumn(2);
     dashboardSheet.autoFitColumn(3);
@@ -180,14 +220,24 @@ class ExportService {
       final cardTrans = transactions.where((t) => t.cardId == card.id).toList();
 
       // Card Statistics
-      double cardIncome = cardTrans
-          .where(
-            (t) => t.amount > 0 && !t.title.toLowerCase().contains('transfer'),
-          )
-          .fold(0.0, (s, t) => s + t.amount);
-      double cardExpense = cardTrans
-          .where((t) => t.amount < 0)
-          .fold(0.0, (s, t) => s + t.amount.abs());
+      double cardIncome = 0.0;
+      double cardExpense = 0.0;
+      for (var t in cardTrans) {
+        if (!t.title.toLowerCase().contains('transfer')) {
+          final amtConverted = _convertCurrency(
+            t.amount,
+            t.currency,
+            card.currency,
+            exchangeRates,
+            mainCurrency,
+          );
+          if (amtConverted > 0) {
+            cardIncome += amtConverted;
+          } else {
+            cardExpense += amtConverted.abs();
+          }
+        }
+      }
 
       sheet.getRangeByName('A4').setText('Ingresos Totales');
       sheet.getRangeByName('B4').setText('Gastos Totales');
@@ -306,6 +356,8 @@ class ExportService {
     required List<InternalTransaction> transactions,
     required List<Category> categories,
     required List<AccountCard> cards,
+    required Map<String, double> exchangeRates,
+    required String mainCurrency,
   }) async {
     final pdf = pw.Document();
     final now = DateTime.now();
@@ -382,60 +434,77 @@ class ExportService {
               _buildPageHeader('Resumen Ejecutivo'),
               pw.SizedBox(height: 20),
 
-              ...cards.map((c) => c.currency).toSet().map((currency) {
-                final currencyTrans = transactions.where(
-                  (t) => t.currency == currency,
-                );
-                final income = currencyTrans
-                    .where(
-                      (t) =>
-                          t.amount > 0 &&
-                          !t.title.toLowerCase().contains('transfer'),
-                    )
-                    .fold(0.0, (s, t) => s + t.amount);
-                final expense = currencyTrans
-                    .where((t) => t.amount < 0)
-                    .fold(0.0, (s, t) => s + t.amount.abs());
-                final balance = income - expense;
+              pw.Builder(
+                builder: (context) {
+                  double totalIncome = 0.0;
+                  double totalExpense = 0.0;
+                  for (var t in transactions) {
+                    if (!t.title.toLowerCase().contains('transfer')) {
+                      final amtMain = _convertCurrency(
+                        t.amount,
+                        t.currency,
+                        mainCurrency,
+                        exchangeRates,
+                        mainCurrency,
+                      );
+                      if (amtMain > 0) {
+                        totalIncome += amtMain;
+                      } else {
+                        totalExpense += amtMain.abs();
+                      }
+                    }
+                  }
+                  final totalBalance = totalIncome - totalExpense;
 
-                return pw.Container(
-                  margin: const pw.EdgeInsets.only(bottom: 15),
-                  padding: const pw.EdgeInsets.all(12),
-                  decoration: pw.BoxDecoration(
-                    border: pw.Border.all(color: PdfColors.grey300),
-                    borderRadius: const pw.BorderRadius.all(
-                      pw.Radius.circular(8),
+                  return pw.Container(
+                    margin: const pw.EdgeInsets.only(bottom: 15),
+                    padding: const pw.EdgeInsets.all(12),
+                    decoration: pw.BoxDecoration(
+                      border: pw.Border.all(color: PdfColors.grey300),
+                      borderRadius: const pw.BorderRadius.all(
+                        pw.Radius.circular(8),
+                      ),
+                      color: PdfColors.grey100,
                     ),
-                    color: PdfColors.grey100,
-                  ),
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        'Moneda: $currency',
-                        style: pw.TextStyle(
-                          fontSize: 16,
-                          fontWeight: pw.FontWeight.bold,
-                          color: _primaryColor,
-                        ),
-                      ),
-                      pw.Divider(),
-                      pw.Row(
-                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildStatItem('Ingresos', income, PdfColors.green),
-                          _buildStatItem('Gastos', expense, PdfColors.red),
-                          _buildStatItem(
-                            'Balance',
-                            balance,
-                            balance >= 0 ? PdfColors.black : PdfColors.red,
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          'Resumen Consolidado ($mainCurrency)',
+                          style: pw.TextStyle(
+                            fontSize: 16,
+                            fontWeight: pw.FontWeight.bold,
+                            color: _primaryColor,
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              }),
+                        ),
+                        pw.Divider(),
+                        pw.Row(
+                          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildStatItem(
+                              'Ingresos',
+                              totalIncome,
+                              PdfColors.green,
+                            ),
+                            _buildStatItem(
+                              'Gastos',
+                              totalExpense,
+                              PdfColors.red,
+                            ),
+                            _buildStatItem(
+                              'Balance',
+                              totalBalance,
+                              totalBalance >= 0
+                                  ? PdfColors.black
+                                  : PdfColors.red,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ],
           );
         },
@@ -479,7 +548,12 @@ class ExportService {
                     // Visual Card Header (Only on first page of this card)
                     _buildVisualCard(card),
                     pw.SizedBox(height: 20),
-                    _buildCardSummary(card, cardTrans),
+                    _buildCardSummary(
+                      card,
+                      cardTrans,
+                      exchangeRates,
+                      mainCurrency,
+                    ),
                     pw.SizedBox(height: 20),
                     pw.Text(
                       'Historial de Transacciones',
@@ -654,13 +728,27 @@ class ExportService {
   pw.Widget _buildCardSummary(
     AccountCard card,
     List<InternalTransaction> cardTrans,
+    Map<String, double> exchangeRates,
+    String mainCurrency,
   ) {
-    final income = cardTrans
-        .where((t) => t.amount > 0)
-        .fold(0.0, (s, t) => s + t.amount);
-    final expense = cardTrans
-        .where((t) => t.amount < 0)
-        .fold(0.0, (s, t) => s + t.amount.abs());
+    double income = 0.0;
+    double expense = 0.0;
+    for (var t in cardTrans) {
+      if (!t.title.toLowerCase().contains('transfer')) {
+        final amt = _convertCurrency(
+          t.amount,
+          t.currency,
+          card.currency,
+          exchangeRates,
+          mainCurrency,
+        );
+        if (amt > 0) {
+          income += amt;
+        } else {
+          expense += amt.abs();
+        }
+      }
+    }
 
     return pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceAround,

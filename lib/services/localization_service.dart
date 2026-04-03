@@ -530,22 +530,34 @@ class AppLocalizations {
       'ask_ai_hint': 'Pide consejos, análisis...',
       'ai_welcome_message': '¡Hola! Soy tu asistente financiero personal.',
 
-      // Licenses
-      'licenses_title': 'Licencias Disponibles',
+      // Licenses - Periods
+      'period_weekly': 'Semanal',
+      'period_monthly': 'Mensual',
+      'period_annual': 'Anual',
+      'days': 'días',
+
+      // Licenses - Titles
+      'licenses_title': 'Elige tu Plan',
       'license_personal': 'Personal',
       'license_pro': 'Pro',
       'license_enterprise': 'Empresarial',
+
+      // Licenses - Features Personal
       'feat_3_cards': '3 Tarjetas',
       'feat_transfers': 'Transferencias',
       'feat_lock_card': 'Bloqueo/Límite Tarjeta',
       'feat_adv_stats': 'Estadísticas (Día/Semana)',
       'feat_settings_basic': 'Config (Pass/Moneda/Imp)',
+
+      // Licenses - Features Pro
       'feat_pro_cards': '4 Tarjetas',
       'feat_pro_categories': 'Crear Categorías',
       'feat_pro_stats': 'Filtros (Tarjeta/Efectivo)',
       'feat_pro_settings': 'Config (PIN/Excel/Bancos)',
       'feat_pro_security': 'Cambiar PIN Tarjeta',
-      // Enterprise
+      'feat_pro_export': 'Exportar Excel',
+
+      // Licenses - Features Enterprise
       'features_all_pro': 'Todo lo de PRO +:',
       'feat_ent_unlimited': 'Tarjetas Ilimitadas',
       'feat_ent_scanner': 'Escáner y Acciones Rápidas',
@@ -554,6 +566,8 @@ class AppLocalizations {
       'feat_ent_cloud': 'Sincronización Cloud',
       'feat_ent_business': 'Negocio, TPV y Cierres',
       'feat_ent_inventory': 'Inventario y Ganancias',
+      'feat_ent_all_features': 'Todas las características',
+
       // Payment
       'payment_methods_title': 'Método de Pago',
       'payment_test_success': '¡Pago Exitoso! Disfruta tu nueva licencia.',
@@ -563,6 +577,7 @@ class AppLocalizations {
       'payment_cancelled': 'Pago cancelado',
       'payment_pending':
           'El pago de la licencia está pendiente en Apklis. Revise su app de Apklis.',
+      'processing_payment': 'Procesando pago...',
       'auth_required': 'Autenticación requerida. Inicie sesión en Apklis.',
       'connection_error': 'Error de conexión. Verifique su internet.',
       'verify_license': 'Verificar licencia',
@@ -576,11 +591,18 @@ class AppLocalizations {
       'select_payment_region': 'Región de Pago',
       'region_cuba': 'Cuba',
       'region_intl': 'Internacional',
-      'select_plan': 'Seleccionar Plan',
+      'select_plan': 'Activar',
+      'renew': 'Renovar',
+      'active': 'ACTIVO',
+      'popular': 'POPULAR',
+      'current_license': 'Licencia Actual',
+      'current_license_free':
+          'Usando plan gratuito. Activa un plan para más funciones.',
+      'expires': 'Expira',
+      'select_payment_method': 'Selecciona tu método de pago',
       'current_plan': 'Plan Actual',
       'active_plan_banner': 'PLAN ACTIVO',
       'change_plan': 'Cambiar Plan',
-      'popular': 'POPULAR',
       'month_short': '/ mes',
 
       // Holiday Promo
@@ -1133,23 +1155,35 @@ class AppLocalizations {
       'ask_ai_hint': 'Ask for advice, analysis...',
       'ai_welcome_message': 'Hello! I am your personal financial assistant.',
 
-      // Licenses
-      'licenses_title': 'Available Licenses',
+      // Licenses - Periods
+      'period_weekly': 'Weekly',
+      'period_monthly': 'Monthly',
+      'period_annual': 'Annual',
+      'days': 'days',
+
+      // Licenses - Titles
+      'licenses_title': 'Choose Your Plan',
       'skip': 'Skip',
       'license_personal': 'Personal',
       'license_pro': 'Pro',
       'license_enterprise': 'Enterprise',
+
+      // Licenses - Features Personal
       'feat_3_cards': '3 Cards',
       'feat_transfers': 'Transfers',
       'feat_lock_card': 'Lock/Limit Card',
       'feat_adv_stats': 'Stats (Day/Week)',
       'feat_settings_basic': 'Settings (Pass/Curr/Imp)',
+
+      // Licenses - Features Pro
       'feat_pro_cards': '4 Cards',
       'feat_pro_categories': 'Create Categories',
       'feat_pro_stats': 'Filters (Card/Cash)',
       'feat_pro_settings': 'Settings (PIN/Excel/Banks)',
       'feat_pro_security': 'Change Card PIN',
-      // Enterprise
+      'feat_pro_export': 'Export Excel',
+
+      // Licenses - Features Enterprise
       'features_all_pro': 'Everything in PRO +:',
       'feat_ent_unlimited': 'Unlimited Cards',
       'feat_ent_scanner': 'Scanner & Quick Actions',
@@ -1158,6 +1192,8 @@ class AppLocalizations {
       'feat_ent_cloud': 'Cloud Sync',
       'feat_ent_business': 'Business, POS & Closings',
       'feat_ent_inventory': 'Inventory & Profit',
+      'feat_ent_all_features': 'All Features',
+
       // Payment
       'payment_methods_title': 'Payment Method',
       'payment_test_success': 'Payment Successful! Enjoy your new license.',
@@ -1167,6 +1203,7 @@ class AppLocalizations {
       'payment_cancelled': 'Payment cancelled',
       'payment_pending':
           'License payment is pending in Apklis. Check your Apklis app.',
+      'processing_payment': 'Processing payment...',
       'auth_required': 'Authentication required. Please log in to Apklis.',
       'connection_error': 'Connection error. Check your internet.',
       'verify_license': 'Verify license',
@@ -1180,11 +1217,18 @@ class AppLocalizations {
       'select_payment_region': 'Payment Region',
       'region_cuba': 'Cuba',
       'region_intl': 'International',
-      'select_plan': 'Select Plan',
+      'select_plan': 'Activate',
+      'renew': 'Renew',
+      'active': 'ACTIVE',
+      'popular': 'POPULAR',
+      'current_license': 'Current License',
+      'current_license_free':
+          'Using free plan. Activate a plan for more features.',
+      'expires': 'Expires',
+      'select_payment_method': 'Select your payment method',
       'current_plan': 'Current Plan',
       'active_plan_banner': 'ACTIVE PLAN',
       'change_plan': 'Change Plan',
-      'popular': 'POPULAR',
       'month_short': '/ month',
 
       // Holiday Promo

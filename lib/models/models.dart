@@ -214,5 +214,3 @@ class ChatConversation extends HiveObject {
     required this.messages,
   });
 }
-
-enum LicenseType { free, personal, pro, enterprise }

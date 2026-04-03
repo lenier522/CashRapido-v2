@@ -11,6 +11,7 @@ import '../models/models.dart';
 import 'info_screens.dart';
 import 'licenses_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../providers/business_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -262,6 +263,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             _buildSettingsTile(
               context,
+              icon: Icons.currency_exchange_rounded,
+              title: "Tasas de Cambio",
+              subtitle: "Tasas para conversiones",
+              trailing: Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Theme.of(context).disabledColor,
+              ),
+              onTap: () => _showExchangeRatesDialog(context),
+            ),
+            _buildSettingsTile(
+              context,
               icon: Icons.account_balance_rounded,
               title: context.t('manage_banks'),
               isLocked: !provider.canManageBanks,
@@ -482,7 +495,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 showLicensePage(
                   context: context,
                   applicationName: context.t('app_name'),
-                  applicationVersion: '1.14.3',
+                  applicationVersion: '1.15.1',
                   applicationIcon: Icon(
                     Icons.account_balance_wallet,
                     size: 48,
@@ -522,7 +535,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 showAboutDialog(
                   context: context,
                   applicationName: context.t('app_name'),
-                  applicationVersion: '1.14.3',
+                  applicationVersion: '1.15.1',
                   applicationIcon: Icon(
                     Icons.account_balance_wallet,
                     size: 48,
@@ -538,6 +551,78 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 40),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showExchangeRatesDialog(BuildContext context) {
+    final provider = Provider.of<AppProvider>(context, listen: false);
+    final businessProvider = Provider.of<BusinessProvider>(
+      context,
+      listen: false,
+    );
+
+    final currencies = provider.availableCurrencies
+        .where((c) => c.code != provider.mainCurrency)
+        .toList();
+    final controllers = <String, TextEditingController>{};
+    for (var c in currencies) {
+      controllers[c.code] = TextEditingController(
+        text: provider.getExchangeRate(c.code).toString(),
+      );
+    }
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Tasas de Cambio"),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: currencies.length,
+            itemBuilder: (context, index) {
+              final code = currencies[index].code;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: TextField(
+                  controller: controllers[code],
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: "1 $code en ${provider.mainCurrency}",
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.currency_exchange),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(context.t('cancel')),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              for (var entry in controllers.entries) {
+                final rate = double.tryParse(entry.value.text);
+                if (rate != null && rate > 0) {
+                  provider.setExchangeRate(entry.key, rate);
+                }
+              }
+              businessProvider.updateCurrencyConfig(
+                provider.mainCurrency,
+                provider.exchangeRates,
+              );
+              Navigator.pop(ctx);
+              _showSnack(context, "Tasas de cambio actualizadas");
+            },
+            child: Text(context.t('save')),
+          ),
+        ],
       ),
     );
   }
@@ -900,7 +985,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Column(
         children: [
           Text(
-            'CashRapido v1.14.3',
+            'CashRapido v1.15.1',
             style: GoogleFonts.outfit(
               color: Theme.of(context).disabledColor,
               fontSize: 12,
