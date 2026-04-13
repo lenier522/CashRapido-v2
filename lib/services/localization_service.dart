@@ -547,6 +547,8 @@ class AppLocalizations {
       'feat_transfers': 'Transferencias',
       'feat_lock_card': 'Bloqueo/Límite Tarjeta',
       'feat_adv_stats': 'Estadísticas (Día/Semana)',
+      'feat_transfermovil': 'Cobro por Transfermóvil',
+      'feat_cloud_backup': 'Respaldo en la Nube',
       'feat_settings_basic': 'Config (Pass/Moneda/Imp)',
 
       // Licenses - Features Pro
@@ -1173,6 +1175,8 @@ class AppLocalizations {
       'feat_transfers': 'Transfers',
       'feat_lock_card': 'Lock/Limit Card',
       'feat_adv_stats': 'Stats (Day/Week)',
+      'feat_transfermovil': 'Transfermovil Payments',
+      'feat_cloud_backup': 'Cloud Backup',
       'feat_settings_basic': 'Settings (Pass/Curr/Imp)',
 
       // Licenses - Features Pro
@@ -1797,6 +1801,8 @@ class AppLocalizations {
       'feat_transfers': 'Transferts',
       'feat_lock_card': 'Verrou/Limite Carte',
       'feat_adv_stats': 'Stats (Jour/Semaine)',
+      'feat_transfermovil': 'Paiements Transfermovil',
+      'feat_cloud_backup': 'Sauvegarde Cloud',
       'feat_settings_basic': 'Param (Pass/Dev/Imp)',
       'feat_pro_cards': '4 Cartes',
       'feat_pro_categories': 'Créer Catégories',

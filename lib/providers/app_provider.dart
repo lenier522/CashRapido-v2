@@ -42,6 +42,17 @@ class AppProvider with ChangeNotifier {
   bool get biometricsEnabled => _biometricsEnabled;
   final LocalAuthentication auth = LocalAuthentication();
 
+  // Daily Streak
+  int _streakDays = 0;
+  int get streakDays => _streakDays;
+  DateTime? _lastLoginDate;
+
+  int _availableRandomPlans = 0;
+  int get availableRandomPlans => _availableRandomPlans;
+
+  List<String> _loginDates = [];
+  List<String> get loginDates => _loginDates;
+
   // Ad Service
   final AdService _adService = AdService();
   AdService get adService => _adService;
@@ -176,7 +187,7 @@ class AppProvider with ChangeNotifier {
 
   // Payment System
   // Change this variable to build for different regions
-  final bool _isCuba = true;
+  final bool _isCuba = false;
   bool get isCuba => _isCuba;
 
   List<PaymentMethod> get paymentMethods {
@@ -451,12 +462,12 @@ class AppProvider with ChangeNotifier {
   bool get canCustomizeCharts =>
       isPromoActive || _licenseType.level == LicenseLevel.enterprise;
 
-  // New Feature: TransferMovil Integration (Enterprise Only)
+  // New Feature: TransferMovil Integration (Personal or higher)
   bool _transferMovilEnabled = false;
   bool get transferMovilEnabled => _transferMovilEnabled;
 
   bool get canUseTransferMovil =>
-      isPromoActive || _licenseType.level == LicenseLevel.enterprise;
+      isPromoActive || _licenseType.level.index >= LicenseLevel.personal.index;
 
   // Widgets (Enterprise Only)
   bool get canUseWidgets =>
@@ -467,7 +478,7 @@ class AppProvider with ChangeNotifier {
 
   Future<void> setTransferMovilEnabled(bool enabled) async {
     if (enabled && !canUseTransferMovil) {
-      throw Exception("Esta función requiere licencia Empresarial");
+      throw Exception("Esta función requiere licencia Personal o superior");
     }
     _transferMovilEnabled = enabled;
     final prefs = await SharedPreferences.getInstance();
@@ -494,7 +505,8 @@ class AppProvider with ChangeNotifier {
   Map<String, double> _exchangeRates = {};
   Map<String, double> get exchangeRates => _exchangeRates;
 
-  double getExchangeRate(String currencyCode) => _exchangeRates[currencyCode] ?? 1.0;
+  double getExchangeRate(String currencyCode) =>
+      _exchangeRates[currencyCode] ?? 1.0;
 
   Future<void> setExchangeRate(String currencyCode, double rate) async {
     _exchangeRates[currencyCode] = rate;
@@ -550,6 +562,17 @@ class AppProvider with ChangeNotifier {
       _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
       _transferMovilEnabled = prefs.getBool('transfermovil_enabled') ?? false;
 
+      // Handle daily streak
+      _streakDays = prefs.getInt('streak_days') ?? 0;
+      _availableRandomPlans = prefs.getInt('available_random_plans') ?? 0;
+      _loginDates = prefs.getStringList('login_dates') ?? [];
+
+      final lastLoginStr = prefs.getString('last_login_date');
+      if (lastLoginStr != null) {
+        _lastLoginDate = DateTime.tryParse(lastLoginStr);
+      }
+      _calculateStreak(prefs);
+
       final themeString = prefs.getString('theme_mode');
       if (themeString != null) {
         _themeMode = ThemeMode.values.firstWhere(
@@ -571,7 +594,9 @@ class AppProvider with ChangeNotifier {
       if (ratesJson != null) {
         try {
           final decoded = jsonDecode(ratesJson) as Map<String, dynamic>;
-          _exchangeRates = decoded.map((key, value) => MapEntry(key, (value as num).toDouble()));
+          _exchangeRates = decoded.map(
+            (key, value) => MapEntry(key, (value as num).toDouble()),
+          );
         } catch (e) {
           _exchangeRates = {};
         }
@@ -581,7 +606,11 @@ class AppProvider with ChangeNotifier {
         if (oldRate != null) {
           _exchangeRates = {'USD': oldRate};
         } else {
-          _exchangeRates = {'USD': 320.0, 'EUR': 340.0, 'MLC': 270.0}; // Default example rates
+          _exchangeRates = {
+            'USD': 320.0,
+            'EUR': 340.0,
+            'MLC': 270.0,
+          }; // Default example rates
         }
       }
 
@@ -593,7 +622,8 @@ class AppProvider with ChangeNotifier {
       }
 
       // Load License
-      final licenseIndex = prefs.getInt('license_type') ?? LicenseType.free.index;
+      final licenseIndex =
+          prefs.getInt('license_type') ?? LicenseType.free.index;
       if (licenseIndex >= 0 && licenseIndex < LicenseType.values.length) {
         _licenseType = LicenseType.values[licenseIndex];
       }
@@ -697,6 +727,66 @@ class AppProvider with ChangeNotifier {
     // Sort transactions by date desc
     _transactions.sort((a, b) => b.date.compareTo(a.date));
     _invalidateCaches();
+  }
+
+  void _calculateStreak(SharedPreferences prefs) {
+    final now = DateTime.now();
+    final todayStr =
+        "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+
+    if (!_loginDates.contains(todayStr)) {
+      _loginDates.add(todayStr);
+      prefs.setStringList('login_dates', _loginDates);
+    }
+
+    if (_lastLoginDate == null) {
+      _streakDays = 1;
+    } else {
+      final today = DateTime(now.year, now.month, now.day);
+      final lastLoginDay = DateTime(
+        _lastLoginDate!.year,
+        _lastLoginDate!.month,
+        _lastLoginDate!.day,
+      );
+      final diffDays = today.difference(lastLoginDay).inDays;
+
+      if (diffDays == 1) {
+        _streakDays++;
+        // Reward every 50 days
+        if (_streakDays % 50 == 0) {
+          _availableRandomPlans++;
+          prefs.setInt('available_random_plans', _availableRandomPlans);
+        }
+      } else if (diffDays > 1) {
+        _streakDays = 1;
+      }
+      // If diffDays == 0, already logged in today, keep streak the same.
+    }
+    _lastLoginDate = now;
+    prefs.setInt('streak_days', _streakDays);
+    prefs.setString('last_login_date', _lastLoginDate!.toIso8601String());
+  }
+
+  Future<void> claimRandomPlan() async {
+    if (_availableRandomPlans > 0) {
+      final types = LicenseType.values
+          .where((t) => t != LicenseType.free)
+          .toList();
+      types.shuffle();
+      final randomType = types.first;
+      _availableRandomPlans--;
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('available_random_plans', _availableRandomPlans);
+
+      final durationDays = randomType.durationDays > 0
+          ? randomType.durationDays
+          : 30;
+      setLicenseType(
+        randomType,
+        expirationDate: DateTime.now().add(Duration(days: durationDays)),
+      );
+    }
   }
 
   // --- Caching ---

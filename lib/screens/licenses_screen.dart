@@ -606,6 +606,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
           context.t('feat_transfers'),
           context.t('feat_lock_card'),
           context.t('feat_adv_stats'),
+          context.t('feat_transfermovil'),
         ];
       case LicenseLevel.pro:
         return [
@@ -613,6 +614,8 @@ class _LicensesScreenState extends State<LicensesScreen> {
           context.t('feat_pro_categories'),
           context.t('feat_pro_stats'),
           context.t('feat_pro_export'),
+          context.t('feat_cloud_backup'),
+          context.t('feat_transfermovil'),
         ];
       case LicenseLevel.enterprise:
         return [
@@ -620,6 +623,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
           context.t('feat_ent_business'),
           context.t('feat_ent_ai_bio'),
           context.t('feat_ent_all_features'),
+          context.t('feat_transfermovil'),
         ];
       default:
         return [];

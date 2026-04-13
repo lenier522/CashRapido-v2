@@ -11,6 +11,7 @@ import 'info_screens.dart';
 import 'licenses_screen.dart';
 import 'transfermovil_screen.dart';
 import 'wallet_screen.dart';
+import 'streak_calendar_screen.dart';
 import '../widgets/add_transaction_modal.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' show Platform;
@@ -135,9 +136,35 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         Row(
           children: [
+            GestureDetector(
+              onTap: () {
+                 Navigator.push(context, MaterialPageRoute(builder: (_) => const StreakCalendarScreen()));
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Text('🔥', style: TextStyle(fontSize: 18)),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${provider.streakDays}',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
             if (aiButton != null) ...[aiButton, const SizedBox(width: 12)],
-
-
 
             // Notification Icon
             Container(
