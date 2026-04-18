@@ -43,13 +43,13 @@ class LicensePaymentConfig {
     // ========================================
     // Configuración: Art-Pay y Anuncios (pagos bajos)
     LicenseType.weeklyPersonal: LicensePaymentConfig(
-      enabledMethods: [artPay, watchAds],
+      enabledMethods: [apklis, artPay, watchAds],
     ),
     LicenseType.weeklyPro: LicensePaymentConfig(
-      enabledMethods: [artPay, watchAds],
+      enabledMethods: [apklis, artPay, watchAds],
     ),
     LicenseType.weeklyEnterprise: LicensePaymentConfig(
-      enabledMethods: [artPay, watchAds],
+      enabledMethods: [apklis, artPay, watchAds],
     ),
 
     // ========================================
@@ -72,15 +72,15 @@ class LicensePaymentConfig {
     // Configuración: Solo Art-Pay (pagos de mayor monto, más seguro)
     // Si quieres habilitar Apklis, agrégalo a enabledMethods
     LicenseType.annualPersonal: LicensePaymentConfig(
-      enabledMethods: [artPay],
+      enabledMethods: [apklis, artPay],
       isCubaOnly: true,
     ),
     LicenseType.annualPro: LicensePaymentConfig(
-      enabledMethods: [artPay],
+      enabledMethods: [apklis, artPay],
       isCubaOnly: true,
     ),
     LicenseType.annualEnterprise: LicensePaymentConfig(
-      enabledMethods: [artPay],
+      enabledMethods: [apklis, artPay],
       isCubaOnly: true,
     ),
   };

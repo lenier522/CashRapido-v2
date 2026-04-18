@@ -25,10 +25,11 @@ class ApklisService {
 
   // Licencias Semanales (7 días)
   static const String _weeklyPersonalUuid =
-      'UUID_WEEKLY_PERSONAL_AQUI'; // 15 CUP
-  static const String _weeklyProUuid = 'UUID_WEEKLY_PRO_AQUI'; // 25 CUP
+      'fce0defc-8023-4e3a-9476-b4088ed46507'; // 15 CUP
+  static const String _weeklyProUuid =
+      '3ac88e00-c7d7-406a-950f-084e2b825c9b'; // 25 CUP
   static const String _weeklyEnterpriseUuid =
-      'UUID_WEEKLY_ENTERPRISE_AQUI'; // 35 CUP
+      '1baa4218-a8fc-4dcd-98b6-abaa6d6d4387'; // 35 CUP
 
   // Licencias Mensuales (30 días)
   static const String _monthlyPersonalUuid =
@@ -40,10 +41,11 @@ class ApklisService {
 
   // Licencias Anuales (365 días)
   static const String _annualPersonalUuid =
-      'UUID_ANNUAL_PERSONAL_AQUI'; // 500 CUP
-  static const String _annualProUuid = 'UUID_ANNUAL_PRO_AQUI'; // 750 CUP
+      '62e88ddb-e132-483d-8ceb-9eff68e317bf'; // 500 CUP
+  static const String _annualProUuid =
+      'a7ee3d19-7870-41e0-96b1-6b80e99d83b5'; // 750 CUP
   static const String _annualEnterpriseUuid =
-      'UUID_ANNUAL_ENTERPRISE_AQUI'; // 1000 CUP
+      '3cdac745-8932-4bd6-a2bd-dda54d893b1c'; // 1000 CUP
 
   /// Obtiene el UUID para un tipo de licencia específico
   static String _getLicenseId(LicenseType licenseType) {
@@ -204,16 +206,16 @@ class ApklisService {
     try {
       if (errorMsg.trim().startsWith('{')) {
         final Map<String, dynamic> decoded = jsonDecode(errorMsg);
-        
+
         // Traducir por el código de error PRIMERO si es posible
         if (decoded.containsKey('code')) {
           final code = decoded['code'].toString();
           if (code == 'already_paid') {
-             return 'Ya posees una licencia activa.';
+            return 'Ya posees una licencia activa.';
           } else if (code == 'not_paid') {
-             return 'No se ha registrado el pago para esta licencia.';
+            return 'No se ha registrado el pago para esta licencia.';
           } else if (code == 'timeout') {
-             return 'Tiempo de espera agotado al conectar con Apklis.';
+            return 'Tiempo de espera agotado al conectar con Apklis.';
           }
         }
 
@@ -228,14 +230,16 @@ class ApklisService {
 
     // Traducciones genéricas heurísticas
     final lower = errorMsg.toLowerCase();
-    
+
     if (lower.contains('already paid') || lower.contains('already_paid')) {
       return 'Ya posees una licencia activa.';
     }
     if (lower.contains('timeout')) {
       return 'Problemas de conexión con Apklis, intenta de nuevo.';
     }
-    if (lower.contains('unauthorized') || lower.contains('credentials') || lower.contains('403')) {
+    if (lower.contains('unauthorized') ||
+        lower.contains('credentials') ||
+        lower.contains('403')) {
       return 'Error de autenticación. Abre Apklis, asegúrate de haber iniciado sesión y vuelve a intentarlo.';
     }
     if (lower.contains('no se encontró') || lower.contains('not found')) {
@@ -244,7 +248,7 @@ class ApklisService {
     if (lower.contains('not published')) {
       return 'La licencia no se encuentra publicada en Apklis.';
     }
-    
+
     // Si era algo en inglés (ejemplo un detail de la api no cazado genéricamente por "code")
     if (lower.contains('token is invalid') || lower.contains('signature')) {
       return 'Error validando la autenticidad con Apklis.';

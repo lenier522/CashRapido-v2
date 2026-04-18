@@ -187,7 +187,7 @@ class AppProvider with ChangeNotifier {
 
   // Payment System
   // Change this variable to build for different regions
-  final bool _isCuba = false;
+  final bool _isCuba = true;
   bool get isCuba => _isCuba;
 
   List<PaymentMethod> get paymentMethods {

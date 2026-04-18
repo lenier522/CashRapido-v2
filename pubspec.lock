@@ -61,10 +61,9 @@ packages:
   artpay_lib:
     dependency: "direct main"
     description:
-      name: artpay_lib
-      sha256: "06552cd882876f4e6b1611b061d75c9ea2b5db99e9d66b48eb0ac583ff2ca2e2"
-      url: "https://pub.dev"
-    source: hosted
+      path: "../artpay_lib"
+      relative: true
+    source: path
     version: "0.0.6"
   async:
     dependency: transitive
@@ -1030,6 +1029,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
+  qr_flutter:
+    dependency: transitive
+    description:
+      name: qr_flutter
+      sha256: "5095f0fc6e3f71d08adef8feccc8cea4f12eec18a2e31c2e8d82cb6019f4b097"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.1.0"
   quiver:
     dependency: transitive
     description:
