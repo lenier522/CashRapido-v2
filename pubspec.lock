@@ -61,10 +61,11 @@ packages:
   artpay_lib:
     dependency: "direct main"
     description:
-      path: "../artpay_lib"
-      relative: true
-    source: path
-    version: "0.0.6"
+      name: artpay_lib
+      sha256: ad93de8049752fb03b7b3cefa53fe02fc2a6f89238fe1d21fabed30b7788f5d4
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.7"
   async:
     dependency: transitive
     description:
