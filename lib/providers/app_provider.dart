@@ -20,6 +20,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import '../services/backup_service.dart';
 import '../licences/apklis.dart';
+import '../licences/art_pay.dart';
 import '../licences/license_type.dart';
 
 class AppProvider with ChangeNotifier {
@@ -342,21 +343,32 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Verifies if user has an active Apklis license and restores it
+  /// Verifies if user has an active Apklis or Art-Pay license and restores it
   /// This is used when user reinstalls the app to recover their purchased license
   Future<String?> verifyAndRestoreLicense() async {
     try {
+      // 1. Try Art-Pay
+      final artPayResult = await ArtPayService.verifyAndRestoreLicense();
+      if (artPayResult != null && artPayResult.success && artPayResult.productToken != null) {
+        final licenseType = ArtPayService.getLicenseTypeFromToken(artPayResult.productToken!);
+        if (licenseType != null) {
+          setLicenseType(licenseType, expirationDate: artPayResult.accessExpiresAt);
+          return null; // Success with Art-Pay
+        }
+      }
+
+      // 2. Try Apklis
       final status = await ApklisService.verify();
 
       if (!status.paid) {
         // User doesn't have an active license
-        // Clean up the error message if it comes as JSON
         String errorMsg = ApklisService.humanizeError(status.error);
-
+        if (artPayResult != null && !artPayResult.success && artPayResult.errorMessage != null) {
+            return 'Art-Pay: ${artPayResult.errorMessage}\\nApklis: $errorMsg';
+        }
         return errorMsg;
       }
 
-      // User has a paid license, now determine which tier
       final licenseType = ApklisService.getLicenseTypeFromUUID(status.license);
 
       if (licenseType == null) {
@@ -366,12 +378,7 @@ class AppProvider with ChangeNotifier {
       setLicenseType(licenseType);
       return null; // Success
     } catch (e) {
-      // Clean up error message
-      String errorMsg = e.toString();
-
-      // Remove "Exception: " prefix if present
-      errorMsg = errorMsg.replaceFirst('Exception: ', '');
-
+      String errorMsg = e.toString().replaceFirst('Exception: ', '');
       return 'Error al verificar: $errorMsg';
     }
   }

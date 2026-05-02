@@ -1,4 +1,5 @@
 import 'package:artpay_lib/artpay_lib.dart';
+import 'package:artpay_lib/artpay_lib.dart' as artpay_lib;
 import 'package:flutter/material.dart';
 import 'license_type.dart';
 
@@ -128,6 +129,26 @@ class ArtPayService {
     return token.isNotEmpty &&
         !token.contains('TOKEN_') &&
         !token.contains('AQUI');
+  }
+
+  /// Obtiene el tipo de licencia basado en el token del producto
+  static LicenseType? getLicenseTypeFromToken(String token) {
+    for (final type in LicenseType.values) {
+      if (type != LicenseType.free && _getProductToken(type) == token) {
+        return type;
+      }
+    }
+    return null;
+  }
+
+  /// Verifica si el usuario tiene una licencia activa usando la sesión de la billetera Art-Pay
+  static Future<ArtPayVerificationResult?> verifyAndRestoreLicense() async {
+    final token = await artpay_lib.ArtPayService.getBilleteraToken();
+    if (token == null || token.isEmpty) {
+      return null;
+    }
+    final result = await artpay_lib.ArtPayService.checkActiveLicense(token, packageId);
+    return result;
   }
 
   /// Mapea un tipo de licencia a su precio en CUP
