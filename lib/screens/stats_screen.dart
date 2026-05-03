@@ -240,10 +240,12 @@ class _StatsScreenState extends State<StatsScreen> {
                   );
                   if (_accountTypeFilter == 'cash') return card.isCash;
                   if (_accountTypeFilter == 'card') return !card.isCash;
+                  
+                  // Si no es all, cash o card, entonces es un ID de cuenta individual
+                  return _accountTypeFilter == card.id;
                 } catch (e) {
                   return false; // Card deleted or not found
                 }
-                return true;
               })
               .toList();
 
@@ -1308,27 +1310,38 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   Widget _buildAccountTypeFilter(BuildContext context) {
+    final provider = Provider.of<AppProvider>(context);
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.only(left: 20, right: 20, top: 4, bottom: 4),
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildTypeFilterOption(context, 'all', context.t('all_accounts')),
-            _buildTypeFilterOption(
-              context,
-              'card',
-              context.t('bank_cards_only'),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildTypeFilterOption(context, 'all', context.t('all_accounts'), icon: Icons.account_balance_wallet_rounded),
+          _buildTypeFilterOption(context, 'card', context.t('bank_cards_only'), icon: Icons.credit_card_rounded),
+          _buildTypeFilterOption(context, 'cash', context.t('cash_only'), icon: Icons.payments_rounded),
+          
+          if (provider.cards.isNotEmpty) ...[
+            Container(
+              width: 1.5,
+              height: 24,
+              color: Theme.of(context).dividerColor.withOpacity(0.3),
+              margin: const EdgeInsets.symmetric(horizontal: 12),
             ),
-            _buildTypeFilterOption(context, 'cash', context.t('cash_only')),
+            ...provider.cards.map((c) {
+              final String label = c.isCash 
+                  ? "${context.t('card_cash')} - ${c.name}" 
+                  : "${c.bankName == 'Efectivo' ? context.t('card_cash') : (c.bankName ?? context.t('card_default_name'))} ${c.cardNumber.length >= 4 ? c.cardNumber.substring(c.cardNumber.length - 4) : '****'}";
+              return _buildTypeFilterOption(
+                context, 
+                c.id, 
+                label,
+                indicatorColor: Color(c.colorValue),
+                icon: c.isCash ? Icons.account_balance_wallet : Icons.credit_card,
+              );
+            }),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -1336,13 +1349,16 @@ class _StatsScreenState extends State<StatsScreen> {
   Widget _buildTypeFilterOption(
     BuildContext context,
     String value,
-    String label,
-  ) {
+    String label, {
+    IconData? icon,
+    Color? indicatorColor,
+  }) {
     final isSelected = _accountTypeFilter == value;
     final provider = Provider.of<AppProvider>(context);
-    final isLocked =
-        !provider.canFilterStatsAccount &&
-        value != 'all'; // Only 'all' allowed for Free
+    final isIndividualCard = value != 'all' && value != 'card' && value != 'cash';
+    final isLocked = isIndividualCard 
+        ? !provider.canFilterStatsByIndividualAccount 
+        : (!provider.canFilterStatsAccount && value != 'all');
 
     return GestureDetector(
       onTap: () {
@@ -1357,27 +1373,68 @@ class _StatsScreenState extends State<StatsScreen> {
         children: [
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            margin: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               color: isSelected
                   ? Theme.of(context).colorScheme.primary
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              label,
-              style: GoogleFonts.outfit(
+                  : Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
                 color: isSelected
-                    ? Colors.white
-                    : Theme.of(context).textTheme.bodyMedium?.color,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                fontSize: 13,
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).dividerColor.withOpacity(0.1),
               ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      )
+                    ]
+                  : [],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (indicatorColor != null) ...[
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: indicatorColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ] else if (icon != null) ...[
+                  Icon(
+                    icon,
+                    size: 16,
+                    color: isSelected
+                        ? Colors.white
+                        : Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                Text(
+                  label,
+                  style: GoogleFonts.outfit(
+                    color: isSelected
+                        ? Colors.white
+                        : Theme.of(context).textTheme.bodyMedium?.color,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
             ),
           ),
           if (isLocked)
             Positioned(
-              right: -4,
+              right: 2,
               top: -4,
               child: Container(
                 padding: const EdgeInsets.all(2),
@@ -1385,9 +1442,7 @@ class _StatsScreenState extends State<StatsScreen> {
                   color: Colors.amber,
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Theme.of(
-                      context,
-                    ).cardColor, // Use cardColor here as bg is card
+                    color: Theme.of(context).scaffoldBackgroundColor,
                     width: 1.5,
                   ),
                   boxShadow: [

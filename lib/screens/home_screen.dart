@@ -121,19 +121,24 @@ class _HomeScreenState extends State<HomeScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              context.t('daily_summary'),
-              style: GoogleFonts.outfit(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).textTheme.headlineMedium?.color,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                context.t('daily_summary'),
+                style: GoogleFonts.outfit(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.headlineMedium?.color,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
+        const SizedBox(width: 8),
         Row(
           children: [
             GestureDetector(
@@ -584,6 +589,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final cardId = _selectedCardId ?? provider.cards.first.id;
     final card = provider.cards.firstWhere((c) => c.id == cardId);
     final controller = TextEditingController();
+    final exchangeRateController = TextEditingController(text: "1.0");
 
     // For internal transfer logic
     bool isInternalTransfer = false;
@@ -634,22 +640,29 @@ class _HomeScreenState extends State<HomeScreen> {
                           hint: Text(context.t('select_dest')),
                           value: toCardId,
                           items: provider.cards
-                              .where(
-                                (c) =>
-                                    c.currency == card.currency &&
-                                    c.id != card.id,
-                              )
+                              .where((c) => c.id != card.id)
                               .map(
                                 (c) => DropdownMenuItem(
                                   value: c.id,
                                   child: Text(
-                                    "${c.bankName} (...${c.cardNumber.substring(c.cardNumber.length - 4)})",
+                                    "${c.isCash ? c.name : (c.bankName ?? 'Tarjeta')} (...${c.isCash ? 'CASH' : (c.cardNumber.length >= 4 ? c.cardNumber.substring(c.cardNumber.length - 4) : c.cardNumber)}) - ${c.currency}",
                                   ),
                                 ),
                               )
                               .toList(),
                           onChanged: (val) => setState(() => toCardId = val),
                         ),
+                        if (toCardId != null && provider.cards.firstWhere((c) => c.id == toCardId).currency != card.currency) ...[
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: exchangeRateController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: const InputDecoration(
+                              labelText: "Tasa de cambio (Ej. 320)",
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ],
                       ],
                       const SizedBox(height: 10),
                     ],
@@ -707,10 +720,15 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                           return;
                         }
+                        double exRate = 1.0;
+                        if (toCardId != null && provider.cards.firstWhere((c) => c.id == toCardId).currency != card.currency) {
+                          exRate = double.tryParse(exchangeRateController.text) ?? 1.0;
+                        }
                         provider.transferBetweenCards(
                           fromCardId: card.id,
                           toCardId: toCardId!,
                           amount: amount,
+                          exchangeRate: exRate,
                         );
                       } else {
                         // Standard Action
@@ -959,12 +977,25 @@ class _HomeScreenState extends State<HomeScreen> {
         else
           ...transactions.map((tx) {
             final isExpense = tx.amount < 0;
+
+            String cardNameStr = '';
+            try {
+              final card = provider.cards.firstWhere((c) => c.id == tx.cardId);
+              if (card.isCash) {
+                cardNameStr = " • ${context.t('card_cash')} - ${card.name}";
+              } else {
+                final bName = card.bankName == 'Efectivo' ? context.t('card_cash') : (card.bankName ?? context.t('card_default_name'));
+                final l4 = card.cardNumber.length >= 4 ? card.cardNumber.substring(card.cardNumber.length - 4) : '****';
+                cardNameStr = " • $bName $l4";
+              }
+            } catch (_) {}
+
             return _buildTransactionItem(
               context,
               provider,
               tx,
               _getTransactionTitle(context, tx),
-              tx.date.toString().substring(0, 10),
+              "${tx.date.toString().substring(0, 10)}$cardNameStr",
               '${isExpense ? '-' : '+'}\$${tx.amount.abs().toStringAsFixed(2)}',
               isExpense
                   ? Colors.red.withOpacity(0.1)

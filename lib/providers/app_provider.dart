@@ -462,6 +462,10 @@ class AppProvider with ChangeNotifier {
       isPromoActive || _licenseType.level.index >= LicenseLevel.pro.index;
   bool get canFilterStatsAccount =>
       isPromoActive || _licenseType.level.index >= LicenseLevel.pro.index;
+  bool get canFilterStatsByIndividualAccount =>
+      isPromoActive || _licenseType.level == LicenseLevel.enterprise;
+  bool get canReorderCards =>
+      isPromoActive || _licenseType.level.index >= LicenseLevel.pro.index;
   bool get canManageBanks =>
       isPromoActive || _licenseType.level.index >= LicenseLevel.pro.index;
   bool get canExportExcel =>
@@ -675,7 +679,7 @@ class AppProvider with ChangeNotifier {
         try {
           await _notificationService.initialize();
         } catch (e) {
-          print('Notification init error: \$e');
+          print('Notification init error: $e');
         }
       }
 
@@ -687,7 +691,7 @@ class AppProvider with ChangeNotifier {
           await _adService.initialize();
           _adService.loadRewardedAd();
         } catch (e) {
-          print('AdService init error: \$e');
+          print('AdService init error: $e');
         }
       }
 
@@ -698,14 +702,14 @@ class AppProvider with ChangeNotifier {
             _currentLocale?.languageCode ?? 'es',
           );
         } catch (e) {
-          print('Notification schedule error: \$e');
+          print('Notification schedule error: $e');
         }
       }
 
       _fetchData();
-    } catch (e) {
+    } catch (e, stacktrace) {
       print(
-        'Critical error during AppProvider initialization: \$e\\n\$stacktrace',
+        'Critical error during AppProvider initialization: $e\n$stacktrace',
       );
       try {
         _fetchData();
@@ -720,7 +724,7 @@ class AppProvider with ChangeNotifier {
           await WidgetService.initialize();
           await _updateWidgetsIfNeeded();
         } catch (e) {
-          print('WidgetService init error: \$e');
+          print('WidgetService init error: $e');
         }
       }
     }
@@ -1015,6 +1019,7 @@ class AppProvider with ChangeNotifier {
     required String fromCardId,
     required String toCardId,
     required double amount,
+    double exchangeRate = 1.0,
   }) async {
     final fromCardIndex = _cards.indexWhere((c) => c.id == fromCardId);
     final toCardIndex = _cards.indexWhere((c) => c.id == toCardId);
@@ -1024,11 +1029,15 @@ class AppProvider with ChangeNotifier {
     final fromCard = _cards[fromCardIndex];
     final toCard = _cards[toCardIndex];
 
+    final destinationAmount = amount * exchangeRate;
+
+    String getCardName(AccountCard c) => c.isCash ? c.name : (c.bankName ?? 'Tarjeta');
+    String getCardSuffix(AccountCard c) => c.isCash ? '' : (c.cardNumber.length >= 4 ? c.cardNumber.substring(c.cardNumber.length - 4) : c.cardNumber);
+
     // 1. Deficit from Source
     await addTransaction(
       amount: -amount,
-      title:
-          "Transferencia a ${toCard.bankName} (...${toCard.cardNumber.substring(toCard.cardNumber.length - 4)})",
+      title: "Transferencia a ${getCardName(toCard)} ${getCardSuffix(toCard)}",
       categoryId: "transfer_out", // Need a valid ID or handle this
       currency: fromCard.currency,
       cardId: fromCardId,
@@ -1036,9 +1045,8 @@ class AppProvider with ChangeNotifier {
 
     // 2. Add to Destination
     await addTransaction(
-      amount: amount,
-      title:
-          "Recibido de ${fromCard.bankName} (...${fromCard.cardNumber.substring(fromCard.cardNumber.length - 4)})",
+      amount: destinationAmount,
+      title: "Recibido de ${getCardName(fromCard)} ${getCardSuffix(fromCard)}",
       categoryId: "transfer_in",
       currency: toCard.currency,
       cardId: toCardId,
@@ -1091,6 +1099,19 @@ class AppProvider with ChangeNotifier {
   }
 
   // --- Cards ---
+
+  Future<void> reorderCards(int oldIndex, int newIndex) async {
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    final item = _cards.removeAt(oldIndex);
+    _cards.insert(newIndex, item);
+    
+    await _cardBox.clear();
+    await _cardBox.addAll(_cards);
+    
+    notifyListeners();
+  }
 
   Future<void> addCard(AccountCard card) async {
     await _cardBox.add(card);

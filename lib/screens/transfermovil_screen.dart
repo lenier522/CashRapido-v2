@@ -324,6 +324,7 @@ class _TransferMovilScreenState extends State<TransferMovilScreen> {
 
     double amount = 0.0;
     String otherParty = "";
+    double discountPercent = 0.0;
 
     if (isIncome) {
       final match = RegExp(r"de\s*([\d\.]+)\s*CUP").firstMatch(body);
@@ -335,20 +336,30 @@ class _TransferMovilScreenState extends State<TransferMovilScreen> {
       }
     } else if (isPayment) {
       // Logic for "Pago completado"
-      // Priority: "Importe pagado", if not found, fallback to "Importe"
-      final paidMatch = RegExp(
-        r"Importe pagado:\s*([\d\.]+)\s*CUP",
-      ).firstMatch(body);
+      double originalAmount = 0.0;
+      
+      final originalMatch = RegExp(r"(?:[Ii]mporte|imorte):?\s*([\d\.]+)\s*CUP").firstMatch(body);
+      if (originalMatch != null) {
+        originalAmount = double.tryParse(originalMatch.group(1) ?? "0") ?? 0.0;
+      }
+      
+      final paidMatch = RegExp(r"Importe [Pp]agado:?\s*([\d\.]+)\s*CUP").firstMatch(body);
       if (paidMatch != null) {
         amount = double.tryParse(paidMatch.group(1) ?? "0") ?? 0.0;
+        if (originalAmount > 0 && originalAmount > amount) {
+           discountPercent = ((originalAmount - amount) / originalAmount) * 100;
+        }
       } else {
-        final match = RegExp(r"Importe:\s*([\d\.]+)\s*CUP").firstMatch(body);
-        amount = double.tryParse(match?.group(1) ?? "0") ?? 0.0;
+        amount = originalAmount;
       }
 
-      final entityMatch = RegExp(r"Entidad:\s*(.+)").firstMatch(body);
-      if (entityMatch != null) {
-        otherParty = "A: ${entityMatch.group(1)?.trim()}";
+      final entityMatch = RegExp(r"Entidad:\s*(.*?)(?=\s+id\s+compra|\s+imorte|\s+Importe|$)", caseSensitive: false).firstMatch(body);
+      final storeMatch = RegExp(r"Tienda Virtual ETECSA", caseSensitive: false).hasMatch(body);
+      
+      if (entityMatch != null && entityMatch.group(1)!.trim().isNotEmpty) {
+        otherParty = "A: ${entityMatch.group(1)!.trim()}";
+      } else if (storeMatch) {
+        otherParty = "A: Tienda Virtual ETECSA";
       } else {
         otherParty = "Pago de Servicio";
       }
@@ -504,15 +515,38 @@ class _TransferMovilScreenState extends State<TransferMovilScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            "Monto",
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              color: isDark
-                                  ? Colors.grey[400]
-                                  : Colors.grey[600],
-                              fontWeight: FontWeight.w500,
-                            ),
+                          Row(
+                            children: [
+                              Text(
+                                "Monto",
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  color: isDark
+                                      ? Colors.grey[400]
+                                      : Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              if (discountPercent > 0) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.withOpacity(isDark ? 0.25 : 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: Colors.green.withOpacity(0.3)),
+                                  ),
+                                  child: Text(
+                                    "-${discountPercent.toStringAsFixed(1).replaceAll('.0', '')}%",
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green.shade400,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                           const SizedBox(height: 4),
                           Text(

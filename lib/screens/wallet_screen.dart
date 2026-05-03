@@ -17,7 +17,6 @@ class WalletScreen extends StatefulWidget {
 }
 
 class _WalletScreenState extends State<WalletScreen> {
-  final PageController _pageController = PageController(viewportFraction: 0.85);
   int _currentIndex = 0;
 
   @override
@@ -158,14 +157,69 @@ class _WalletScreenState extends State<WalletScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // PageView for Cards
+                // Lista de Tarjetas (Reordenable)
                 SizedBox(
                   height: 220,
-                  child: PageView.builder(
-                    controller: _pageController,
-                    onPageChanged: (index) =>
-                        setState(() => _currentIndex = index),
+                  child: ReorderableListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    buildDefaultDragHandles: false,
+                    proxyDecorator: (Widget child, int index, Animation<double> animation) {
+                      return AnimatedBuilder(
+                        animation: animation,
+                        builder: (BuildContext context, Widget? child) {
+                          final double animValue = Curves.easeInOut.transform(animation.value);
+                          final double scale = 1.0 + (0.05 * animValue);
+                          return Transform.scale(
+                            scale: scale,
+                            child: Card(
+                              elevation: 12 * animValue,
+                              color: Colors.transparent,
+                              margin: EdgeInsets.zero,
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: child,
+                      );
+                    },
                     itemCount: cards.length,
+                    onReorder: (oldIndex, newIndex) {
+                      final p = Provider.of<AppProvider>(context, listen: false);
+                      if (!p.canReorderCards) {
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: Text(context.t('feature_locked_title')),
+                            content: Text(context.t('feature_locked_desc')),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: Text(context.t('close')),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.pop(ctx);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const LicensesScreen()),
+                                  );
+                                },
+                                child: Text(context.t('upgrade_btn')),
+                              ),
+                            ],
+                          ),
+                        );
+                        return;
+                      }
+                      p.reorderCards(oldIndex, newIndex);
+                      setState(() {
+                        if (oldIndex < newIndex) {
+                          newIndex -= 1;
+                        }
+                        _currentIndex = newIndex;
+                      });
+                    },
                     itemBuilder: (context, index) {
                       final card = cards[index];
                       // Translate name if 'Efectivo'
@@ -184,28 +238,40 @@ class _WalletScreenState extends State<WalletScreen> {
                             ),
                           );
 
-                      return _buildCreditCard(
-                        context: context,
-                        cardId: card.id,
-                        isLocked: card.isLocked,
-                        color: Color(card.colorValue),
-                        bankName: card.isCash
-                            ? context.t('card_cash')
-                            : (card.bankName ?? 'VISA'),
-                        balance:
-                            '${currencyObj.symbol} ${card.balance.toStringAsFixed(2)}',
-                        cardNumber: card.isCash
-                            ? ''
-                            : _maskCardNumber(card.cardNumber),
-                        expiry: card.isCash ? '' : card.expiryDate,
-                        cardHolder: displayName,
-                        isCash: card.isCash,
-                        currencyCode: card.currency,
+                      return ReorderableDelayedDragStartListener(
+                        key: ValueKey(card.id),
+                        index: index,
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() => _currentIndex = index);
+                          },
+                          child: Opacity(
+                            opacity: _currentIndex == index ? 1.0 : 0.6,
+                            child: _buildCreditCard(
+                              context: context,
+                              cardIndex: index,
+                              cardId: card.id,
+                            isLocked: card.isLocked,
+                            color: Color(card.colorValue),
+                            bankName: card.isCash
+                                ? context.t('card_cash')
+                                : (card.bankName ?? 'VISA'),
+                            balance:
+                                '${currencyObj.symbol} ${card.balance.toStringAsFixed(2)}',
+                              cardNumber: card.isCash
+                                  ? ''
+                                  : _maskCardNumber(card.cardNumber),
+                              expiry: card.isCash ? '' : card.expiryDate,
+                              cardHolder: displayName,
+                              isCash: card.isCash,
+                              currencyCode: card.currency,
+                            ),
+                          ),
+                        ),
                       );
                     },
                   ),
                 ),
-
                 const SizedBox(height: 10),
                 Center(
                   child: Text(
@@ -353,6 +419,7 @@ class _WalletScreenState extends State<WalletScreen> {
 
   Widget _buildCreditCard({
     required BuildContext context,
+    required int cardIndex,
     required String cardId,
     required bool isLocked,
     required Color color,
@@ -395,13 +462,33 @@ class _WalletScreenState extends State<WalletScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    bankName,
-                    style: GoogleFonts.outfit(
-                      color: Colors.white70,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          cardIndex == 0 ? "1. Principal" : "${cardIndex + 1}.",
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        bankName,
+                        style: GoogleFonts.outfit(
+                          color: Colors.white70,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                   Row(
                     children: [
@@ -502,7 +589,7 @@ class _WalletScreenState extends State<WalletScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -516,8 +603,8 @@ class _WalletScreenState extends State<WalletScreen> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: isDestructive
-                    ? Colors.red.withOpacity(0.1)
-                    : Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    ? Colors.red.withValues(alpha: 0.1)
+                    : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -562,7 +649,7 @@ class _WalletScreenState extends State<WalletScreen> {
           style: GoogleFonts.outfit(
             color: Theme.of(
               context,
-            ).textTheme.bodyMedium?.color?.withOpacity(0.6),
+            ).textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
             fontSize: 14,
           ),
         ),
@@ -600,7 +687,7 @@ class _WalletScreenState extends State<WalletScreen> {
         trailing: Icon(
           Icons.arrow_forward_ios,
           size: 16,
-          color: Theme.of(context).dividerColor.withOpacity(0.5),
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
         ),
       ),
     );

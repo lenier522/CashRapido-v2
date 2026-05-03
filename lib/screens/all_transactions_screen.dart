@@ -93,15 +93,21 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
                   ),
                   // Individual Cards
                   ...cards.map((card) {
-                    final bankName = card.bankName == 'Efectivo'
-                        ? context.t('card_cash')
-                        : (card.bankName ?? context.t('card_default_name'));
-                    final last4 = card.cardNumber.length >= 4
-                        ? card.cardNumber.substring(card.cardNumber.length - 4)
-                        : '****';
+                    String label;
+                    if (card.isCash) {
+                      label = card.name.isNotEmpty ? "${context.t('card_cash')} - ${card.name}" : context.t('card_cash');
+                    } else {
+                      final bankName = card.bankName == 'Efectivo'
+                          ? context.t('card_cash')
+                          : (card.bankName ?? context.t('card_default_name'));
+                      final last4 = card.cardNumber.length >= 4
+                          ? card.cardNumber.substring(card.cardNumber.length - 4)
+                          : '****';
+                      label = '$bankName $last4';
+                    }
 
                     return _buildFilterChip(
-                      label: '$bankName $last4',
+                      label: label,
                       isSelected: _selectedCardId == card.id,
                       onTap: () => setState(() => _selectedCardId = card.id),
                     );
@@ -129,6 +135,18 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
                       final tx = transactions[index];
                       final isExpense = tx.amount < 0;
 
+                      String cardNameStr = '';
+                      try {
+                        final card = provider.cards.firstWhere((c) => c.id == tx.cardId);
+                        if (card.isCash) {
+                          cardNameStr = " • ${context.t('card_cash')} - ${card.name}";
+                        } else {
+                          final bName = card.bankName == 'Efectivo' ? context.t('card_cash') : (card.bankName ?? context.t('card_default_name'));
+                          final l4 = card.cardNumber.length >= 4 ? card.cardNumber.substring(card.cardNumber.length - 4) : '****';
+                          cardNameStr = " • $bName $l4";
+                        }
+                      } catch (_) {}
+
                       Color iconColor = Colors.grey;
                       Color bgColor = Colors.grey.withAlpha(25);
                       IconData icon = Icons.help_outline;
@@ -153,10 +171,7 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
 
                       return _buildTransactionItem(
                         title: _getTransactionTitle(context, tx),
-                        subtitle: tx.date.toString().substring(
-                          0,
-                          10,
-                        ), // Simple date
+                        subtitle: "${tx.date.toString().substring(0, 10)}$cardNameStr",
                         amount:
                             '${isExpense ? '-' : '+'}\$${tx.amount.abs().toStringAsFixed(2)}',
                         bgColor: bgColor,
