@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../providers/business_provider.dart';
 import '../../models/product.dart';
 import 'product_form_screen.dart';
+import 'package:cashrapido/utils/number_format_utils.dart';
 
 class ProductsTab extends StatelessWidget {
   const ProductsTab({super.key});
@@ -104,7 +105,7 @@ class ProductsTab extends StatelessWidget {
           children: [
             Text('SKU: ${product.sku}'),
             Text(
-              'Precio: \$${product.salePrice} | Margen: ${product.profitMarginPercentage.toStringAsFixed(1)}%',
+              'Precio: \$${product.salePrice} | Margen: ${product.profitMarginPercentage.toFormattedString(1)}%',
               style: TextStyle(color: Colors.green[700], fontSize: 12),
             ),
           ],

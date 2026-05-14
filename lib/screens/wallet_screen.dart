@@ -8,6 +8,7 @@ import '../services/localization_service.dart';
 import 'add_card_screen.dart';
 import 'money_counter_screen.dart';
 import 'licenses_screen.dart';
+import 'package:cashrapido/utils/number_format_utils.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -257,7 +258,7 @@ class _WalletScreenState extends State<WalletScreen> {
                                 ? context.t('card_cash')
                                 : (card.bankName ?? 'VISA'),
                             balance:
-                                '${currencyObj.symbol} ${card.balance.toStringAsFixed(2)}',
+                                '${currencyObj.symbol} ${card.balance.toFormattedString(2)}',
                               cardNumber: card.isCash
                                   ? ''
                                   : _maskCardNumber(card.cardNumber),
@@ -348,7 +349,7 @@ class _WalletScreenState extends State<WalletScreen> {
                         context.t('spending_limit'),
                         activeCard.spendingLimit == null
                             ? context.t('no_limit_set')
-                            : '\$ ${activeCard.spendingLimit!.toStringAsFixed(2)}',
+                            : '\$ ${activeCard.spendingLimit!.toFormattedString(2)}',
                         isLocked: !provider.canSecurizeCard,
                         onTap: () => _showLimitDialog(
                           context,

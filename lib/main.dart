@@ -87,6 +87,8 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           title: 'CashRapido',
           debugShowCheckedModeBanner: false,
+          themeAnimationDuration: const Duration(milliseconds: 500),
+          themeAnimationCurve: Curves.easeInOut,
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
             useMaterial3: true,

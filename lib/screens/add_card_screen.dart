@@ -118,7 +118,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
     final balance =
         double.tryParse(
-          _balanceController.text.replaceAll(RegExp(r'[^0-9.]'), ''),
+          _balanceController.text.replaceAll(RegExp(r'[^0-9.,]'), '').replaceAll(',', '.'),
         ) ??
         0.0;
 

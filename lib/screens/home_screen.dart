@@ -16,6 +16,7 @@ import '../widgets/add_transaction_modal.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' show Platform;
 import '../utils/tour_keys.dart';
+import 'package:cashrapido/utils/number_format_utils.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -330,7 +331,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            '\$ ${totalBalance.toStringAsFixed(2)}',
+            '\$ ${totalBalance.toFormattedString(2)}',
             style: GoogleFonts.outfit(
               color: Colors.white,
               fontSize: 36,
@@ -343,13 +344,13 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildCardInfoBadge(
                 Icons.arrow_upward,
                 context.t('income_month'),
-                '+ \$${income.toStringAsFixed(0)}',
+                '+ \$${income.toFormattedString(0)}',
               ),
               const SizedBox(width: 24),
               _buildCardInfoBadge(
                 Icons.arrow_downward,
                 context.t('expense_month'),
-                '- \$${expense.toStringAsFixed(0)}',
+                '- \$${expense.toFormattedString(0)}',
               ),
             ],
           ),
@@ -996,7 +997,7 @@ class _HomeScreenState extends State<HomeScreen> {
               tx,
               _getTransactionTitle(context, tx),
               "${tx.date.toString().substring(0, 10)}$cardNameStr",
-              '${isExpense ? '-' : '+'}\$${tx.amount.abs().toStringAsFixed(2)}',
+              '${isExpense ? '-' : '+'}\$${tx.amount.abs().toFormattedString(2)}',
               isExpense
                   ? Colors.red.withOpacity(0.1)
                   : Colors.green.withOpacity(0.1),

@@ -5,6 +5,7 @@ import '../providers/app_provider.dart';
 import '../models/models.dart';
 import '../services/localization_service.dart';
 import '../utils/icon_constants.dart';
+import 'package:cashrapido/utils/number_format_utils.dart';
 
 class AllTransactionsScreen extends StatefulWidget {
   final String? initialCardId;
@@ -173,7 +174,7 @@ class _AllTransactionsScreenState extends State<AllTransactionsScreen> {
                         title: _getTransactionTitle(context, tx),
                         subtitle: "${tx.date.toString().substring(0, 10)}$cardNameStr",
                         amount:
-                            '${isExpense ? '-' : '+'}\$${tx.amount.abs().toStringAsFixed(2)}',
+                            '${isExpense ? '-' : '+'}\$${tx.amount.abs().toFormattedString(2)}',
                         bgColor: bgColor,
                         iconColor: iconColor,
                         icon: icon,

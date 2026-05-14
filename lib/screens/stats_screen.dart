@@ -9,6 +9,7 @@ import '../models/models.dart';
 import '../services/localization_service.dart';
 import 'licenses_screen.dart';
 import '../utils/icon_constants.dart';
+import 'package:cashrapido/utils/number_format_utils.dart';
 
 enum TimeRange { day, week, month, year, custom }
 
@@ -327,8 +328,8 @@ class _StatsScreenState extends State<StatsScreen> {
                   },
                   child: _buildCategoryItem(
                     category.name,
-                    '${_showIncome ? '+' : '-'}\$${entry.value.toStringAsFixed(2)}',
-                    '${percentage.toStringAsFixed(1)}%',
+                    '${_showIncome ? '+' : '-'}\$${entry.value.toFormattedString(2)}',
+                    '${percentage.toFormattedString(1)}%',
                     Color(category.colorValue),
                     IconConstants.getCategoryIcon(category.iconCode),
                     monthlyBudget: _timeRange == TimeRange.month && !_showIncome ? category.monthlyBudget : null,
@@ -393,7 +394,7 @@ class _StatsScreenState extends State<StatsScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '\$${totalExpense.toStringAsFixed(2)}',
+                                  '\$${totalExpense.toFormattedString(2)}',
                                   style: GoogleFonts.outfit(
                                     color: Theme.of(
                                       context,
@@ -814,7 +815,7 @@ class _StatsScreenState extends State<StatsScreen> {
   void _showEditBudgetDialog(BuildContext context, Category category, AppProvider provider) {
     final controller = TextEditingController(
       text: category.monthlyBudget != null && category.monthlyBudget! > 0 
-          ? category.monthlyBudget!.toStringAsFixed(2) 
+          ? category.monthlyBudget!.toFormattedString(2) 
           : '',
     );
     showDialog(
@@ -839,7 +840,7 @@ class _StatsScreenState extends State<StatsScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              final val = double.tryParse(controller.text.replaceAll(RegExp(r'[^0-9.]'), ''));
+              final val = double.tryParse(controller.text.replaceAll(RegExp(r'[^0-9.,]'), '').replaceAll(',', '.'));
               provider.editCategoryBudget(category.id, val ?? 0.0);
               Navigator.pop(ctx);
             },
@@ -924,14 +925,14 @@ class _StatsScreenState extends State<StatsScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                '${context.t('monthly_budget')}: \$${monthlyBudget.toStringAsFixed(2)}',
+                                '${context.t('monthly_budget')}: \$${monthlyBudget.toFormattedString(2)}',
                                 style: GoogleFonts.outfit(
                                   fontSize: 10,
                                   color: Colors.grey,
                                 ),
                               ),
                               Text(
-                                '${(progress * 100).toStringAsFixed(0)}%',
+                                '${(progress * 100).toFormattedString(0)}%',
                                 style: GoogleFonts.outfit(
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
@@ -1069,7 +1070,7 @@ class _StatsScreenState extends State<StatsScreen> {
         PieChartSectionData(
           color: Color(category.colorValue),
           value: percentage,
-          title: '${percentage.toStringAsFixed(0)}%',
+          title: '${percentage.toFormattedString(0)}%',
           radius: radius,
           titleStyle: GoogleFonts.outfit(
             fontSize: fontSize,
@@ -1137,7 +1138,7 @@ class _StatsScreenState extends State<StatsScreen> {
                   ),
                   children: [
                     TextSpan(
-                      text: (rod.toY).toStringAsFixed(0),
+                      text: (rod.toY).toFormattedString(0),
                       style: const TextStyle(color: Colors.yellow),
                     ),
                   ],

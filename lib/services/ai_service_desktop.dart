@@ -1,6 +1,7 @@
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/models.dart';
+import 'package:cashrapido/utils/number_format_utils.dart';
 
 class AIService {
   // STRICTLY confidential API Key provided by user for this session.
@@ -115,12 +116,12 @@ class AIService {
     final accountsInfo = cards
         .map(
           (c) =>
-              "- ${c.name}: ${c.balance.toStringAsFixed(2)} ${c.currency} (${c.isCash ? 'Efectivo' : c.bankName ?? 'Banco'}) [ID: ${c.id}]",
+              "- ${c.name}: ${c.balance.toFormattedString(2)} ${c.currency} (${c.isCash ? 'Efectivo' : c.bankName ?? 'Banco'}) [ID: ${c.id}]",
         )
         .join('\\n');
     final totalBalance = cards
         .fold(0.0, (sum, c) => sum + c.balance)
-        .toStringAsFixed(2);
+        .toFormattedString(2);
 
     // 2. Category Map (ID -> Name)
     final catMap = {for (var c in categories) c.id: c.name};
@@ -167,8 +168,8 @@ $accountsInfo
 Total Global Aproximado: $totalBalance
 
 [Resumen Últimos 30 Días]
-Ingresos: ${income30.toStringAsFixed(2)}
-Gastos: ${expense30.toStringAsFixed(2)}
+Ingresos: ${income30.toFormattedString(2)}
+Gastos: ${expense30.toFormattedString(2)}
 
 [Transacciones Recientes (Últimas 50)]
 $recentTx
@@ -184,7 +185,7 @@ INSTRUCCIONES CLAVE:
 5. IDIOMA: Responde en el idioma del usuario.
 6. DIRECTO: No saludes dos veces. Ve al dato.
 
-Ejemplo: "Tienes activada la biometría. Este mes has gastado \$${expense30.toStringAsFixed(2)}, principalmente en..."
+Ejemplo: "Tienes activada la biometría. Este mes has gastado \$${expense30.toFormattedString(2)}, principalmente en..."
 ''';
   }
 }

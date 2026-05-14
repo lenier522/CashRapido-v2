@@ -84,7 +84,7 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
       return;
     }
 
-    final budgetText = _budgetController.text.replaceAll(RegExp(r'[^0-9.]'), '');
+    final budgetText = _budgetController.text.replaceAll(RegExp(r'[^0-9.,]'), '').replaceAll(',', '.');
     final budget = double.tryParse(budgetText);
 
     Provider.of<AppProvider>(context, listen: false).addCategory(

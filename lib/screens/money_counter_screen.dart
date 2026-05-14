@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/localization_service.dart';
+import 'package:cashrapido/utils/number_format_utils.dart';
 
 class MoneyCounterScreen extends StatefulWidget {
   final String currencySymbol;
@@ -242,7 +243,7 @@ class _MoneyCounterScreenState extends State<MoneyCounterScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 10),
               alignment: Alignment.centerRight,
               child: Text(
-                '${widget.currencySymbol}${item.subtotal.toStringAsFixed(0)}', // Assume whole numbers mostly usually, but maybe not? let's stick to fixed(0) or fixed(2) if decimal.
+                '${widget.currencySymbol}${item.subtotal.toFormattedString(0)}', // Assume whole numbers mostly usually, but maybe not? let's stick to fixed(0) or fixed(2) if decimal.
                 // Let's use clean formatting.
                 style: GoogleFonts.outfit(
                   fontWeight: FontWeight.bold,
@@ -283,7 +284,7 @@ class _MoneyCounterScreenState extends State<MoneyCounterScreen> {
               ),
             ),
             Text(
-              '${widget.currencySymbol}${_total.toStringAsFixed(2)}',
+              '${widget.currencySymbol}${_total.toFormattedString(2)}',
               style: GoogleFonts.outfit(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,

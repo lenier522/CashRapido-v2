@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../providers/business_provider.dart';
 import 'expense_form_screen.dart';
+import 'package:cashrapido/utils/number_format_utils.dart';
 
 class ExpensesTab extends StatelessWidget {
   const ExpensesTab({super.key});
@@ -52,7 +53,7 @@ class ExpensesTab extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          '\$${expense.amount.toStringAsFixed(2)}',
+                          '\$${expense.amount.toFormattedString(2)}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.red,

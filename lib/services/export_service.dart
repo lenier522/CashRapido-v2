@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
 import '../models/models.dart';
+import 'package:cashrapido/utils/number_format_utils.dart';
 
 class ExportService {
   // --- Formatters ---
@@ -14,7 +15,7 @@ class ExportService {
   }
 
   String _formatCurrency(double amount) {
-    return amount.toStringAsFixed(2);
+    return amount.toFormattedString(2);
   }
 
   String _getTransactionType(InternalTransaction trans) {
@@ -582,7 +583,7 @@ class ExportService {
                           _formatDate(t.date),
                           cat.name,
                           t.title,
-                          t.amount.toStringAsFixed(2),
+                          t.amount.toFormattedString(2),
                         ];
                       }).toList(),
                       headerStyle: pw.TextStyle(

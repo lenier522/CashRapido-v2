@@ -35,6 +35,17 @@ class AppProvider with ChangeNotifier {
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
+  static String decimalSeparator = '.';
+
+  String get currentDecimalSeparator => decimalSeparator;
+
+  Future<void> setDecimalSeparator(String separator) async {
+    decimalSeparator = separator;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('decimal_separator', separator);
+    notifyListeners();
+  }
+
   String _chartType = 'Pie'; // Default
   String get chartType => _chartType;
 
@@ -188,7 +199,7 @@ class AppProvider with ChangeNotifier {
 
   // Payment System
   // Change this variable to build for different regions
-  final bool _isCuba = true;
+  final bool _isCuba = false;
   bool get isCuba => _isCuba;
 
   List<PaymentMethod> get paymentMethods {
@@ -349,10 +360,17 @@ class AppProvider with ChangeNotifier {
     try {
       // 1. Try Art-Pay
       final artPayResult = await ArtPayService.verifyAndRestoreLicense();
-      if (artPayResult != null && artPayResult.success && artPayResult.productToken != null) {
-        final licenseType = ArtPayService.getLicenseTypeFromToken(artPayResult.productToken!);
+      if (artPayResult != null &&
+          artPayResult.success &&
+          artPayResult.productToken != null) {
+        final licenseType = ArtPayService.getLicenseTypeFromToken(
+          artPayResult.productToken!,
+        );
         if (licenseType != null) {
-          setLicenseType(licenseType, expirationDate: artPayResult.accessExpiresAt);
+          setLicenseType(
+            licenseType,
+            expirationDate: artPayResult.accessExpiresAt,
+          );
           return null; // Success with Art-Pay
         }
       }
@@ -363,8 +381,10 @@ class AppProvider with ChangeNotifier {
       if (!status.paid) {
         // User doesn't have an active license
         String errorMsg = ApklisService.humanizeError(status.error);
-        if (artPayResult != null && !artPayResult.success && artPayResult.errorMessage != null) {
-            return 'Art-Pay: ${artPayResult.errorMessage}\\nApklis: $errorMsg';
+        if (artPayResult != null &&
+            !artPayResult.success &&
+            artPayResult.errorMessage != null) {
+          return 'Art-Pay: ${artPayResult.errorMessage}\\nApklis: $errorMsg';
         }
         return errorMsg;
       }
@@ -500,6 +520,19 @@ class AppProvider with ChangeNotifier {
   // Notifications
   bool _notificationsEnabled = false;
   bool get notificationsEnabled => _notificationsEnabled;
+
+  bool _dailyReminderEnabled = true;
+  bool get dailyReminderEnabled => _dailyReminderEnabled;
+
+  int _dailyReminderHour = 9;
+  int get dailyReminderHour => _dailyReminderHour;
+
+  int _dailyReminderMinute = 0;
+  int get dailyReminderMinute => _dailyReminderMinute;
+
+  bool _tipsEnabled = true;
+  bool get tipsEnabled => _tipsEnabled;
+
   final NotificationService _notificationService = NotificationService();
 
   // Export
@@ -571,6 +604,10 @@ class AppProvider with ChangeNotifier {
       _appPinHash = prefs.getString('app_pin_hash');
       _appPasswordHash = prefs.getString('app_password_hash');
       _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
+      _dailyReminderEnabled = prefs.getBool('daily_reminder_enabled') ?? true;
+      _dailyReminderHour = prefs.getInt('daily_reminder_hour') ?? 9;
+      _dailyReminderMinute = prefs.getInt('daily_reminder_minute') ?? 0;
+      _tipsEnabled = prefs.getBool('tips_enabled') ?? true;
       _transferMovilEnabled = prefs.getBool('transfermovil_enabled') ?? false;
 
       // Handle daily streak
@@ -583,6 +620,9 @@ class AppProvider with ChangeNotifier {
         _lastLoginDate = DateTime.tryParse(lastLoginStr);
       }
       _calculateStreak(prefs);
+
+      final sep = prefs.getString('decimal_separator') ?? '.';
+      decimalSeparator = sep;
 
       final themeString = prefs.getString('theme_mode');
       if (themeString != null) {
@@ -700,6 +740,10 @@ class AppProvider with ChangeNotifier {
         try {
           await _notificationService.scheduleAllNotifications(
             _currentLocale?.languageCode ?? 'es',
+            dailyReminderEnabled: _dailyReminderEnabled,
+            dailyReminderHour: _dailyReminderHour,
+            dailyReminderMinute: _dailyReminderMinute,
+            tipsEnabled: _tipsEnabled,
           );
         } catch (e) {
           print('Notification schedule error: $e');
@@ -1031,8 +1075,13 @@ class AppProvider with ChangeNotifier {
 
     final destinationAmount = amount * exchangeRate;
 
-    String getCardName(AccountCard c) => c.isCash ? c.name : (c.bankName ?? 'Tarjeta');
-    String getCardSuffix(AccountCard c) => c.isCash ? '' : (c.cardNumber.length >= 4 ? c.cardNumber.substring(c.cardNumber.length - 4) : c.cardNumber);
+    String getCardName(AccountCard c) =>
+        c.isCash ? c.name : (c.bankName ?? 'Tarjeta');
+    String getCardSuffix(AccountCard c) => c.isCash
+        ? ''
+        : (c.cardNumber.length >= 4
+              ? c.cardNumber.substring(c.cardNumber.length - 4)
+              : c.cardNumber);
 
     // 1. Deficit from Source
     await addTransaction(
@@ -1106,10 +1155,10 @@ class AppProvider with ChangeNotifier {
     }
     final item = _cards.removeAt(oldIndex);
     _cards.insert(newIndex, item);
-    
+
     await _cardBox.clear();
     await _cardBox.addAll(_cards);
-    
+
     notifyListeners();
   }
 
@@ -1738,6 +1787,10 @@ class AppProvider with ChangeNotifier {
       }
       await _notificationService.scheduleAllNotifications(
         _currentLocale?.languageCode ?? 'es',
+        dailyReminderEnabled: _dailyReminderEnabled,
+        dailyReminderHour: _dailyReminderHour,
+        dailyReminderMinute: _dailyReminderMinute,
+        tipsEnabled: _tipsEnabled,
       );
     } else {
       await _notificationService.cancelAllNotifications();
@@ -1922,6 +1975,59 @@ class AppProvider with ChangeNotifier {
     _aiChatEnabled = enabled;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('ai_chat_enabled', enabled);
+    notifyListeners();
+  }
+
+  Future<void> setDailyReminderEnabled(bool enabled) async {
+    _dailyReminderEnabled = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('daily_reminder_enabled', enabled);
+
+    if (_notificationsEnabled) {
+      if (enabled) {
+        await _notificationService.scheduleDailyReminder(
+          _currentLocale?.languageCode ?? 'es',
+          _dailyReminderHour,
+          _dailyReminderMinute,
+        );
+      } else {
+        await _notificationService.cancelDailyReminder();
+      }
+    }
+    notifyListeners();
+  }
+
+  Future<void> setDailyReminderTime(int hour, int minute) async {
+    _dailyReminderHour = hour;
+    _dailyReminderMinute = minute;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('daily_reminder_hour', hour);
+    await prefs.setInt('daily_reminder_minute', minute);
+
+    if (_notificationsEnabled && _dailyReminderEnabled) {
+      await _notificationService.scheduleDailyReminder(
+        _currentLocale?.languageCode ?? 'es',
+        hour,
+        minute,
+      );
+    }
+    notifyListeners();
+  }
+
+  Future<void> setTipsEnabled(bool enabled) async {
+    _tipsEnabled = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('tips_enabled', enabled);
+
+    if (_notificationsEnabled) {
+      if (enabled) {
+        await _notificationService.scheduleMotivationalTips(
+          _currentLocale?.languageCode ?? 'es',
+        );
+      } else {
+        await _notificationService.cancelMotivationalTips();
+      }
+    }
     notifyListeners();
   }
 }

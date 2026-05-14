@@ -13,6 +13,7 @@ import 'expenses_tab.dart';
 import 'closings_tab.dart';
 import 'analytics_tab.dart';
 import 'pos_screen.dart'; // Added for direct access
+import 'package:cashrapido/utils/number_format_utils.dart';
 
 class BusinessDetailScreen extends StatefulWidget {
   final Business business;
@@ -214,7 +215,7 @@ class _BusinessDetailScreenState extends State<BusinessDetailScreen>
           child: _buildMetricCard(
             context,
             context.t('metrics_revenue'),
-            '\$${provider.totalRevenue.toStringAsFixed(2)}',
+            '\$${provider.totalRevenue.toFormattedString(2)}',
             Icons.trending_up_rounded,
             Colors.green,
           ),
@@ -224,7 +225,7 @@ class _BusinessDetailScreenState extends State<BusinessDetailScreen>
           child: _buildMetricCard(
             context,
             context.t('metrics_expenses'),
-            '\$${provider.totalExpenses.toStringAsFixed(2)}',
+            '\$${provider.totalExpenses.toFormattedString(2)}',
             Icons.trending_down_rounded,
             Colors.red,
           ),
@@ -234,7 +235,7 @@ class _BusinessDetailScreenState extends State<BusinessDetailScreen>
           child: _buildMetricCard(
             context,
             context.t('metrics_roi'),
-            '${provider.overallROI.toStringAsFixed(1)}%',
+            '${provider.overallROI.toFormattedString(1)}%',
             Icons.pie_chart_rounded,
             color,
           ),

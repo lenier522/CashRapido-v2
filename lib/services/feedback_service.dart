@@ -10,7 +10,7 @@ class FeedbackService {
   static const String _kDailyOpenCount = 'feedback_daily_open_count';
   static const String _kLastShownDate = 'feedback_last_shown_date';
 
-  static const String _kTelegramUrl = 'https://t.me/+De8fwjWq94xjMzBh';
+  static const String _kTelegramUrl = 'https://t.me/cashrapido26';
   static const String _kApklisUrl =
       'https://apklis.cu/application/cu.lenier.cashrapido';
   static const String _kPlayStoreUrl =

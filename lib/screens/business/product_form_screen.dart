@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/business_provider.dart';
 import '../../models/product.dart';
+import 'package:cashrapido/utils/number_format_utils.dart';
 
 class ProductFormScreen extends StatefulWidget {
   final Product? product;
@@ -230,7 +231,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    '\$${_calculateTotalInvestment().toStringAsFixed(2)}',
+                    '\$${_calculateTotalInvestment().toFormattedString(2)}',
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,

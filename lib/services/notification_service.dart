@@ -56,14 +56,38 @@ class NotificationService {
   }
 
   // Schedule all notifications
-  Future<void> scheduleAllNotifications(String langCode) async {
-    await scheduleDailyReminder(langCode);
+  Future<void> scheduleAllNotifications(
+    String langCode, {
+    bool dailyReminderEnabled = true,
+    int dailyReminderHour = 9,
+    int dailyReminderMinute = 0,
+    bool tipsEnabled = true,
+  }) async {
+    if (dailyReminderEnabled) {
+      await scheduleDailyReminder(langCode, dailyReminderHour, dailyReminderMinute);
+    } else {
+      await cancelDailyReminder();
+    }
     await scheduleWeeklySummary(langCode);
-    await scheduleMotivationalTips(langCode);
+    if (tipsEnabled) {
+      await scheduleMotivationalTips(langCode);
+    } else {
+      await cancelMotivationalTips();
+    }
   }
 
-  // Daily reminder at 9:00 AM
-  Future<void> scheduleDailyReminder(String langCode) async {
+  Future<void> cancelDailyReminder() async {
+    await _notifications.cancel(0);
+  }
+
+  Future<void> cancelMotivationalTips() async {
+    await _notifications.cancel(10);
+    await _notifications.cancel(11);
+    await _notifications.cancel(12);
+  }
+
+  // Daily reminder at custom time
+  Future<void> scheduleDailyReminder(String langCode, int hour, int minute) async {
     final title = AppLocalizations.getString(langCode, 'notif_daily_title');
     final body = AppLocalizations.getString(langCode, 'notif_daily_body');
 
@@ -71,7 +95,7 @@ class NotificationService {
       0, // Notification ID
       title,
       body,
-      _nextInstanceOfTime(9, 0),
+      _nextInstanceOfTime(hour, minute),
       const NotificationDetails(
         android: AndroidNotificationDetails(
           'daily_reminder',

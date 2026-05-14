@@ -12,6 +12,8 @@ import 'info_screens.dart';
 import 'licenses_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/business_provider.dart';
+import 'notification_settings_screen.dart';
+import '../widgets/smooth_switch.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -78,10 +80,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.fingerprint,
                 title: context.t('biometrics'),
                 isLocked: !provider.canUseBiometrics,
-                trailing: Switch(
+                trailing: SmoothSwitch(
                   value: provider.biometricsEnabled,
                   activeThumbColor: Theme.of(context).colorScheme.primary,
-                  onChanged: (val) async {
+                  onChangedAsync: (val) async {
                     if (!provider.canUseBiometrics) {
                       _showLockedFeature(context);
                       return;
@@ -135,21 +137,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
               context,
               icon: Icons.notifications_outlined,
               title: context.t('notifications'),
-              trailing: Switch(
-                value: provider.notificationsEnabled,
-                activeThumbColor: Theme.of(context).colorScheme.primary,
-                onChanged: (val) async {
-                  await provider.setNotificationsEnabled(val);
-                  if (context.mounted) {
-                    _showSnack(
-                      context,
-                      val
-                          ? context.t('notif_enabled')
-                          : context.t('notif_disabled'),
-                    );
-                  }
-                },
+              subtitle: context.t('notif_settings_subtitle'),
+              trailing: Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Theme.of(context).disabledColor,
               ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const NotificationSettingsScreen(),
+                  ),
+                );
+              },
             ),
 
             const SizedBox(height: 24),
@@ -222,10 +223,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         color: Theme.of(context).textTheme.bodyLarge?.color,
                       ),
                     ),
-                    trailing: Switch(
+                    trailing: SmoothSwitch(
                       value: provider.aiChatEnabled,
                       activeThumbColor: Theme.of(context).colorScheme.primary,
-                      onChanged: (val) async {
+                      onChangedAsync: (val) async {
                         if (!provider.canUseAI) {
                           _showLockedFeature(context);
                           return;
@@ -275,6 +276,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             _buildSettingsTile(
               context,
+              icon: Icons.numbers_rounded,
+              title: context.t('numeric_format'),
+              subtitle:
+                  "${context.t('decimal_separator')} ${provider.currentDecimalSeparator == ',' ? context.t('comma') : context.t('point')}",
+              trailing: Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Theme.of(context).disabledColor,
+              ),
+              onTap: () => _showDecimalSeparatorDialog(context),
+            ),
+            _buildSettingsTile(
+              context,
               icon: Icons.account_balance_rounded,
               title: context.t('manage_banks'),
               isLocked: !provider.canManageBanks,
@@ -289,7 +303,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               context,
               icon: Icons.dark_mode_outlined,
               title: context.t('dark_mode'),
-              trailing: Switch(
+              trailing: SmoothSwitch(
                 value: provider.themeMode == ThemeMode.dark,
                 activeThumbColor: Theme.of(context).colorScheme.primary,
                 onChanged: (val) {
@@ -317,10 +331,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: "Integración Transfermóvil",
                 subtitle: "Detectar pagos automáticamente (Solo Cuba)",
                 isLocked: !provider.canUseTransferMovil,
-                trailing: Switch(
+                trailing: SmoothSwitch(
                   value: provider.transferMovilEnabled,
                   activeThumbColor: Theme.of(context).colorScheme.primary,
-                  onChanged: (val) async {
+                  onChangedAsync: (val) async {
                     if (!provider.canUseTransferMovil) {
                       _showLockedFeature(context);
                       return;
@@ -495,7 +509,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 showLicensePage(
                   context: context,
                   applicationName: context.t('app_name'),
-                  applicationVersion: '1.18.0',
+                  applicationVersion: '1.19.4',
                   applicationIcon: Icon(
                     Icons.account_balance_wallet,
                     size: 48,
@@ -535,7 +549,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 showAboutDialog(
                   context: context,
                   applicationName: context.t('app_name'),
-                  applicationVersion: '1.18.0',
+                  applicationVersion: '1.19.4',
                   applicationIcon: Icon(
                     Icons.account_balance_wallet,
                     size: 48,
@@ -621,6 +635,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _showSnack(context, "Tasas de cambio actualizadas");
             },
             child: Text(context.t('save')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDecimalSeparatorDialog(BuildContext context) {
+    final provider = Provider.of<AppProvider>(context, listen: false);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(context.t('numeric_format')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: Text(context.t('point')),
+              subtitle: const Text("Ejemplo: 1000.00"),
+              trailing: provider.currentDecimalSeparator == '.'
+                  ? const Icon(Icons.check, color: Colors.green)
+                  : null,
+              onTap: () {
+                provider.setDecimalSeparator('.');
+                Navigator.pop(ctx);
+              },
+            ),
+            ListTile(
+              title: Text(context.t('comma')),
+              subtitle: const Text("Ejemplo: 1000,00"),
+              trailing: provider.currentDecimalSeparator == ','
+                  ? const Icon(Icons.check, color: Colors.green)
+                  : null,
+              onTap: () {
+                provider.setDecimalSeparator(',');
+                Navigator.pop(ctx);
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(context.t('cancel')),
           ),
         ],
       ),
@@ -985,7 +1042,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Column(
         children: [
           Text(
-            'CashRapido v1.18.0',
+            'CashRapido v1.19.4',
             style: GoogleFonts.outfit(
               color: Theme.of(context).disabledColor,
               fontSize: 12,
@@ -1032,7 +1089,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Icons.telegram,
                 Colors.blueAccent,
                 () => launchUrl(
-                  Uri.parse('https://t.me/+De8fwjWq94xjMzBh'),
+                  Uri.parse('https://t.me/cashrapido26'),
                   mode: LaunchMode.externalApplication,
                 ),
               ),

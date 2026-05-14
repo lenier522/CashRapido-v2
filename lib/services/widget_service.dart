@@ -1,6 +1,7 @@
 import 'package:home_widget/home_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
+import 'package:cashrapido/utils/number_format_utils.dart';
 
 class WidgetService {
   static const String _balanceWidgetEnabled = 'balance_widget_enabled';
@@ -53,7 +54,7 @@ class WidgetService {
     try {
       await HomeWidget.saveWidgetData<String>(
         'balance',
-        balance.toStringAsFixed(2),
+        balance.toFormattedString(2),
       );
       await HomeWidget.saveWidgetData<String>('currency', currency);
       await HomeWidget.updateWidget(androidName: 'BalanceWidgetProvider');

@@ -20,6 +20,21 @@ class AppLocalizations {
 
   static final Map<String, Map<String, String>> _localizedValues = {
     'es': {
+      'notif_settings_subtitle': 'Ajustes de alertas y recordatorios',
+      'notif_general': 'General',
+      'notif_general_desc': 'Activa o desactiva todas las notificaciones',
+      'notif_reminders': 'Recordatorios',
+      'notif_daily': 'Recordatorio de Gastos',
+      'notif_daily_desc': 'Te recordamos registrar tus gastos',
+      'notif_time': 'Hora del recordatorio',
+      'notif_tips_section': 'Consejos y Tips',
+      'notif_tips': 'Tips Financieros',
+      'notif_tips_desc': 'Recibe consejos aleatorios para mejorar tus finanzas',
+      'numeric_format': 'Formato Numérico',
+      'decimal_separator': 'Separador Decimal: ',
+      'comma': 'Coma (,)',
+      'point': 'Punto (.)',
+      'numeric_format_desc': 'Elige el separador decimal para toda la app',
       // Feedback
       'feedback_title': '¡Tu opinión nos importa!',
       'feedback_description':
@@ -647,6 +662,21 @@ class AppLocalizations {
       'btn_close': 'Cerrar',
     },
     'en': {
+      'notif_settings_subtitle': 'Alerts and reminders settings',
+      'notif_general': 'General',
+      'notif_general_desc': 'Enable or disable all notifications',
+      'notif_reminders': 'Reminders',
+      'notif_daily': 'Expense Reminder',
+      'notif_daily_desc': 'We remind you to record your expenses',
+      'notif_time': 'Reminder time',
+      'notif_tips_section': 'Advice & Tips',
+      'notif_tips': 'Financial Tips',
+      'notif_tips_desc': 'Receive random tips to improve your finances',
+      'numeric_format': 'Numeric Format',
+      'decimal_separator': 'Decimal Separator: ',
+      'comma': 'Comma (,)',
+      'point': 'Point (.)',
+      'numeric_format_desc': 'Choose the decimal separator for the whole app',
       // Help Center
       'help_q_add_card': 'How to add my first card?',
       'help_a_add_card':
@@ -1274,6 +1304,21 @@ class AppLocalizations {
       'btn_close': 'Close',
     },
     'fr': {
+      'notif_settings_subtitle': 'Paramètres d\'alertes et de rappels',
+      'notif_general': 'Général',
+      'notif_general_desc': 'Activer ou désactiver toutes les notifications',
+      'notif_reminders': 'Rappels',
+      'notif_daily': 'Rappel de Dépenses',
+      'notif_daily_desc': 'Nous vous rappelons d\'enregistrer vos dépenses',
+      'notif_time': 'Heure du rappel',
+      'notif_tips_section': 'Conseils et Astuces',
+      'notif_tips': 'Astuces Financières',
+      'notif_tips_desc': 'Recevez des conseils aléatoires pour améliorer vos finances',
+      'numeric_format': 'Format Numérique',
+      'decimal_separator': 'Séparateur Décimal: ',
+      'comma': 'Virgule (,)',
+      'point': 'Point (.)',
+      'numeric_format_desc': 'Choisissez le séparateur décimal pour toute l\'application',
       // Help Center
       'help_q_add_card': 'Comment ajouter ma première carte ?',
       'help_a_add_card':

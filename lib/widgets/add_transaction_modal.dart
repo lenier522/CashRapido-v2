@@ -6,6 +6,7 @@ import '../providers/app_provider.dart';
 import '../models/models.dart';
 import '../screens/add_category_screen.dart';
 import '../utils/icon_constants.dart';
+import 'package:cashrapido/utils/number_format_utils.dart';
 
 class AddTransactionModal extends StatefulWidget {
   final InternalTransaction? transactionToEdit;
@@ -31,7 +32,7 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
     // If editing, populate fields
     if (widget.transactionToEdit != null) {
       final tx = widget.transactionToEdit!;
-      _amountController.text = tx.amount.abs().toStringAsFixed(2);
+      _amountController.text = tx.amount.abs().toFormattedString(2);
       _titleController.text = tx.title;
       _selectedCategoryId = tx.categoryId;
       _selectedCardId = tx.cardId;
@@ -49,10 +50,10 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
 
   void _saveTransaction() {
     final amountText = _amountController.text.replaceAll(
-      RegExp(r'[^0-9.]'),
+      RegExp(r'[^0-9.,]'),
       '',
     );
-    final amount = double.tryParse(amountText) ?? 0.0;
+    final amount = double.tryParse(amountText.replaceAll(',', '.')) ?? 0.0;
 
     if (amount <= 0 || _selectedCategoryId.isEmpty) {
       // Close modal first, then show error
@@ -105,7 +106,7 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '${context.t('insufficient_funds')} (${context.t('balance')}: ${card.balance.toStringAsFixed(2)} ${card.currency})',
+                '${context.t('insufficient_funds')} (${context.t('balance')}: ${card.balance.toFormattedString(2)} ${card.currency})',
               ),
             ),
           );

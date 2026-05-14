@@ -4,6 +4,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/app_provider.dart';
+import 'package:cashrapido/utils/number_format_utils.dart';
 
 class TransferMovilScreen extends StatefulWidget {
   const TransferMovilScreen({super.key});
@@ -374,7 +375,7 @@ class _TransferMovilScreenState extends State<TransferMovilScreen> {
     bool isRegistered = provider.transactions.any((t) {
       if (t.categoryId != 'cat_transfermovil') return false;
       final targetAmount = isIncome ? amount : -amount;
-      if (t.amount.toStringAsFixed(2) != targetAmount.toStringAsFixed(2)) {
+      if (t.amount.toFormattedString(2) != targetAmount.toFormattedString(2)) {
         return false;
       }
       return t.date.difference(date).inSeconds.abs() < 60;
@@ -537,7 +538,7 @@ class _TransferMovilScreenState extends State<TransferMovilScreen> {
                                     border: Border.all(color: Colors.green.withOpacity(0.3)),
                                   ),
                                   child: Text(
-                                    "-${discountPercent.toStringAsFixed(1).replaceAll('.0', '')}%",
+                                    "-${discountPercent.toFormattedString(1).replaceAll('.0', '')}%",
                                     style: GoogleFonts.outfit(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
@@ -550,7 +551,7 @@ class _TransferMovilScreenState extends State<TransferMovilScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            "${isIncome ? '+' : '-'}\$${amount.toStringAsFixed(2)}",
+                            "${isIncome ? '+' : '-'}\$${amount.toFormattedString(2)}",
                             style: GoogleFonts.outfit(
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
@@ -798,7 +799,7 @@ class _TransferMovilScreenState extends State<TransferMovilScreen> {
                         ),
                       ),
                       Text(
-                        "\$${amount.toStringAsFixed(2)}",
+                        "\$${amount.toFormattedString(2)}",
                         style: GoogleFonts.outfit(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,

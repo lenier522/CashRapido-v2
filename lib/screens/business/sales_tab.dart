@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../providers/business_provider.dart';
 import '../../services/localization_service.dart';
 import 'pos_screen.dart';
+import 'package:cashrapido/utils/number_format_utils.dart';
 
 class SalesTab extends StatelessWidget {
   const SalesTab({super.key});
@@ -90,7 +91,7 @@ class SalesTab extends StatelessWidget {
                       ),
                     ),
                     title: Text(
-                      '\$${sale.total.toStringAsFixed(2)}',
+                      '\$${sale.total.toFormattedString(2)}',
                       style: GoogleFonts.outfit(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -127,7 +128,7 @@ class SalesTab extends StatelessWidget {
                               ],
                             ),
                             Text(
-                              '\$${item.subtotal.toStringAsFixed(2)}',
+                              '\$${item.subtotal.toFormattedString(2)}',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                               ),

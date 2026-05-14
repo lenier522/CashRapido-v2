@@ -5,6 +5,7 @@ import '../../providers/business_provider.dart';
 import '../../models/product.dart';
 import '../../models/sale.dart';
 import '../../services/localization_service.dart';
+import 'package:cashrapido/utils/number_format_utils.dart';
 
 class PosScreen extends StatefulWidget {
   const PosScreen({super.key});
@@ -111,7 +112,7 @@ class _PosScreenState extends State<PosScreen> {
                               style: TextStyle(color: Colors.grey[600]),
                             ),
                             Text(
-                              '\$${total.toStringAsFixed(2)}',
+                              '\$${total.toFormattedString(2)}',
                               style: GoogleFonts.outfit(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
@@ -336,7 +337,7 @@ class _PosScreenState extends State<PosScreen> {
                   style: TextStyle(color: Colors.grey[600], fontSize: 16),
                 ),
                 Text(
-                  '\$${total.toStringAsFixed(2)}',
+                  '\$${total.toFormattedString(2)}',
                   style: GoogleFonts.outfit(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,

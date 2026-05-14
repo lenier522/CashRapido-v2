@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/business_provider.dart';
 import '../../services/localization_service.dart';
+import 'package:cashrapido/utils/number_format_utils.dart';
 
 class AnalyticsTab extends StatelessWidget {
   const AnalyticsTab({super.key});
@@ -21,7 +22,7 @@ class AnalyticsTab extends StatelessWidget {
             _buildSummaryCard(
               context,
               context.t('analytics_income'),
-              '\$${provider.totalRevenue.toStringAsFixed(2)}',
+              '\$${provider.totalRevenue.toFormattedString(2)}',
               Icons.trending_up,
               Colors.green,
             ),
@@ -29,7 +30,7 @@ class AnalyticsTab extends StatelessWidget {
             _buildSummaryCard(
               context,
               context.t('analytics_expense'),
-              '\$${provider.totalExpenses.toStringAsFixed(2)}',
+              '\$${provider.totalExpenses.toFormattedString(2)}',
               Icons.trending_down,
               Colors.red,
             ),
@@ -37,7 +38,7 @@ class AnalyticsTab extends StatelessWidget {
             _buildSummaryCard(
               context,
               context.t('analytics_profit'),
-              '\$${provider.totalProfit.toStringAsFixed(2)}',
+              '\$${provider.totalProfit.toFormattedString(2)}',
               Icons.account_balance_wallet,
               Colors.blue,
             ),
@@ -45,7 +46,7 @@ class AnalyticsTab extends StatelessWidget {
             _buildSummaryCard(
               context,
               context.t('analytics_roi'),
-              '${provider.overallROI.toStringAsFixed(2)}%',
+              '${provider.overallROI.toFormattedString(2)}%',
               Icons.pie_chart,
               Colors.purple,
             ),

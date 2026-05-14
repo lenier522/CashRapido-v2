@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../providers/business_provider.dart';
 import '../../models/closing.dart';
+import 'package:cashrapido/utils/number_format_utils.dart';
 
 class ClosingsTab extends StatelessWidget {
   const ClosingsTab({super.key});
@@ -176,7 +177,7 @@ class ClosingsTab extends StatelessWidget {
       children: [
         Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
         Text(
-          '\$${value.toStringAsFixed(2)}',
+          '\$${value.toFormattedString(2)}',
           style: GoogleFonts.outfit(
             fontWeight: FontWeight.bold,
             fontSize: 16,
@@ -401,7 +402,7 @@ class _GenerateClosingSheetState extends State<_GenerateClosingSheet> {
       children: [
         Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
         Text(
-          '\$${value.toStringAsFixed(2)}',
+          '\$${value.toFormattedString(2)}',
           style: GoogleFonts.outfit(
             fontWeight: FontWeight.bold,
             fontSize: 18,
