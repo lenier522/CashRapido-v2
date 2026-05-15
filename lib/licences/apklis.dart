@@ -25,27 +25,27 @@ class ApklisService {
 
   // Licencias Semanales (7 días)
   static const String _weeklyPersonalUuid =
-      'fce0defc-8023-4e3a-9476-b4088ed46507'; // 15 CUP
+      '23ddd9bb-2f0c-4a14-8142-2f468d9f6131'; // 15 CUP
   static const String _weeklyProUuid =
-      '3ac88e00-c7d7-406a-950f-084e2b825c9b'; // 25 CUP
+      '899617dc-03d7-49ce-a179-90cf3538e465'; // 25 CUP
   static const String _weeklyEnterpriseUuid =
-      '1baa4218-a8fc-4dcd-98b6-abaa6d6d4387'; // 35 CUP
+      '5dc145c7-fbb4-4c5e-bfd6-e106bb80724e'; // 35 CUP
 
   // Licencias Mensuales (30 días)
   static const String _monthlyPersonalUuid =
-      'ef115f45-8736-4a21-a619-2d2f7b1d8781'; // 50 CUP
+      'af2e4fad-80dc-4abe-9557-e0515ad10a48'; // 50 CUP
   static const String _monthlyProUuid =
-      '1c6fa982-48e8-4b85-8bbb-56be3bb628c3'; // 75 CUP
+      'dcdaedc4-2762-4b62-bf0a-5cd99496d70c'; // 75 CUP
   static const String _monthlyEnterpriseUuid =
-      '3a72b071-a327-4336-9df9-4aebf04bd0e5'; // 110 CUP
+      'ca09f2d8-e8bf-4499-b1b1-6242a0c5e61d'; // 110 CUP
 
   // Licencias Anuales (365 días)
   static const String _annualPersonalUuid =
-      '62e88ddb-e132-483d-8ceb-9eff68e317bf'; // 500 CUP
+      '800431da-0e73-4553-bf37-7efab18514aa'; // 500 CUP
   static const String _annualProUuid =
-      'a7ee3d19-7870-41e0-96b1-6b80e99d83b5'; // 750 CUP
+      'a2f644b6-8829-4577-a248-7c65e29f6919'; // 750 CUP
   static const String _annualEnterpriseUuid =
-      '3cdac745-8932-4bd6-a2bd-dda54d893b1c'; // 1000 CUP
+      'e65389ab-9ccb-4a52-b671-9ff6c24d9deb'; // 1000 CUP
 
   /// Obtiene el UUID para un tipo de licencia específico
   static String _getLicenseId(LicenseType licenseType) {

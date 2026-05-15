@@ -12,6 +12,8 @@ import 'licenses_screen.dart';
 import 'transfermovil_screen.dart';
 import 'wallet_screen.dart';
 import 'streak_calendar_screen.dart';
+import 'notifications_screen.dart';
+import 'recurring_transactions_screen.dart';
 import '../widgets/add_transaction_modal.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' show Platform;
@@ -173,23 +175,48 @@ class _HomeScreenState extends State<HomeScreen> {
             if (aiButton != null) ...[aiButton, const SizedBox(width: 12)],
 
             // Notification Icon
-            Container(
-              height: 48,
-              width: 48,
-              decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
+              },
+              child: Stack(
+                children: [
+                  Container(
+                    height: 48,
+                    width: 48,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.notifications_outlined,
+                      color: Theme.of(context).iconTheme.color,
+                    ),
                   ),
+                  if (provider.unreadNotificationsCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          '${provider.unreadNotificationsCount}',
+                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
                 ],
-              ),
-              child: Icon(
-                Icons.notifications_outlined,
-                color: Theme.of(context).iconTheme.color,
               ),
             ),
           ],
@@ -409,6 +436,17 @@ class _HomeScreenState extends State<HomeScreen> {
           },
           key: TourKeys.transferActionKey,
           isLocked: !provider.canTransfer,
+        ),
+        _buildActionButton(
+          context,
+          Icons.autorenew,
+          'Recurrente',
+          () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const RecurringTransactionsScreen()),
+            );
+          },
         ),
         if (provider.isCuba &&
             provider.transferMovilEnabled &&
@@ -797,8 +835,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               ElevatedButton(
                                 onPressed: () {
                                   if (pinController.text == card.pin) {
-                                    Navigator.pop(pinCtx); // Close PIN
-                                    runAction(); // Run
+                                  if (!context.mounted) return;
+                                  Navigator.pop(pinCtx); // Close PIN
+                                  runAction(); // Run
                                   } else {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(

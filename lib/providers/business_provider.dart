@@ -328,10 +328,14 @@ class BusinessProvider with ChangeNotifier {
   Future<void> addSale({
     required List<SaleItem> items,
     required String paymentMethod,
+    double discount = 0.0,
+    String? clientName,
+    String status = 'paid',
   }) async {
     if (_activeBusinessId == null) return;
 
-    final total = items.fold<double>(0.0, (sum, item) => sum + item.subtotal);
+    final subtotal = items.fold<double>(0.0, (sum, item) => sum + item.subtotal);
+    final total = (subtotal - discount) > 0 ? (subtotal - discount) : 0.0;
 
     final sale = Sale(
       id: _uuid.v4(),
@@ -340,6 +344,9 @@ class BusinessProvider with ChangeNotifier {
       total: total,
       paymentMethod: paymentMethod,
       date: DateTime.now(),
+      discount: discount,
+      clientName: clientName,
+      status: status,
     );
 
     await _saleBox.add(sale);
@@ -367,6 +374,35 @@ class BusinessProvider with ChangeNotifier {
     if (key != null) {
       await _saleBox.delete(key);
       _sales.removeAt(index);
+      notifyListeners();
+    }
+  }
+
+  Future<void> markSaleAsPaid(String id) async {
+    final index = _sales.indexWhere((s) => s.id == id);
+    if (index == -1) return;
+
+    final key = _saleBox.keys.firstWhere(
+      (k) => _saleBox.get(k)?.id == id,
+      orElse: () => null,
+    );
+
+    if (key != null) {
+      final oldSale = _sales[index];
+      final newSale = Sale(
+        id: oldSale.id,
+        businessId: oldSale.businessId,
+        items: oldSale.items,
+        total: oldSale.total,
+        paymentMethod: oldSale.paymentMethod,
+        date: oldSale.date,
+        discount: oldSale.discount,
+        clientName: oldSale.clientName,
+        status: 'paid', // Mark as paid
+      );
+      
+      await _saleBox.put(key, newSale);
+      _sales[index] = newSale;
       notifyListeners();
     }
   }

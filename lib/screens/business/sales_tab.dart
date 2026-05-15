@@ -6,6 +6,7 @@ import '../../providers/business_provider.dart';
 import '../../services/localization_service.dart';
 import 'pos_screen.dart';
 import 'package:cashrapido/utils/number_format_utils.dart';
+import '../../utils/receipt_helper.dart';
 
 class SalesTab extends StatelessWidget {
   const SalesTab({super.key});
@@ -81,12 +82,14 @@ class SalesTab extends StatelessWidget {
                     leading: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
+                        color: sale.status == 'pending' 
+                            ? Colors.orange.withOpacity(0.1) 
+                            : Colors.green.withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.attach_money,
-                        color: Colors.green,
+                      child: Icon(
+                        sale.status == 'pending' ? Icons.access_time : Icons.check_circle,
+                        color: sale.status == 'pending' ? Colors.orange : Colors.green,
                         size: 24,
                       ),
                     ),
@@ -95,48 +98,103 @@ class SalesTab extends StatelessWidget {
                       style: GoogleFonts.outfit(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
-                        color: Colors.green[700],
+                        color: sale.status == 'pending' ? Colors.orange[700] : Colors.green[700],
                       ),
                     ),
-                    subtitle: Text(
-                      '${DateFormat('dd/MM HH:mm').format(sale.date)} • ${sale.paymentMethod}',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${DateFormat('dd/MM HH:mm').format(sale.date)} • ${sale.paymentMethod}',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        ),
+                        if (sale.clientName != null)
+                          Text(
+                            'Cliente: ${sale.clientName}',
+                            style: TextStyle(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.bold),
+                          ),
+                      ],
                     ),
                     childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    children: sale.items.map((item) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.productName,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w500,
+                    children: [
+                      ...sale.items.map((item) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.productName,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
-                                ),
-                                Text(
-                                  '${item.quantity} x \$${item.unitPrice}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
+                                  Text(
+                                    '${item.quantity} x \$${item.unitPrice.toFormattedString(2)}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            Text(
-                              '\$${item.subtotal.toFormattedString(2)}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
+                                ],
                               ),
-                            ),
-                          ],
+                              Text(
+                                '\$${item.subtotal.toFormattedString(2)}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                      if (sale.discount > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8, bottom: 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Descuento', style: TextStyle(color: Colors.red)),
+                              Text('-\$${sale.discount.toFormattedString(2)}', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
                         ),
-                      );
-                    }).toList(),
+                      const Divider(),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          TextButton.icon(
+                            onPressed: () {
+                              final activeBusiness = provider.activeBusiness;
+                              if (activeBusiness != null) {
+                                ReceiptHelper.shareReceipt(context, sale, activeBusiness);
+                              }
+                            },
+                            icon: const Icon(Icons.share, size: 18),
+                            label: const Text('Compartir'),
+                          ),
+                          if (sale.status == 'pending')
+                            ElevatedButton.icon(
+                              onPressed: () => provider.markSaleAsPaid(sale.id),
+                              icon: const Icon(Icons.check, size: 18),
+                              label: const Text('Marcar Pagado'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                foregroundColor: Colors.white,
+                              ),
+                            )
+                          else
+                            TextButton.icon(
+                              onPressed: () => provider.deleteSale(sale.id),
+                              icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+                              label: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+                            ),
+                        ],
+                      ),
+                    ],
                   ),
                 );
               },

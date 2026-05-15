@@ -147,7 +147,10 @@ class ArtPayService {
     if (token == null || token.isEmpty) {
       return null;
     }
-    final result = await artpay_lib.ArtPayService.checkActiveLicense(token, packageId);
+    final result = await artpay_lib.ArtPayService.checkActiveLicense(
+      token,
+      packageId,
+    );
     return result;
   }
 
@@ -156,27 +159,27 @@ class ArtPayService {
     switch (licenseType) {
       // Semanales
       case LicenseType.weeklyPersonal:
-        return '20';
+        return '30';
       case LicenseType.weeklyPro:
-        return '50';
+        return '65';
       case LicenseType.weeklyEnterprise:
-        return '70';
+        return '100';
 
       // Mensuales
       case LicenseType.monthlyPersonal:
-        return '50';
+        return '60';
       case LicenseType.monthlyPro:
-        return '75';
+        return '95';
       case LicenseType.monthlyEnterprise:
-        return '110';
+        return '125';
 
       // Anuales
       case LicenseType.annualPersonal:
-        return '150';
+        return '200';
       case LicenseType.annualPro:
-        return '230';
+        return '310';
       case LicenseType.annualEnterprise:
-        return '300';
+        return '420';
 
       // Gratuita
       case LicenseType.free:

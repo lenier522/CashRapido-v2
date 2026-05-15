@@ -22,15 +22,26 @@ import '../services/backup_service.dart';
 import '../licences/apklis.dart';
 import '../licences/art_pay.dart';
 import '../licences/license_type.dart';
+import 'package:cashrapido/utils/number_format_utils.dart';
+import '../models/recurring_transaction.dart';
+import '../models/notification_item.dart';
 
 class AppProvider with ChangeNotifier {
   late Box<InternalTransaction> _transactionBox;
   late Box<Category> _categoryBox;
   late Box<AccountCard> _cardBox;
+  late Box<RecurringTransaction> _recurringBox;
+  late Box<NotificationItem> _notificationBox;
 
   List<InternalTransaction> _transactions = [];
   List<Category> _categories = [];
   List<AccountCard> _cards = [];
+  List<RecurringTransaction> _recurringTransactions = [];
+  List<NotificationItem> _notifications = [];
+
+  List<RecurringTransaction> get recurringTransactions => _recurringTransactions;
+  List<NotificationItem> get notifications => _notifications..sort((a, b) => b.date.compareTo(a.date));
+  int get unreadNotificationsCount => _notifications.where((n) => !n.isRead).length;
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -199,7 +210,7 @@ class AppProvider with ChangeNotifier {
 
   // Payment System
   // Change this variable to build for different regions
-  final bool _isCuba = false;
+  final bool _isCuba = true;
   bool get isCuba => _isCuba;
 
   List<PaymentMethod> get paymentMethods {
@@ -583,6 +594,8 @@ class AppProvider with ChangeNotifier {
       _transactionBox = await Hive.openBox<InternalTransaction>('transactions');
       _categoryBox = await Hive.openBox<Category>('categories');
       _cardBox = await Hive.openBox<AccountCard>('cards');
+      _recurringBox = await Hive.openBox<RecurringTransaction>('recurring_transactions');
+      _notificationBox = await Hive.openBox<NotificationItem>('notifications');
 
       // Ensure Default Categories exist
       await _seedDefaultCategories();
@@ -751,6 +764,7 @@ class AppProvider with ChangeNotifier {
       }
 
       _fetchData();
+      _processRecurringTransactions();
     } catch (e, stacktrace) {
       print(
         'Critical error during AppProvider initialization: $e\n$stacktrace',
@@ -777,11 +791,104 @@ class AppProvider with ChangeNotifier {
   void _fetchData() {
     _transactions = _transactionBox.values.toList().cast<InternalTransaction>();
     _categories = _categoryBox.values.toList().cast<Category>();
+    // Clean up any duplicate cards that might have been introduced by previous bug
+    final uniqueCards = <String>{};
+    final keysToRemove = [];
+    for (var key in _cardBox.keys) {
+      final card = _cardBox.get(key);
+      if (card != null) {
+        if (uniqueCards.contains(card.id)) {
+          keysToRemove.add(key);
+        } else {
+          uniqueCards.add(card.id);
+        }
+      }
+    }
+    if (keysToRemove.isNotEmpty) {
+      _cardBox.deleteAll(keysToRemove);
+    }
+
     _cards = _cardBox.values.toList().cast<AccountCard>();
+    _recurringTransactions = _recurringBox.values.toList().cast<RecurringTransaction>();
+    _notifications = _notificationBox.values.toList().cast<NotificationItem>();
 
     // Sort transactions by date desc
     _transactions.sort((a, b) => b.date.compareTo(a.date));
     _invalidateCaches();
+  }
+
+  void _processRecurringTransactions() {
+    final now = DateTime.now();
+    bool updated = false;
+
+    for (var r in _recurringTransactions) {
+      if (r.autoRegister && now.isAfter(r.nextExecutionDate)) {
+        // Find currency
+        final card = _cards.firstWhere((c) => c.id == r.accountId, orElse: () => AccountCard(
+          id: '', name: '', balance: 0, currency: 'CUP', cardNumber: '', expiryDate: '', colorValue: 0,
+        ));
+
+        // Create the transaction
+        final newTrans = InternalTransaction(
+          id: _uuid.v4(),
+          amount: r.isIncome ? r.amount : -r.amount,
+          currency: card.currency,
+          categoryId: r.categoryId,
+          date: now,
+          title: r.title,
+          cardId: r.accountId,
+        );
+        _transactions.insert(0, newTrans);
+        _transactionBox.put(newTrans.id, newTrans);
+
+        // Update card balance safely without creating duplicates
+        final updatedCard = card.copyWith(balance: card.balance + (r.isIncome ? r.amount : -r.amount));
+        final listIndex = _cards.indexWhere((c) => c.id == card.id);
+        if (listIndex != -1) {
+          _cards[listIndex] = updatedCard;
+        }
+        final boxIndex = _cardBox.values.toList().indexWhere((c) => c.id == card.id);
+        if (boxIndex != -1) {
+          _cardBox.putAt(boxIndex, updatedCard);
+        }
+
+        // Update the next execution date
+        DateTime nextDate = r.nextExecutionDate;
+        switch (r.recurrence) {
+          case 'diario': nextDate = nextDate.add(const Duration(days: 1)); break;
+          case 'semanal': nextDate = nextDate.add(const Duration(days: 7)); break;
+          case 'quincenal': nextDate = nextDate.add(const Duration(days: 15)); break;
+          case 'mensual': nextDate = DateTime(nextDate.year, nextDate.month + 1, nextDate.day, nextDate.hour, nextDate.minute); break;
+          case 'trimestral': nextDate = DateTime(nextDate.year, nextDate.month + 3, nextDate.day, nextDate.hour, nextDate.minute); break;
+          case 'anual': nextDate = DateTime(nextDate.year + 1, nextDate.month, nextDate.day, nextDate.hour, nextDate.minute); break;
+        }
+
+        final updatedR = r.copyWith(nextExecutionDate: nextDate);
+        final rIndex = _recurringTransactions.indexWhere((rt) => rt.id == r.id);
+        if (rIndex != -1) {
+          _recurringTransactions[rIndex] = updatedR;
+          _recurringBox.put(r.id, updatedR);
+        }
+
+        // Add Notification
+        final notif = NotificationItem(
+          id: _uuid.v4(),
+          title: r.isIncome ? 'Ingreso Recurrente: ${r.title}' : 'Gasto Recurrente: ${r.title}',
+          body: r.isIncome
+              ? 'Se ha registrado automáticamente un ingreso por \$${r.amount.toFormattedString(2)} en la cuenta ${card.name}.'
+              : 'Se ha registrado automáticamente un gasto por \$${r.amount.toFormattedString(2)} en la cuenta ${card.name}.',
+          date: now,
+        );
+        _notificationBox.put(notif.id, notif);
+        _notifications.insert(0, notif);
+
+        updated = true;
+      }
+    }
+
+    if (updated) {
+      _invalidateCaches();
+    }
   }
 
   void _calculateStreak(SharedPreferences prefs) {
@@ -1804,23 +1911,41 @@ class AppProvider with ChangeNotifier {
 
   // --- Export ---
 
-  Future<String> exportToExcel() async {
+  Future<String> exportToExcel({
+    List<dynamic> businesses = const [],
+    List<dynamic> products = const [],
+    List<dynamic> sales = const [],
+    List<dynamic> businessExpenses = const [],
+  }) async {
     return await _exportService.exportToExcel(
       transactions: _transactions,
       categories: _categories,
       cards: _cards,
       exchangeRates: _exchangeRates,
       mainCurrency: _mainCurrency,
+      businesses: businesses,
+      products: products,
+      sales: sales,
+      businessExpenses: businessExpenses,
     );
   }
 
-  Future<String> exportToPDF() async {
+  Future<String> exportToPDF({
+    List<dynamic> businesses = const [],
+    List<dynamic> products = const [],
+    List<dynamic> sales = const [],
+    List<dynamic> businessExpenses = const [],
+  }) async {
     return await _exportService.exportToPDF(
       transactions: _transactions,
       categories: _categories,
       cards: _cards,
       exchangeRates: _exchangeRates,
       mainCurrency: _mainCurrency,
+      businesses: businesses,
+      products: products,
+      sales: sales,
+      businessExpenses: businessExpenses,
     );
   }
 
@@ -2028,6 +2153,54 @@ class AppProvider with ChangeNotifier {
         await _notificationService.cancelMotivationalTips();
       }
     }
+    notifyListeners();
+  }
+
+  // --- Recurring Transactions ---
+  Future<void> addRecurringTransaction(RecurringTransaction rt) async {
+    _recurringTransactions.add(rt);
+    await _recurringBox.put(rt.id, rt);
+    _processRecurringTransactions();
+    notifyListeners();
+  }
+
+  Future<void> updateRecurringTransaction(RecurringTransaction rt) async {
+    final index = _recurringTransactions.indexWhere((r) => r.id == rt.id);
+    if (index != -1) {
+      _recurringTransactions[index] = rt;
+      await _recurringBox.put(rt.id, rt);
+      _processRecurringTransactions();
+      notifyListeners();
+    }
+  }
+
+  Future<void> deleteRecurringTransaction(String id) async {
+    _recurringTransactions.removeWhere((r) => r.id == id);
+    await _recurringBox.delete(id);
+    notifyListeners();
+  }
+
+  // --- Notifications ---
+  Future<void> markNotificationAsRead(String id) async {
+    final notif = _notifications.firstWhere((n) => n.id == id);
+    notif.isRead = true;
+    await notif.save();
+    notifyListeners();
+  }
+
+  Future<void> markAllNotificationsAsRead() async {
+    for (var n in _notifications) {
+      if (!n.isRead) {
+        n.isRead = true;
+        await n.save();
+      }
+    }
+    notifyListeners();
+  }
+
+  Future<void> clearNotifications() async {
+    _notifications.clear();
+    await _notificationBox.clear();
     notifyListeners();
   }
 }

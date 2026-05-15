@@ -7,6 +7,11 @@ class Sale {
   final double total;
   final String paymentMethod; // Cash, Card, Transfer, etc.
   final DateTime date;
+  
+  // New features
+  final double discount; // Amount discounted
+  final String? clientName; // For credit sales
+  final String status; // 'paid', 'pending'
 
   Sale({
     required this.id,
@@ -15,6 +20,9 @@ class Sale {
     required this.total,
     required this.paymentMethod,
     required this.date,
+    this.discount = 0.0,
+    this.clientName,
+    this.status = 'paid',
   });
 }
 
@@ -51,13 +59,16 @@ class SaleAdapter extends TypeAdapter<Sale> {
       total: fields[3] as double,
       paymentMethod: fields[4] as String,
       date: fields[5] as DateTime,
+      discount: fields[6] as double? ?? 0.0,
+      clientName: fields[7] as String?,
+      status: fields[8] as String? ?? 'paid',
     );
   }
 
   @override
   void write(BinaryWriter writer, Sale obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -69,7 +80,13 @@ class SaleAdapter extends TypeAdapter<Sale> {
       ..writeByte(4)
       ..write(obj.paymentMethod)
       ..writeByte(5)
-      ..write(obj.date);
+      ..write(obj.date)
+      ..writeByte(6)
+      ..write(obj.discount)
+      ..writeByte(7)
+      ..write(obj.clientName)
+      ..writeByte(8)
+      ..write(obj.status);
   }
 }
 

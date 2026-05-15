@@ -7,11 +7,12 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
+import '../providers/business_provider.dart';
 import '../models/models.dart';
 import 'info_screens.dart';
 import 'licenses_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../providers/business_provider.dart';
+
 import 'notification_settings_screen.dart';
 import '../widgets/smooth_switch.dart';
 
@@ -416,7 +417,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: () async {
                 _showSnack(context, context.t('generating_excel'));
                 try {
-                  final path = await provider.exportToExcel();
+                  final businessProv = Provider.of<BusinessProvider>(
+                    context,
+                    listen: false,
+                  );
+                  final path = await provider.exportToExcel(
+                    businesses: businessProv.businesses,
+                    products: businessProv.products,
+                    sales: businessProv.sales,
+                    businessExpenses: businessProv.expenses,
+                  );
                   if (context.mounted) {
                     _showExportSuccessDialog(context, 'Excel', path, provider);
                   }
@@ -440,7 +450,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: () async {
                 _showSnack(context, context.t('generating_pdf'));
                 try {
-                  final path = await provider.exportToPDF();
+                  final businessProv = Provider.of<BusinessProvider>(
+                    context,
+                    listen: false,
+                  );
+                  final path = await provider.exportToPDF(
+                    businesses: businessProv.businesses,
+                    products: businessProv.products,
+                    sales: businessProv.sales,
+                    businessExpenses: businessProv.expenses,
+                  );
                   if (context.mounted) {
                     _showExportSuccessDialog(context, 'PDF', path, provider);
                   }
@@ -509,7 +528,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 showLicensePage(
                   context: context,
                   applicationName: context.t('app_name'),
-                  applicationVersion: '1.19.4',
+                  applicationVersion: '1.20.0',
                   applicationIcon: Icon(
                     Icons.account_balance_wallet,
                     size: 48,
@@ -549,7 +568,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 showAboutDialog(
                   context: context,
                   applicationName: context.t('app_name'),
-                  applicationVersion: '1.19.4',
+                  applicationVersion: '1.20.0',
                   applicationIcon: Icon(
                     Icons.account_balance_wallet,
                     size: 48,
@@ -1042,7 +1061,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Column(
         children: [
           Text(
-            'CashRapido v1.19.4',
+            'CashRapido v1.20.0',
             style: GoogleFonts.outfit(
               color: Theme.of(context).disabledColor,
               fontSize: 12,

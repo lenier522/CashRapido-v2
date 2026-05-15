@@ -114,6 +114,11 @@ class ProductsTab extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
+              icon: const Icon(Icons.add_circle_outline, size: 20, color: Colors.blue),
+              tooltip: 'Reabastecer (Restock)',
+              onPressed: () => _showRestockDialog(context, product, provider),
+            ),
+            IconButton(
               icon: const Icon(Icons.edit, size: 20),
               onPressed: () {
                 Navigator.push(
@@ -162,5 +167,42 @@ class ProductsTab extends StatelessWidget {
     if (confirmed == true) {
       await provider.deleteProduct(product.id);
     }
+  }
+
+  void _showRestockDialog(BuildContext context, Product product, BusinessProvider provider) {
+    final ctrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Reabastecer ${product.name}'),
+        content: TextField(
+          controller: ctrl,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Cantidad a añadir',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final qty = int.tryParse(ctrl.text);
+              if (qty != null && qty > 0) {
+                provider.updateStock(product.id, product.currentStock + qty);
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Stock actualizado exitosamente')),
+                );
+              }
+            },
+            child: const Text('Añadir'),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
 import '../models/models.dart';
+import '../models/sale.dart';
 import 'package:cashrapido/utils/number_format_utils.dart';
 
 class ExportService {
@@ -63,6 +64,10 @@ class ExportService {
     required List<AccountCard> cards,
     required Map<String, double> exchangeRates,
     required String mainCurrency,
+    List<dynamic> businesses = const [],
+    List<dynamic> products = const [],
+    List<dynamic> sales = const [],
+    List<dynamic> businessExpenses = const [],
   }) async {
     final xlsio.Workbook workbook = xlsio.Workbook();
 
@@ -340,6 +345,53 @@ class ExportService {
     masterSheet.autoFitColumn(5);
     masterSheet.autoFitColumn(7);
 
+    // -----------------------------------------------------
+    // Business Module Sheet
+    // -----------------------------------------------------
+    if (businesses.isNotEmpty || sales.isNotEmpty) {
+      final xlsio.Worksheet bizSheet = workbook.worksheets.add();
+      bizSheet.name = 'Módulo de Negocio';
+
+      bizSheet.getRangeByName('A1').setText('Reporte de Negocios');
+      bizSheet.getRangeByName('A1:G1').cellStyle = headerStyle;
+      bizSheet.getRangeByName('A1:G1').merge();
+      
+      int bRow = 3;
+      bizSheet.getRangeByName('A$bRow').setText('Ventas Registradas');
+      bizSheet.getRangeByName('A$bRow').cellStyle = subHeaderStyle;
+      bRow++;
+
+      final saleHeaders = ['Fecha', 'Negocio', 'Cliente', 'Método', 'Estado', 'Descuento', 'Total'];
+      for (int i = 0; i < saleHeaders.length; i++) {
+        bizSheet.getRangeByIndex(bRow, i + 1).setText(saleHeaders[i]);
+      }
+      bizSheet.getRangeByIndex(bRow, 1, bRow, saleHeaders.length).cellStyle = headerStyle;
+      bRow++;
+
+      for (var saleRaw in sales) {
+        if (saleRaw is Sale) {
+          final biz = businesses.firstWhere(
+            (b) => b.id == saleRaw.businessId,
+            orElse: () => null,
+          );
+          
+          bizSheet.getRangeByIndex(bRow, 1).setText(_formatDate(saleRaw.date));
+          bizSheet.getRangeByIndex(bRow, 2).setText(biz?.name ?? 'Desconocido');
+          bizSheet.getRangeByIndex(bRow, 3).setText(saleRaw.clientName ?? 'Mostrador');
+          bizSheet.getRangeByIndex(bRow, 4).setText(saleRaw.paymentMethod);
+          bizSheet.getRangeByIndex(bRow, 5).setText(saleRaw.status == 'pending' ? 'Fiado' : 'Pagado');
+          bizSheet.getRangeByIndex(bRow, 6).setNumber(saleRaw.discount);
+          bizSheet.getRangeByIndex(bRow, 7).setNumber(saleRaw.total);
+          bRow++;
+        }
+      }
+      
+      bizSheet.autoFitColumn(1);
+      bizSheet.autoFitColumn(2);
+      bizSheet.autoFitColumn(3);
+      bizSheet.autoFitColumn(7);
+    }
+
     // Save
     final directory = await _getExportDirectory();
     final timestamp = DateFormat('yyyyMMdd_HHmm').format(DateTime.now());
@@ -359,6 +411,10 @@ class ExportService {
     required List<AccountCard> cards,
     required Map<String, double> exchangeRates,
     required String mainCurrency,
+    List<dynamic> businesses = const [],
+    List<dynamic> products = const [],
+    List<dynamic> sales = const [],
+    List<dynamic> businessExpenses = const [],
   }) async {
     final pdf = pw.Document();
     final now = DateTime.now();
@@ -617,6 +673,81 @@ class ExportService {
           ),
         );
       }
+    }
+
+    // --- Business Summary Page ---
+    if (businesses.isNotEmpty || sales.isNotEmpty) {
+      pdf.addPage(
+        pw.Page(
+          build: (context) {
+            double totalSales = 0.0;
+            double pendingDebts = 0.0;
+            
+            for(var s in sales) {
+              if (s is Sale) {
+                if (s.status == 'pending') {
+                  pendingDebts += s.total;
+                } else {
+                  totalSales += s.total;
+                }
+              }
+            }
+
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                _buildPageHeader('Módulo de Negocio'),
+                pw.SizedBox(height: 20),
+                
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(12),
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.grey300),
+                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+                    color: PdfColors.grey100,
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('Resumen de Negocios', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: _primaryColor)),
+                      pw.Divider(),
+                      pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                        children: [
+                          _buildStatItem('Negocios', businesses.length.toDouble(), PdfColors.black),
+                          _buildStatItem('Ventas Pagadas', totalSales, PdfColors.green),
+                          _buildStatItem('Cuentas por Cobrar', pendingDebts, PdfColors.orange),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                pw.SizedBox(height: 20),
+                pw.Text('Últimas Ventas', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                pw.SizedBox(height: 10),
+                
+                if (sales.isNotEmpty)
+                  pw.TableHelper.fromTextArray(
+                    headers: ['Fecha', 'Cliente', 'Estado', 'Total'],
+                    data: sales.take(15).map((s) {
+                      if (s is Sale) {
+                        return [
+                          _formatDate(s.date),
+                          s.clientName ?? 'Mostrador',
+                          s.status == 'pending' ? 'Fiado' : 'Pagado',
+                          s.total.toFormattedString(2)
+                        ];
+                      }
+                      return [];
+                    }).toList(),
+                    headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+                    headerDecoration: const pw.BoxDecoration(color: _primaryColor),
+                  ),
+              ],
+            );
+          }
+        )
+      );
     }
 
     // Save

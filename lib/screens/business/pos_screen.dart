@@ -44,9 +44,7 @@ class _PosScreenState extends State<PosScreen> {
                 padding: const EdgeInsets.all(16),
                 child: TextField(
                   decoration: InputDecoration(
-                    hintText: context.t(
-                      'inventory_title',
-                    ), // Reuse or add 'search_products'
+                    hintText: context.t('inventory_title'),
                     prefixIcon: const Icon(Icons.search),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -306,77 +304,212 @@ class _PosScreenState extends State<PosScreen> {
   void _showCheckoutDialog(
     BuildContext context,
     BusinessProvider provider,
-    double total,
+    double initialTotal,
   ) {
+    String paymentMethod = 'Efectivo';
+    String status = 'paid';
+    double discount = 0.0;
+    final discountCtrl = TextEditingController();
+    String currentClientName = '';
+
+    final clientNames = provider.sales
+        .map((s) => s.clientName)
+        .where((name) => name != null && name.trim().isNotEmpty)
+        .cast<String>()
+        .toSet()
+        .toList();
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              context.t('confirm_sale'),
-              style: GoogleFonts.outfit(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final total = (initialTotal - discount) > 0
+              ? (initialTotal - discount)
+              : 0.0;
+
+          return Padding(
+            padding: EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 24,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
             ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Total',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 16),
-                ),
-                Text(
-                  '\$${total.toFormattedString(2)}',
-                  style: GoogleFonts.outfit(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    context.t('confirm_sale'),
+                    style: GoogleFonts.outfit(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () {
-                _processSale(provider);
-                Navigator.pop(context); // Close sheet
-                Navigator.pop(context); // Close POS
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                  const SizedBox(height: 16),
+
+                  // Discount
+                  TextField(
+                    controller: discountCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Descuento (\$) (Opcional)',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.money_off),
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    onChanged: (val) {
+                      setModalState(() {
+                        discount = double.tryParse(val) ?? 0.0;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Client
+                  Autocomplete<String>(
+                    optionsBuilder: (TextEditingValue textEditingValue) {
+                      currentClientName = textEditingValue.text;
+                      if (textEditingValue.text.isEmpty) {
+                        return const Iterable<String>.empty();
+                      }
+                      return clientNames.where((String option) {
+                        return option.toLowerCase().contains(
+                          textEditingValue.text.toLowerCase(),
+                        );
+                      });
+                    },
+                    onSelected: (String selection) {
+                      currentClientName = selection;
+                    },
+                    fieldViewBuilder:
+                        (context, controller, focusNode, onFieldSubmitted) {
+                          return TextField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            onChanged: (val) {
+                              currentClientName = val;
+                            },
+                            decoration: const InputDecoration(
+                              labelText: 'Nombre del Cliente (Opcional)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.person),
+                            ),
+                          );
+                        },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Payment Method
+                  DropdownButtonFormField<String>(
+                    initialValue: paymentMethod,
+                    decoration: const InputDecoration(
+                      labelText: 'Método de Pago',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: ['Efectivo', 'Tarjeta', 'Transferencia', 'Crédito']
+                        .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                        .toList(),
+                    onChanged: (val) {
+                      setModalState(() {
+                        paymentMethod = val!;
+                        if (paymentMethod == 'Crédito') {
+                          status = 'pending';
+                        } else {
+                          status = 'paid';
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Total summary
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Total a Pagar',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                      ),
+                      Text(
+                        '\$${total.toFormattedString(2)}',
+                        style: GoogleFonts.outfit(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: status == 'pending'
+                              ? Colors.orange
+                              : Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (paymentMethod == 'Crédito' &&
+                          currentClientName.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Debe ingresar un cliente para ventas a crédito.',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+
+                      _processSale(
+                        provider,
+                        discount: discount,
+                        clientName: currentClientName.trim(),
+                        paymentMethod: paymentMethod,
+                        status: status,
+                      );
+                      Navigator.pop(context); // Close sheet
+                      Navigator.pop(context); // Close POS
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: status == 'pending'
+                          ? Colors.orange
+                          : Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      status == 'pending'
+                          ? 'Confirmar Fiado'
+                          : context.t('confirm_sale'),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              child: Text(
-                context.t('confirm_sale'),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
             ),
-            const SizedBox(height: 24),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  void _processSale(BusinessProvider provider) {
+  void _processSale(
+    BusinessProvider provider, {
+    required double discount,
+    required String clientName,
+    required String paymentMethod,
+    required String status,
+  }) {
     final List<SaleItem> items = [];
     _cart.forEach((id, qty) {
       final product = provider.products.firstWhere((p) => p.id == id);
@@ -393,7 +526,10 @@ class _PosScreenState extends State<PosScreen> {
 
     provider.addSale(
       items: items,
-      paymentMethod: 'Efectivo', // Default for now
+      paymentMethod: paymentMethod,
+      discount: discount,
+      clientName: clientName.isEmpty ? null : clientName,
+      status: status,
     );
 
     ScaffoldMessenger.of(context).showSnackBar(

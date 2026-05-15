@@ -13,6 +13,8 @@ import 'models/business.dart';
 import 'models/sale.dart';
 import 'models/business_expense.dart';
 import 'models/closing.dart';
+import 'models/recurring_transaction.dart';
+import 'models/notification_item.dart';
 import 'providers/app_provider.dart';
 import 'dart:io' show Platform, Process;
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -46,6 +48,10 @@ void main() async {
   // AI Chat Adapters
   Hive.registerAdapter(ChatMessageAdapter());
   Hive.registerAdapter(ChatConversationAdapter());
+
+  // Recurring & Notifications
+  Hive.registerAdapter(RecurringTransactionAdapter());
+  Hive.registerAdapter(NotificationItemAdapter());
 
   // Open Boxes
   await Hive.openBox<ChatConversation>('ai_chats');
