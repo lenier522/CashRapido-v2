@@ -117,7 +117,8 @@ class _TransferMovilScreenState extends State<TransferMovilScreen> {
         final body = sms.body ?? "";
         return body.contains("La Transferencia fue completada") ||
             body.contains("Se ha realizado una transferencia a la cuenta") ||
-            body.contains("Pago completado");
+            body.contains("Pago completado") ||
+            body.contains("factura de electricidad fue completado");
       }).toList();
 
       setState(() {
@@ -322,6 +323,7 @@ class _TransferMovilScreenState extends State<TransferMovilScreen> {
       "Se ha realizado una transferencia a la cuenta",
     );
     bool isPayment = body.contains("Pago completado");
+    bool isElectricityBill = body.contains("factura de electricidad fue completado");
 
     double amount = 0.0;
     String otherParty = "";
@@ -335,6 +337,25 @@ class _TransferMovilScreenState extends State<TransferMovilScreen> {
         otherParty =
             "Cuenta ...${accMatch.group(1)?.substring(accMatch.group(1)!.length - 4)}";
       }
+    } else if (isElectricityBill) {
+      // Logic for electricity bill payment
+      // Use "Importe Pagado" as the amount to register (per user request)
+      double invoiceAmount = 0.0;
+
+      final paidMatch = RegExp(r"Importe\s+Pagado:?\s*([\d\.]+)\s*CUP", caseSensitive: false).firstMatch(body);
+      if (paidMatch != null) {
+        amount = double.tryParse(paidMatch.group(1) ?? "0") ?? 0.0;
+      }
+
+      final invoiceMatch = RegExp(r"Importe\s+Factura:?\s*([\d\.]+)\s*CUP", caseSensitive: false).firstMatch(body);
+      if (invoiceMatch != null) {
+        invoiceAmount = double.tryParse(invoiceMatch.group(1) ?? "0") ?? 0.0;
+        if (amount > 0 && invoiceAmount > 0 && invoiceAmount > amount) {
+          discountPercent = ((invoiceAmount - amount) / invoiceAmount) * 100;
+        }
+      }
+
+      otherParty = "A: Factura Electricidad";
     } else if (isPayment) {
       // Logic for "Pago completado"
       double originalAmount = 0.0;
@@ -448,7 +469,9 @@ class _TransferMovilScreenState extends State<TransferMovilScreen> {
                         Text(
                           isIncome
                               ? "Transferencia Recibida"
-                              : "Transferencia Enviada",
+                              : isElectricityBill
+                                  ? "Pago Factura Electricidad"
+                                  : "Transferencia Enviada",
                           style: GoogleFonts.outfit(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
