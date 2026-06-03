@@ -39,9 +39,12 @@ class AppProvider with ChangeNotifier {
   List<RecurringTransaction> _recurringTransactions = [];
   List<NotificationItem> _notifications = [];
 
-  List<RecurringTransaction> get recurringTransactions => _recurringTransactions;
-  List<NotificationItem> get notifications => _notifications..sort((a, b) => b.date.compareTo(a.date));
-  int get unreadNotificationsCount => _notifications.where((n) => !n.isRead).length;
+  List<RecurringTransaction> get recurringTransactions =>
+      _recurringTransactions;
+  List<NotificationItem> get notifications =>
+      _notifications..sort((a, b) => b.date.compareTo(a.date));
+  int get unreadNotificationsCount =>
+      _notifications.where((n) => !n.isRead).length;
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -241,8 +244,8 @@ class AppProvider with ChangeNotifier {
           id: 'test_cuba',
           name: 'Prueba (Test)',
           iconAsset: 'assets/icons/test.png',
-          isEnabled: false,
-          isVisible: false,
+          isEnabled: true,
+          isVisible: true,
           isTest: true,
         ),
         PaymentMethod(
@@ -594,7 +597,9 @@ class AppProvider with ChangeNotifier {
       _transactionBox = await Hive.openBox<InternalTransaction>('transactions');
       _categoryBox = await Hive.openBox<Category>('categories');
       _cardBox = await Hive.openBox<AccountCard>('cards');
-      _recurringBox = await Hive.openBox<RecurringTransaction>('recurring_transactions');
+      _recurringBox = await Hive.openBox<RecurringTransaction>(
+        'recurring_transactions',
+      );
       _notificationBox = await Hive.openBox<NotificationItem>('notifications');
 
       // Ensure Default Categories exist
@@ -809,7 +814,9 @@ class AppProvider with ChangeNotifier {
     }
 
     _cards = _cardBox.values.toList().cast<AccountCard>();
-    _recurringTransactions = _recurringBox.values.toList().cast<RecurringTransaction>();
+    _recurringTransactions = _recurringBox.values
+        .toList()
+        .cast<RecurringTransaction>();
     _notifications = _notificationBox.values.toList().cast<NotificationItem>();
 
     // Sort transactions by date desc
@@ -824,9 +831,18 @@ class AppProvider with ChangeNotifier {
     for (var r in _recurringTransactions) {
       if (r.autoRegister && now.isAfter(r.nextExecutionDate)) {
         // Find currency
-        final card = _cards.firstWhere((c) => c.id == r.accountId, orElse: () => AccountCard(
-          id: '', name: '', balance: 0, currency: 'CUP', cardNumber: '', expiryDate: '', colorValue: 0,
-        ));
+        final card = _cards.firstWhere(
+          (c) => c.id == r.accountId,
+          orElse: () => AccountCard(
+            id: '',
+            name: '',
+            balance: 0,
+            currency: 'CUP',
+            cardNumber: '',
+            expiryDate: '',
+            colorValue: 0,
+          ),
+        );
 
         // Create the transaction
         final newTrans = InternalTransaction(
@@ -842,12 +858,16 @@ class AppProvider with ChangeNotifier {
         _transactionBox.put(newTrans.id, newTrans);
 
         // Update card balance safely without creating duplicates
-        final updatedCard = card.copyWith(balance: card.balance + (r.isIncome ? r.amount : -r.amount));
+        final updatedCard = card.copyWith(
+          balance: card.balance + (r.isIncome ? r.amount : -r.amount),
+        );
         final listIndex = _cards.indexWhere((c) => c.id == card.id);
         if (listIndex != -1) {
           _cards[listIndex] = updatedCard;
         }
-        final boxIndex = _cardBox.values.toList().indexWhere((c) => c.id == card.id);
+        final boxIndex = _cardBox.values.toList().indexWhere(
+          (c) => c.id == card.id,
+        );
         if (boxIndex != -1) {
           _cardBox.putAt(boxIndex, updatedCard);
         }
@@ -855,12 +875,42 @@ class AppProvider with ChangeNotifier {
         // Update the next execution date
         DateTime nextDate = r.nextExecutionDate;
         switch (r.recurrence) {
-          case 'diario': nextDate = nextDate.add(const Duration(days: 1)); break;
-          case 'semanal': nextDate = nextDate.add(const Duration(days: 7)); break;
-          case 'quincenal': nextDate = nextDate.add(const Duration(days: 15)); break;
-          case 'mensual': nextDate = DateTime(nextDate.year, nextDate.month + 1, nextDate.day, nextDate.hour, nextDate.minute); break;
-          case 'trimestral': nextDate = DateTime(nextDate.year, nextDate.month + 3, nextDate.day, nextDate.hour, nextDate.minute); break;
-          case 'anual': nextDate = DateTime(nextDate.year + 1, nextDate.month, nextDate.day, nextDate.hour, nextDate.minute); break;
+          case 'diario':
+            nextDate = nextDate.add(const Duration(days: 1));
+            break;
+          case 'semanal':
+            nextDate = nextDate.add(const Duration(days: 7));
+            break;
+          case 'quincenal':
+            nextDate = nextDate.add(const Duration(days: 15));
+            break;
+          case 'mensual':
+            nextDate = DateTime(
+              nextDate.year,
+              nextDate.month + 1,
+              nextDate.day,
+              nextDate.hour,
+              nextDate.minute,
+            );
+            break;
+          case 'trimestral':
+            nextDate = DateTime(
+              nextDate.year,
+              nextDate.month + 3,
+              nextDate.day,
+              nextDate.hour,
+              nextDate.minute,
+            );
+            break;
+          case 'anual':
+            nextDate = DateTime(
+              nextDate.year + 1,
+              nextDate.month,
+              nextDate.day,
+              nextDate.hour,
+              nextDate.minute,
+            );
+            break;
         }
 
         final updatedR = r.copyWith(nextExecutionDate: nextDate);
@@ -873,7 +923,9 @@ class AppProvider with ChangeNotifier {
         // Add Notification
         final notif = NotificationItem(
           id: _uuid.v4(),
-          title: r.isIncome ? 'Ingreso Recurrente: ${r.title}' : 'Gasto Recurrente: ${r.title}',
+          title: r.isIncome
+              ? 'Ingreso Recurrente: ${r.title}'
+              : 'Gasto Recurrente: ${r.title}',
           body: r.isIncome
               ? 'Se ha registrado automáticamente un ingreso por \$${r.amount.toFormattedString(2)} en la cuenta ${card.name}.'
               : 'Se ha registrado automáticamente un gasto por \$${r.amount.toFormattedString(2)} en la cuenta ${card.name}.',
@@ -2201,6 +2253,21 @@ class AppProvider with ChangeNotifier {
   Future<void> clearNotifications() async {
     _notifications.clear();
     await _notificationBox.clear();
+    notifyListeners();
+  }
+
+  Future<void> addNotificationItem({
+    required String title,
+    required String body,
+  }) async {
+    final notif = NotificationItem(
+      id: _uuid.v4(),
+      title: title,
+      body: body,
+      date: DateTime.now(),
+    );
+    await _notificationBox.put(notif.id, notif);
+    _notifications.insert(0, notif);
     notifyListeners();
   }
 }

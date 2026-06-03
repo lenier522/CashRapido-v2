@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
 import '../models/models.dart';
 import '../models/sale.dart';
+import '../models/loan.dart';
 import 'package:cashrapido/utils/number_format_utils.dart';
 
 class ExportService {
@@ -907,7 +908,104 @@ class ExportService {
   }
 
   Future<void> shareFile(String filePath) async {
-    // ignore: deprecated_member_use
-    await Share.shareXFiles([XFile(filePath)]);
+    await SharePlus.instance.share(ShareParams(files: [XFile(filePath)]));
+  }
+
+  Future<String> exportLoansToCSV(List<Loan> loans) async {
+    final StringBuffer csvBuffer = StringBuffer();
+    // Headers
+    csvBuffer.writeln("ID,Deudor,Monto,Interes(%),Tipo Interes,Frecuencia,Cuotas,Inicio,Vencimiento,Restante,Estado,Moneda,Notas");
+
+    for (var l in loans) {
+      final id = l.id;
+      final debtor = l.borrowerName.replaceAll('"', '""');
+      final amount = l.amount.toStringAsFixed(2);
+      final rate = l.interestRate.toStringAsFixed(2);
+      final type = l.interestType;
+      final freq = l.frequency;
+      final term = l.durationValue;
+      final start = "${l.startDate.day}/${l.startDate.month}/${l.startDate.year}";
+      final due = "${l.dueDate.day}/${l.dueDate.month}/${l.dueDate.year}";
+      final remaining = l.remainingAmount.toStringAsFixed(2);
+      final status = l.status;
+      final currency = l.currency;
+      final notes = (l.notes ?? '').replaceAll('"', '""').replaceAll('\n', ' ');
+
+      csvBuffer.writeln('"$id","$debtor",$amount,$rate,"$type","$freq",$term,"$start","$due",$remaining,"$status","$currency","$notes"');
+    }
+
+    final directory = await _getExportDirectory();
+    final timestamp = DateFormat('yyyyMMdd_HHmm').format(DateTime.now());
+    final filePath = '${directory.path}/CashRapido_Prestamos_$timestamp.csv';
+
+    final file = File(filePath);
+    await file.writeAsString(csvBuffer.toString());
+    return filePath;
+  }
+
+  Future<String> exportLoansToExcel(List<Loan> loans) async {
+    final xlsio.Workbook workbook = xlsio.Workbook();
+    final xlsio.Worksheet sheet = workbook.worksheets[0];
+    sheet.name = 'Prestamos';
+
+    final xlsio.Style headerStyle = workbook.styles.add('HeaderStyleLoan');
+    headerStyle.fontName = 'Calibri';
+    headerStyle.bold = true;
+    headerStyle.fontColor = '#FFFFFF';
+    headerStyle.backColor = '#00796B'; // Teal
+    headerStyle.hAlign = xlsio.HAlignType.center;
+    headerStyle.vAlign = xlsio.VAlignType.center;
+
+    final headers = [
+      'Deudor',
+      'Capital',
+      'Interes (%)',
+      'Tipo Interes',
+      'Frecuencia',
+      'Cuotas',
+      'Fecha Inicio',
+      'Fecha Vencimiento',
+      'Saldo Restante',
+      'Estado',
+      'Moneda',
+      'Notas'
+    ];
+
+    for (int i = 0; i < headers.length; i++) {
+      sheet.getRangeByIndex(1, i + 1).setText(headers[i]);
+    }
+    sheet.getRangeByIndex(1, 1, 1, headers.length).cellStyle = headerStyle;
+
+    for (int i = 0; i < loans.length; i++) {
+      final l = loans[i];
+      final r = i + 2;
+      sheet.getRangeByIndex(r, 1).setText(l.borrowerName);
+      sheet.getRangeByIndex(r, 2).setNumber(l.amount);
+      sheet.getRangeByIndex(r, 3).setNumber(l.interestRate);
+      sheet.getRangeByIndex(r, 4).setText(l.interestType);
+      sheet.getRangeByIndex(r, 5).setText(l.frequency);
+      sheet.getRangeByIndex(r, 6).setNumber(l.durationValue.toDouble());
+      sheet.getRangeByIndex(r, 7).setText("${l.startDate.day}/${l.startDate.month}/${l.startDate.year}");
+      sheet.getRangeByIndex(r, 8).setText("${l.dueDate.day}/${l.dueDate.month}/${l.dueDate.year}");
+      sheet.getRangeByIndex(r, 9).setNumber(l.remainingAmount);
+      sheet.getRangeByIndex(r, 10).setText(l.status);
+      sheet.getRangeByIndex(r, 11).setText(l.currency);
+      sheet.getRangeByIndex(r, 12).setText(l.notes ?? '');
+    }
+
+    for (int i = 1; i <= headers.length; i++) {
+      sheet.autoFitColumn(i);
+    }
+
+    final directory = await _getExportDirectory();
+    final timestamp = DateFormat('yyyyMMdd_HHmm').format(DateTime.now());
+    final filePath = '${directory.path}/CashRapido_Prestamos_$timestamp.xlsx';
+
+    final List<int> bytes = workbook.saveAsStream();
+    workbook.dispose();
+
+    final file = File(filePath);
+    await file.writeAsBytes(bytes);
+    return filePath;
   }
 }

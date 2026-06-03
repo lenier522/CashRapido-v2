@@ -15,6 +15,9 @@ import 'models/business_expense.dart';
 import 'models/closing.dart';
 import 'models/recurring_transaction.dart';
 import 'models/notification_item.dart';
+import 'models/loan.dart';
+import 'models/borrower.dart';
+import 'models/loan_activity.dart';
 import 'providers/app_provider.dart';
 import 'dart:io' show Platform, Process;
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -24,6 +27,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'services/localization_service.dart';
 
 import 'providers/business_provider.dart';
+import 'providers/loan_provider.dart';
 
 
 void main() async {
@@ -44,6 +48,13 @@ void main() async {
   Hive.registerAdapter(SaleItemAdapter());
   Hive.registerAdapter(BusinessExpenseAdapter());
   Hive.registerAdapter(ClosingAdapter());
+
+  // Loans Module Adapters
+  Hive.registerAdapter(LoanAdapter());
+  Hive.registerAdapter(LoanPaymentAdapter());
+  Hive.registerAdapter(BorrowerAdapter());
+  Hive.registerAdapter(InstallmentAdapter());
+  Hive.registerAdapter(LoanActivityAdapter());
 
   // AI Chat Adapters
   Hive.registerAdapter(ChatMessageAdapter());
@@ -74,6 +85,10 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AppProvider()..init()),
         ChangeNotifierProvider(create: (_) => BusinessProvider()..init()),
+        ChangeNotifierProvider(create: (context) {
+          final appProvider = Provider.of<AppProvider>(context, listen: false);
+          return LoanProvider()..init(appProvider: appProvider);
+        }),
       ],
       child: MyApp(seenOnboarding: seenOnboarding),
     ),

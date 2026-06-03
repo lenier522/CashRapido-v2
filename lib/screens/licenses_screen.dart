@@ -832,14 +832,60 @@ class _LicensesScreenState extends State<LicensesScreen> {
     }
 
     if (method.isTest ?? false) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '${context.t('payment_test_success')} (${licenseType.name.toUpperCase()})',
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => PopScope(
+          canPop: false,
+          child: Center(
+            child: Card(
+              margin: const EdgeInsets.all(32),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      Localizations.localeOf(context).languageCode == 'es'
+                          ? 'Simulando pago de prueba...'
+                          : 'Simulating test payment...',
+                      style: GoogleFonts.outfit(fontSize: 16),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
-          backgroundColor: Colors.green,
         ),
       );
+
+      final errorMsg = await provider.simulatePayment(method.id, licenseType);
+      
+      if (!mounted) return;
+      
+      // Close dialog
+      Navigator.of(context, rootNavigator: true).pop();
+      
+      if (errorMsg == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${context.t('payment_test_success')} (${licenseType.name.toUpperCase()})',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMsg),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return;
     }
 

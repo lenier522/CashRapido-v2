@@ -15,6 +15,7 @@ import 'streak_calendar_screen.dart';
 import 'notifications_screen.dart';
 import 'recurring_transactions_screen.dart';
 import '../widgets/add_transaction_modal.dart';
+import 'loans/loans_gatekeeper.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' show Platform;
 import '../utils/tour_keys.dart';
@@ -915,6 +916,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     Icons.bar_chart,
                     context.t('action_balances'),
                     () => _navigateFromMoreOptions(context, const WalletScreen()),
+                  ),
+                  _buildMoreOptionItem(
+                    Icons.real_estate_agent_outlined,
+                    context.t('nav_loans'),
+                    () => _navigateFromMoreOptions(context, const LoansGatekeeper()),
                   ),
                   _buildMoreOptionItem(
                     Icons.help_outline,

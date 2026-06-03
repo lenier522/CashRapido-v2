@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -38,7 +39,7 @@ class NotificationService {
 
   void _onNotificationTap(NotificationResponse response) {
     // Handle notification tap (open app)
-    print('Notification tapped: ${response.payload}');
+    debugPrint('Notification tapped: ${response.payload}');
   }
 
   // Request notification permissions (Android 13+)
@@ -219,5 +220,60 @@ class NotificationService {
     }
 
     return scheduledDate;
+  }
+
+  // Schedule notification for loan installment due date
+  Future<void> scheduleInstallmentReminder({
+    required String langCode,
+    required String loanId,
+    required int installmentNumber,
+    required String borrowerName,
+    required double amount,
+    required String currency,
+    required DateTime dueDate,
+  }) async {
+    // Generate a unique positive 32-bit int notification ID
+    final notificationId = (loanId.hashCode + installmentNumber) & 0x7FFFFFFF;
+
+    final title = langCode == 'es' ? 'Vencimiento de Cuota' : 'Installment Due';
+    final body = langCode == 'es'
+        ? 'La cuota #$installmentNumber de $borrowerName por \$${amount.toStringAsFixed(2)} $currency vence hoy.'
+        : 'Installment #$installmentNumber for $borrowerName of \$${amount.toStringAsFixed(2)} $currency is due today.';
+
+    // Schedule for 9:00 AM on the due date in Cuba/Local time
+    final scheduledDate = tz.TZDateTime(
+      tz.local,
+      dueDate.year,
+      dueDate.month,
+      dueDate.day,
+      9, // Hour
+      0, // Minute
+    );
+
+    // If scheduled time is in the past, don't schedule it
+    if (scheduledDate.isBefore(tz.TZDateTime.now(tz.local))) return;
+
+    await _notifications.zonedSchedule(
+      notificationId,
+      title,
+      body,
+      scheduledDate,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'loan_reminders',
+          'Recordatorios de Préstamos',
+          channelDescription: 'Notificaciones sobre cuotas por cobrar hoy',
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+    );
+  }
+
+  Future<void> cancelInstallmentReminder(String loanId, int installmentNumber) async {
+    final notificationId = (loanId.hashCode + installmentNumber) & 0x7FFFFFFF;
+    await _notifications.cancel(notificationId);
   }
 }

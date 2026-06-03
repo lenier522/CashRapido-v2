@@ -80,7 +80,7 @@ class LicensePaymentConfig {
       isCubaOnly: true,
     ),
     LicenseType.annualEnterprise: LicensePaymentConfig(
-      enabledMethods: [apklis, artPay],
+      enabledMethods: [apklis, artPay, testCuba],
       isCubaOnly: true,
     ),
   };

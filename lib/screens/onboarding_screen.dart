@@ -44,7 +44,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       OnboardingData(
         title: context.t('onboarding_title_3'),
         description: context.t('onboarding_desc_3'),
-        animation: 'assets/animations/finance_3.json',
+        animation: 'assets/animations/robot.json',
       ),
     ];
 
