@@ -528,7 +528,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 showLicensePage(
                   context: context,
                   applicationName: context.t('app_name'),
-                  applicationVersion: '1.20.0',
+                  applicationVersion: '1.21.6',
                   applicationIcon: Icon(
                     Icons.account_balance_wallet,
                     size: 48,
@@ -568,7 +568,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 showAboutDialog(
                   context: context,
                   applicationName: context.t('app_name'),
-                  applicationVersion: '1.20.0',
+                  applicationVersion: '1.21.6',
                   applicationIcon: Icon(
                     Icons.account_balance_wallet,
                     size: 48,
@@ -1061,7 +1061,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Column(
         children: [
           Text(
-            'CashRapido v1.20.0',
+            'CashRapido v1.21.6',
             style: GoogleFonts.outfit(
               color: Theme.of(context).disabledColor,
               fontSize: 12,

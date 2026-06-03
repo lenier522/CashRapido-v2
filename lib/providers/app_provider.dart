@@ -244,8 +244,8 @@ class AppProvider with ChangeNotifier {
           id: 'test_cuba',
           name: 'Prueba (Test)',
           iconAsset: 'assets/icons/test.png',
-          isEnabled: true,
-          isVisible: true,
+          isEnabled: false,
+          isVisible: false,
           isTest: true,
         ),
         PaymentMethod(
@@ -253,8 +253,8 @@ class AppProvider with ChangeNotifier {
           name: 'Art-Pay (.lic)',
           iconAsset:
               'assets/icons/art_pay.png', // Fallback to Icons.payment if not found
-          isEnabled: true,
-          isVisible: true,
+          isEnabled: false,
+          isVisible: false,
         ),
       ];
       if (kIsWeb || Platform.isWindows) {
