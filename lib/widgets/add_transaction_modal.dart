@@ -100,7 +100,7 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
         // Check Insufficient Funds (Only for Expenses, and only when adding new transactions)
         if (_isExpense &&
             widget.transactionToEdit == null &&
-            amount > card.balance) {
+            (amount - card.balance) > 0.005) {
           // Close modal first, then show error
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(

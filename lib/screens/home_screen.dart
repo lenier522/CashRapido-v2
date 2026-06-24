@@ -731,7 +731,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (amount == null || amount <= 0) return;
 
                     if (actionType == "transfer" &&
-                        (card.balance - amount) < 0) {
+                        (amount - card.balance) > 0.005) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(context.t('insufficient_funds')),
