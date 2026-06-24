@@ -20,6 +20,7 @@ Aplicación de finanzas personales desarrollada en **Flutter** con **Dart**. Cas
 - [Compilación](#compilación)
 - [Variables de Entorno](#variables-de-entorno)
 - [Dependencias Principales](#dependencias-principales)
+- [Roadmap](ROADMAP.md)
 
 ---
 

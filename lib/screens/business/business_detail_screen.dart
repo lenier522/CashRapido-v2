@@ -12,6 +12,7 @@ import 'sales_tab.dart';
 import 'expenses_tab.dart';
 import 'closings_tab.dart';
 import 'analytics_tab.dart';
+import 'break_even_screen.dart';
 import 'pos_screen.dart'; // Added for direct access
 import 'package:cashrapido/utils/number_format_utils.dart';
 
@@ -31,7 +32,7 @@ class _BusinessDetailScreenState extends State<BusinessDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
   }
 
   @override
@@ -51,6 +52,7 @@ class _BusinessDetailScreenState extends State<BusinessDetailScreen>
       context.t('tab_expenses'),
       context.t('tab_closings'),
       context.t('tab_analytics'),
+      context.t('break_even_title'),
     ];
 
     return Scaffold(
@@ -192,6 +194,7 @@ class _BusinessDetailScreenState extends State<BusinessDetailScreen>
                         ExpensesTab(),
                         ClosingsTab(),
                         AnalyticsTab(),
+                        BreakEvenScreen(),
                       ],
                     ),
                   ),

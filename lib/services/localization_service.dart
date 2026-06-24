@@ -185,6 +185,25 @@ class AppLocalizations {
       'analytics_profit': 'Ganancia Neta',
       'analytics_roi': 'ROI General',
 
+      // Break Even
+      'break_even_title': 'Punto de Equilibrio',
+      'break_even_fixed_costs': 'Costos Fijos',
+      'break_even_unit_price': 'Precio Unitario Promedio',
+      'break_even_unit_cost': 'Costo Variable Unitario Prom.',
+      'break_even_contribution_margin': 'Margen de Contribución',
+      'break_even_units': 'Unidades para Equilibrar',
+      'break_even_revenue': 'Ingresos para Equilibrar',
+      'break_even_no_products': 'Agrega productos para ver el análisis de punto de equilibrio',
+      'break_even_no_expenses': 'No hay gastos registrados',
+      'break_even_sold': 'Vendidas',
+      'break_even_needed': 'Necesarias',
+      'break_even_period': 'Período',
+      'break_even_monthly': 'Mensual',
+      'break_even_weekly': 'Semanal',
+      'break_even_yearly': 'Anual',
+      'break_even_explanation': 'CF / (PVU - CVU)',
+      'break_even_chart_title': 'Comparativa de Unidades',
+
       'help_q_add_transaction': '¿Cómo registrar una transacción?',
       'help_a_add_transaction':
           'Toca el botón "+" flotante. Selecciona gasto/ingreso, categoría, monto y descripción.',
@@ -851,6 +870,25 @@ class AppLocalizations {
       'analytics_expense': 'Total Expenses',
       'analytics_profit': 'Net Profit',
       'analytics_roi': 'Overall ROI',
+
+      // Break Even
+      'break_even_title': 'Break-Even Point',
+      'break_even_fixed_costs': 'Fixed Costs',
+      'break_even_unit_price': 'Avg. Unit Price',
+      'break_even_unit_cost': 'Avg. Variable Cost',
+      'break_even_contribution_margin': 'Contribution Margin',
+      'break_even_units': 'Units to Break Even',
+      'break_even_revenue': 'Revenue to Break Even',
+      'break_even_no_products': 'Add products to see break-even analysis',
+      'break_even_no_expenses': 'No expenses recorded',
+      'break_even_sold': 'Sold',
+      'break_even_needed': 'Needed',
+      'break_even_period': 'Period',
+      'break_even_monthly': 'Monthly',
+      'break_even_weekly': 'Weekly',
+      'break_even_yearly': 'Yearly',
+      'break_even_explanation': 'FC / (SPU - VCU)',
+      'break_even_chart_title': 'Units Comparison',
 
       'help_q_add_transaction': 'How to record a transaction?',
       'help_a_add_transaction':
@@ -1579,6 +1617,25 @@ class AppLocalizations {
       'analytics_expense': 'Dépenses Totales',
       'analytics_profit': 'Profit Net',
       'analytics_roi': 'ROI Global',
+
+      // Break Even
+      'break_even_title': 'Seuil de Rentabilité',
+      'break_even_fixed_costs': 'Coûts Fixes',
+      'break_even_unit_price': 'Prix Unitaire Moyen',
+      'break_even_unit_cost': 'Coût Variable Unitaire Moy.',
+      'break_even_contribution_margin': 'Marge de Contribution',
+      'break_even_units': 'Unités pour Équilibrer',
+      'break_even_revenue': 'Revenus pour Équilibrer',
+      'break_even_no_products': 'Ajoutez des produits pour voir l\'analyse',
+      'break_even_no_expenses': 'Aucune dépense enregistrée',
+      'break_even_sold': 'Vendues',
+      'break_even_needed': 'Nécessaires',
+      'break_even_period': 'Période',
+      'break_even_monthly': 'Mensuel',
+      'break_even_weekly': 'Hebdomadaire',
+      'break_even_yearly': 'Annuel',
+      'break_even_explanation': 'CF / (PVU - CVU)',
+      'break_even_chart_title': 'Comparaison d\'Unités',
 
       // Feedback
       'feedback_title': 'Votre avis compte !',

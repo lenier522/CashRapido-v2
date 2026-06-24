@@ -244,8 +244,8 @@ class AppProvider with ChangeNotifier {
           id: 'test_cuba',
           name: 'Prueba (Test)',
           iconAsset: 'assets/icons/test.png',
-          isEnabled: false,
-          isVisible: false,
+          isEnabled: true,
+          isVisible: true,
           isTest: true,
         ),
         PaymentMethod(
@@ -859,7 +859,10 @@ class AppProvider with ChangeNotifier {
 
         // Update card balance safely without creating duplicates
         final updatedCard = card.copyWith(
-          balance: double.parse((card.balance + (r.isIncome ? r.amount : -r.amount)).toStringAsFixed(2)),
+          balance: double.parse(
+            (card.balance + (r.isIncome ? r.amount : -r.amount))
+                .toStringAsFixed(2),
+          ),
         );
         final listIndex = _cards.indexWhere((c) => c.id == card.id);
         if (listIndex != -1) {
@@ -1044,7 +1047,9 @@ class AppProvider with ChangeNotifier {
       final cardIndex = _cards.indexWhere((c) => c.id == cardId);
       if (cardIndex != -1) {
         final card = _cards[cardIndex];
-        double newBalance = double.parse((card.balance + amount).toStringAsFixed(2));
+        double newBalance = double.parse(
+          (card.balance + amount).toStringAsFixed(2),
+        );
 
         // Check if expense would cause negative balance (with tolerance for float representation)
         if (newBalance < -0.005) {
@@ -1072,7 +1077,9 @@ class AppProvider with ChangeNotifier {
       final cardIndex = _cards.indexWhere((c) => c.id == cardId);
       if (cardIndex != -1) {
         final card = _cards[cardIndex];
-        double newBalance = double.parse((card.balance + amount).toStringAsFixed(2));
+        double newBalance = double.parse(
+          (card.balance + amount).toStringAsFixed(2),
+        );
 
         final updatedCard = AccountCard(
           id: card.id,
@@ -1122,7 +1129,9 @@ class AppProvider with ChangeNotifier {
       if (cardIndex != -1) {
         final card = _cards[cardIndex];
         // If it was Income (+), we subtract. If Expense (-), we add (subtracting negative).
-        double newBalance = double.parse((card.balance - transaction.amount).toStringAsFixed(2));
+        double newBalance = double.parse(
+          (card.balance - transaction.amount).toStringAsFixed(2),
+        );
         final updatedCard = card.copyWith(balance: newBalance);
         await editCard(updatedCard);
       }
@@ -1161,10 +1170,14 @@ class AppProvider with ChangeNotifier {
         final card = _cards[cardIndex];
 
         // Calculate what the balance would be without the old transaction
-        double baseBalance = double.parse((card.balance - oldTransaction.amount).toStringAsFixed(2));
+        double baseBalance = double.parse(
+          (card.balance - oldTransaction.amount).toStringAsFixed(2),
+        );
 
         // Calculate new balance with the new transaction
-        double proposedBalance = double.parse((baseBalance + newAmount).toStringAsFixed(2));
+        double proposedBalance = double.parse(
+          (baseBalance + newAmount).toStringAsFixed(2),
+        );
 
         // If proposed balance would be negative, adjust the transaction amount
         double finalAmount = newAmount;
