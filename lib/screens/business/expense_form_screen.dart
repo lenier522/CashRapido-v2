@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/business_provider.dart';
+import '../../models/business_expense.dart';
 
 class ExpenseFormScreen extends StatefulWidget {
-  const ExpenseFormScreen({super.key});
+  final BusinessExpense? expense;
+
+  const ExpenseFormScreen({super.key, this.expense});
 
   @override
   State<ExpenseFormScreen> createState() => _ExpenseFormScreenState();
@@ -12,12 +15,26 @@ class ExpenseFormScreen extends StatefulWidget {
 
 class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _amountController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  String _selectedCategory = BusinessProvider.expenseCategories.first;
-  String _selectedCurrency = 'CUP';
+  late TextEditingController _amountController;
+  late TextEditingController _descriptionController;
+  late String _selectedCategory;
+  late String _selectedCurrency;
 
   final List<String> _currencies = ['CUP', 'USD', 'EUR', 'MLC'];
+
+  @override
+  void initState() {
+    super.initState();
+    _amountController = TextEditingController(
+      text: widget.expense?.amount.toString() ?? '',
+    );
+    _descriptionController = TextEditingController(
+      text: widget.expense?.description ?? '',
+    );
+    _selectedCategory =
+        widget.expense?.category ?? BusinessProvider.expenseCategories.first;
+    _selectedCurrency = widget.expense?.currency ?? 'CUP';
+  }
 
   @override
   void dispose() {
@@ -26,12 +43,14 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     super.dispose();
   }
 
+  bool get _isEdit => widget.expense != null;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Nuevo Gasto',
+          _isEdit ? 'Editar Gasto' : 'Nuevo Gasto',
           style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -125,9 +144,13 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                'Registrar Gasto',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              child: Text(
+                _isEdit ? 'Guardar Cambios' : 'Registrar Gasto',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
             ),
           ],
@@ -141,12 +164,22 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
 
     final provider = Provider.of<BusinessProvider>(context, listen: false);
 
-    await provider.addExpense(
-      amount: double.parse(_amountController.text),
-      category: _selectedCategory,
-      description: _descriptionController.text.trim(),
-      currency: _selectedCurrency,
-    );
+    if (_isEdit) {
+      final updated = widget.expense!.copyWith(
+        amount: double.parse(_amountController.text),
+        category: _selectedCategory,
+        description: _descriptionController.text.trim(),
+        currency: _selectedCurrency,
+      );
+      await provider.editExpense(updated);
+    } else {
+      await provider.addExpense(
+        amount: double.parse(_amountController.text),
+        category: _selectedCategory,
+        description: _descriptionController.text.trim(),
+        currency: _selectedCurrency,
+      );
+    }
 
     if (mounted) {
       Navigator.pop(context);

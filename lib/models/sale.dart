@@ -12,6 +12,8 @@ class Sale {
   final double discount; // Amount discounted
   final String? clientName; // For credit sales
   final String status; // 'paid', 'pending'
+  final String? sellerId;
+  final String? sellerName;
 
   Sale({
     required this.id,
@@ -23,13 +25,15 @@ class Sale {
     this.discount = 0.0,
     this.clientName,
     this.status = 'paid',
+    this.sellerId,
+    this.sellerName,
   });
 }
 
 class SaleItem {
   final String productId;
   final String productName; // Store name for historical records
-  final int quantity;
+  final double quantity; // Changed to double to support weight/fractional sales (e.g. 1.5 kg)
   final double unitPrice;
   final double subtotal; // quantity * unitPrice
 
@@ -62,13 +66,15 @@ class SaleAdapter extends TypeAdapter<Sale> {
       discount: fields[6] as double? ?? 0.0,
       clientName: fields[7] as String?,
       status: fields[8] as String? ?? 'paid',
+      sellerId: fields[9] as String?,
+      sellerName: fields[10] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Sale obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -86,7 +92,11 @@ class SaleAdapter extends TypeAdapter<Sale> {
       ..writeByte(7)
       ..write(obj.clientName)
       ..writeByte(8)
-      ..write(obj.status);
+      ..write(obj.status)
+      ..writeByte(9)
+      ..write(obj.sellerId)
+      ..writeByte(10)
+      ..write(obj.sellerName);
   }
 }
 
@@ -103,9 +113,9 @@ class SaleItemAdapter extends TypeAdapter<SaleItem> {
     return SaleItem(
       productId: fields[0] as String,
       productName: fields[1] as String,
-      quantity: fields[2] as int,
-      unitPrice: fields[3] as double,
-      subtotal: fields[4] as double,
+      quantity: (fields[2] as num?)?.toDouble() ?? 0.0, // Safely cast int/double to double
+      unitPrice: (fields[3] as num?)?.toDouble() ?? 0.0,
+      subtotal: (fields[4] as num?)?.toDouble() ?? 0.0,
     );
   }
 

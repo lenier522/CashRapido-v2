@@ -18,6 +18,9 @@ class ReceiptHelper {
     if (sale.clientName != null) {
       sb.writeln('Cliente: ${sale.clientName}');
     }
+    if (sale.sellerName != null && sale.sellerName!.isNotEmpty) {
+      sb.writeln('Vendedor: ${sale.sellerName}');
+    }
     sb.writeln('--------------------------------');
     
     for (var item in sale.items) {

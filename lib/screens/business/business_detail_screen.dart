@@ -14,6 +14,7 @@ import 'closings_tab.dart';
 import 'analytics_tab.dart';
 import 'break_even_screen.dart';
 import 'pos_screen.dart'; // Added for direct access
+import 'sellers_tab.dart';
 import 'package:cashrapido/utils/number_format_utils.dart';
 
 class BusinessDetailScreen extends StatefulWidget {
@@ -29,10 +30,15 @@ class _BusinessDetailScreenState extends State<BusinessDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  static const _sellerTypes = {'Retail', 'Restaurante', 'E-commerce'};
+
+  bool get _hasSellers => _sellerTypes.contains(widget.business.type);
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this);
+    final tabCount = _hasSellers ? 7 : 6;
+    _tabController = TabController(length: tabCount, vsync: this);
   }
 
   @override
@@ -50,6 +56,7 @@ class _BusinessDetailScreenState extends State<BusinessDetailScreen>
       context.t('tab_products'),
       context.t('tab_sales'),
       context.t('tab_expenses'),
+      if (_hasSellers) 'Vendedores',
       context.t('tab_closings'),
       context.t('tab_analytics'),
       context.t('break_even_title'),
@@ -188,13 +195,14 @@ class _BusinessDetailScreenState extends State<BusinessDetailScreen>
                   Expanded(
                     child: TabBarView(
                       controller: _tabController,
-                      children: const [
-                        ProductsTab(),
-                        SalesTab(),
-                        ExpensesTab(),
-                        ClosingsTab(),
-                        AnalyticsTab(),
-                        BreakEvenScreen(),
+                      children: [
+                        const ProductsTab(),
+                        const SalesTab(),
+                        const ExpensesTab(),
+                        if (_hasSellers) const SellersTab(),
+                        const ClosingsTab(),
+                        const AnalyticsTab(),
+                        const BreakEvenScreen(),
                       ],
                     ),
                   ),

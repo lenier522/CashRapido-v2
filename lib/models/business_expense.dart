@@ -18,6 +18,26 @@ class BusinessExpense {
     required this.currency,
     required this.date,
   });
+
+  BusinessExpense copyWith({
+    String? id,
+    String? businessId,
+    double? amount,
+    String? category,
+    String? description,
+    String? currency,
+    DateTime? date,
+  }) {
+    return BusinessExpense(
+      id: id ?? this.id,
+      businessId: businessId ?? this.businessId,
+      amount: amount ?? this.amount,
+      category: category ?? this.category,
+      description: description ?? this.description,
+      currency: currency ?? this.currency,
+      date: date ?? this.date,
+    );
+  }
 }
 
 class BusinessExpenseAdapter extends TypeAdapter<BusinessExpense> {

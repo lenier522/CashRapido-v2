@@ -4,7 +4,7 @@ description: "A new Flutter project."
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 1.22.1+34070159
+version: 1.23.50+34070160
 
 environment:
   sdk: ^3.10.3
@@ -34,6 +34,7 @@ dependencies:
   camera: ^0.10.5+9
   permission_handler: ^11.3.1
   local_auth: ^3.0.0
+  mobile_scanner: ^3.5.2
   crypto: ^3.0.7
   flutter_local_notifications: ^19.5.0
   timezone: ^0.10.1

@@ -9,8 +9,11 @@ import 'screens/onboarding_screen.dart';
 import 'screens/main_screen.dart';
 import 'models/models.dart';
 import 'models/product.dart';
+import 'models/product_category.dart';
 import 'models/business.dart';
 import 'models/sale.dart';
+import 'models/seller.dart';
+import 'models/seller_inventory.dart';
 import 'models/business_expense.dart';
 import 'models/closing.dart';
 import 'models/recurring_transaction.dart';
@@ -48,6 +51,9 @@ void main() async {
   Hive.registerAdapter(SaleItemAdapter());
   Hive.registerAdapter(BusinessExpenseAdapter());
   Hive.registerAdapter(ClosingAdapter());
+  Hive.registerAdapter(ProductCategoryAdapter());
+  Hive.registerAdapter(SellerAdapter());
+  Hive.registerAdapter(SellerInventoryAdapter());
 
   // Loans Module Adapters
   Hive.registerAdapter(LoanAdapter());
