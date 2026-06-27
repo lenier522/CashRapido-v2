@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/business_provider.dart';
 import '../../models/seller.dart';
+import '../../services/localization_service.dart';
 import 'seller_form_screen.dart';
 import 'seller_assign_products_screen.dart';
 import 'seller_detail_screen.dart';
@@ -43,7 +44,7 @@ class SellersTab extends StatelessWidget {
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          'No hay vendedores',
+                          context.t('no_sellers'),
                           style: GoogleFonts.outfit(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -52,7 +53,7 @@ class SellersTab extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Agrega vendedores para gestionar tu equipo',
+                          context.t('no_sellers_desc'),
                           style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                         ),
                       ],
@@ -169,7 +170,7 @@ class _SellerCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                seller.isActive ? 'Activo' : 'Inactivo',
+                seller.isActive ? context.t('seller_active') : context.t('seller_inactive'),
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
@@ -206,20 +207,20 @@ class _SellerCard extends StatelessWidget {
                   }
                 },
                 itemBuilder: (_) => [
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'report',
                     child: ListTile(
                       leading: Icon(Icons.assessment_outlined, size: 20),
-                      title: Text('Ver Reporte'),
+                      title: Text(context.t('seller_view_report')),
                       dense: true,
                       contentPadding: EdgeInsets.zero,
                     ),
                   ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'inventory',
                     child: ListTile(
                       leading: Icon(Icons.inventory_2_outlined, size: 20),
-                      title: Text('Asignar Productos'),
+                      title: Text(context.t('seller_assign_products')),
                       dense: true,
                       contentPadding: EdgeInsets.zero,
                     ),
@@ -255,8 +256,8 @@ class _SellerCard extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Eliminar Vendedor'),
-        content: Text('¿Eliminar a "${seller.fullName}"?'),
+        title: Text(context.t('seller_delete')),
+        content: Text(context.t('seller_delete_confirm').replaceAll('{name}', seller.fullName)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),

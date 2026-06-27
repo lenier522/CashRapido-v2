@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../providers/business_provider.dart';
 import '../../models/seller.dart';
 import '../../models/seller_inventory.dart';
+import '../../services/localization_service.dart';
 
 class SellerAssignProductsScreen extends StatefulWidget {
   final Seller seller;
@@ -87,7 +88,7 @@ class _SellerAssignProductsScreenState extends State<SellerAssignProductsScreen>
             ),
           ),
           body: products.isEmpty
-              ? const Center(child: Text('No hay productos disponibles'))
+              ? Center(child: Text(context.t('seller_no_products_available')))
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: products.length,

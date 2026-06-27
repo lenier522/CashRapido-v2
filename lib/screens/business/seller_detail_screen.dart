@@ -7,6 +7,7 @@ import '../../models/product.dart';
 import 'seller_form_screen.dart';
 import 'seller_assign_products_screen.dart';
 import 'package:cashrapido/utils/number_format_utils.dart';
+import '../../services/localization_service.dart';
 
 class SellerDetailScreen extends StatelessWidget {
   final Seller seller;
@@ -94,7 +95,7 @@ class SellerDetailScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          seller.isActive ? 'Activo' : 'Inactivo',
+                          seller.isActive ? context.t('seller_active') : context.t('seller_inactive'),
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
@@ -108,13 +109,13 @@ class SellerDetailScreen extends StatelessWidget {
                 const SizedBox(height: 24),
 
                 // Financial Summary
-                _SectionTitle('Resumen Financiero', Icons.attach_money),
+                _SectionTitle(context.t('seller_financial_summary'), Icons.attach_money),
                 const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
                       child: _MetricCard(
-                        label: 'Vendido',
+                        label: context.t('seller_sold'),
                         value: '\$${totalSales.toFormattedString(2)}',
                         icon: Icons.trending_up,
                         color: Colors.green,
@@ -123,7 +124,7 @@ class SellerDetailScreen extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: _MetricCard(
-                        label: 'Por Vender',
+                        label: context.t('seller_to_sell'),
                         value: '\$${remainingValue.toFormattedString(2)}',
                         icon: Icons.inventory_2,
                         color: Colors.orange,
@@ -136,7 +137,7 @@ class SellerDetailScreen extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _MetricCard(
-                        label: 'Valor Asignado',
+                        label: context.t('seller_assigned_value'),
                         value: '\$${assignedValue.toFormattedString(2)}',
                         icon: Icons.assignment,
                         color: Colors.blue,
@@ -145,7 +146,7 @@ class SellerDetailScreen extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: _MetricCard(
-                        label: 'Comisión',
+                        label: context.t('seller_commission'),
                         value: '\$${commission.toFormattedString(2)}',
                         icon: Icons.percent,
                         color: Colors.purple,
@@ -156,7 +157,7 @@ class SellerDetailScreen extends StatelessWidget {
                 const SizedBox(height: 24),
 
                 // Earnings
-                _SectionTitle('Ganancias del Vendedor', Icons.account_balance_wallet),
+                _SectionTitle(context.t('seller_earnings'), Icons.account_balance_wallet),
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -167,18 +168,18 @@ class SellerDetailScreen extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      _EarningRow('Salario Base', monthlySalary, Colors.blue),
+                      _EarningRow(context.t('seller_base_salary'), monthlySalary, Colors.blue),
                       const Divider(),
-                      _EarningRow('Comisión (${seller.commissionRate}%)', commission, Colors.purple),
+                      _EarningRow('${context.t('seller_commission')} (${seller.commissionRate}%)', commission, Colors.purple),
                       const Divider(),
-                      _EarningRow('Total', totalEarnings, Colors.green, bold: true),
+                      _EarningRow(context.t('seller_total'), totalEarnings, Colors.green, bold: true),
                     ],
                   ),
                 ),
                 const SizedBox(height: 24),
 
                 // Assigned Inventory
-                _SectionTitle('Inventario Asignado', Icons.inventory_2_outlined),
+                _SectionTitle(context.t('seller_assigned_inventory'), Icons.inventory_2_outlined),
                 const SizedBox(height: 12),
                 if (inv.isEmpty)
                   Container(
@@ -187,7 +188,7 @@ class SellerDetailScreen extends StatelessWidget {
                       color: Colors.grey.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Center(child: Text('Sin productos asignados')),
+                    child: Center(child: Text(context.t('seller_no_products'))),
                   )
                 else
                   ...inv.map((item) {
@@ -250,7 +251,7 @@ class SellerDetailScreen extends StatelessWidget {
                       );
                     },
                     icon: const Icon(Icons.inventory_2_outlined),
-                    label: const Text('Gestionar Inventario'),
+                    label: Text(context.t('seller_manage_inventory')),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),

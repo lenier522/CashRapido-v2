@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/business_provider.dart';
 import '../../models/seller.dart';
+import '../../services/localization_service.dart';
 
 class SellerFormScreen extends StatefulWidget {
   final Seller? seller;
@@ -68,7 +69,7 @@ class _SellerFormScreenState extends State<SellerFormScreen> {
   Future<void> _save() async {
     if (_nameCtrl.text.trim().isEmpty || _lastNameCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nombre y Apellidos son obligatorios')),
+        SnackBar(content: Text(context.t('seller_validation'))),
       );
       return;
     }
@@ -121,7 +122,7 @@ class _SellerFormScreenState extends State<SellerFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.seller != null ? 'Editar Vendedor' : 'Nuevo Vendedor',
+          widget.seller != null ? context.t('seller_edit') : context.t('seller_new'),
           style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
         ),
         actions: [
@@ -142,17 +143,17 @@ class _SellerFormScreenState extends State<SellerFormScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSection('Datos Personales', Icons.person),
+            _buildSection(context.t('seller_personal_data'), Icons.person),
             const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _nameCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Nombre *',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.badge),
+                    decoration: InputDecoration(
+                      labelText: context.t('seller_name'),
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.badge),
                     ),
                   ),
                 ),
@@ -160,8 +161,8 @@ class _SellerFormScreenState extends State<SellerFormScreen> {
                 Expanded(
                   child: TextField(
                     controller: _lastNameCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Apellidos *',
+                    decoration: InputDecoration(
+                      labelText: context.t('seller_lastname'),
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.badge_outlined),
                     ),
@@ -172,8 +173,8 @@ class _SellerFormScreenState extends State<SellerFormScreen> {
             const SizedBox(height: 12),
             TextField(
               controller: _ciCtrl,
-              decoration: const InputDecoration(
-                labelText: 'CI / DNI',
+              decoration: InputDecoration(
+                labelText: context.t('seller_id_doc'),
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.credit_card),
               ),
@@ -181,8 +182,8 @@ class _SellerFormScreenState extends State<SellerFormScreen> {
             const SizedBox(height: 12),
             TextField(
               controller: _phoneCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Teléfono',
+              decoration: InputDecoration(
+                labelText: context.t('seller_phone'),
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.phone),
               ),
@@ -191,8 +192,8 @@ class _SellerFormScreenState extends State<SellerFormScreen> {
             const SizedBox(height: 12),
             TextField(
               controller: _emailCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Email',
+              decoration: InputDecoration(
+                labelText: context.t('seller_email'),
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.email),
               ),
@@ -201,20 +202,20 @@ class _SellerFormScreenState extends State<SellerFormScreen> {
             const SizedBox(height: 12),
             TextField(
               controller: _addressCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Dirección',
+              decoration: InputDecoration(
+                labelText: context.t('seller_address'),
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.location_on),
               ),
               maxLines: 2,
             ),
             const SizedBox(height: 24),
-            _buildSection('Datos Laborales', Icons.work),
+            _buildSection(context.t('seller_employment_data'), Icons.work),
             const SizedBox(height: 12),
             TextField(
               controller: _roleCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Rol / Cargo',
+              decoration: InputDecoration(
+                labelText: context.t('seller_role'),
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.badge),
               ),
@@ -225,10 +226,10 @@ class _SellerFormScreenState extends State<SellerFormScreen> {
                 Expanded(
                   child: TextField(
                     controller: _salaryCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Salario Base (\$)',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.attach_money),
+                    decoration: InputDecoration(
+                      labelText: context.t('seller_salary'),
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.attach_money),
                     ),
                     keyboardType: TextInputType.number,
                   ),
@@ -237,10 +238,10 @@ class _SellerFormScreenState extends State<SellerFormScreen> {
                 Expanded(
                   child: TextField(
                     controller: _commissionCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Comisión (%)',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.percent),
+                    decoration: InputDecoration(
+                      labelText: context.t('seller_commission_rate'),
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.percent),
                     ),
                     keyboardType: TextInputType.number,
                   ),
@@ -251,7 +252,7 @@ class _SellerFormScreenState extends State<SellerFormScreen> {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.calendar_today),
-              title: Text('Fecha de Ingreso: ${_hireDate.day}/${_hireDate.month}/${_hireDate.year}'),
+              title: Text('${context.t('seller_hire_date')}: ${_hireDate.day}/${_hireDate.month}/${_hireDate.year}'),
               trailing: const Icon(Icons.edit_calendar),
               onTap: () async {
                 final picked = await showDatePicker(
@@ -264,23 +265,23 @@ class _SellerFormScreenState extends State<SellerFormScreen> {
               },
             ),
             const SizedBox(height: 24),
-            _buildSection('Estado', Icons.toggle_on),
+            _buildSection(context.t('seller_status'), Icons.toggle_on),
             const SizedBox(height: 12),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: Text(_isActive ? 'Activo' : 'Inactivo'),
-              subtitle: Text(_isActive ? 'El vendedor está habilitado' : 'El vendedor está deshabilitado'),
+              title: Text(_isActive ? context.t('seller_active') : context.t('seller_inactive')),
+              subtitle: Text(_isActive ? context.t('seller_enabled') : context.t('seller_disabled')),
               value: _isActive,
               onChanged: (val) => setState(() => _isActive = val),
             ),
             const SizedBox(height: 24),
-            _buildSection('Notas', Icons.note),
+            _buildSection(context.t('seller_notes'), Icons.note),
             const SizedBox(height: 12),
             TextField(
               controller: _notesCtrl,
-              decoration: const InputDecoration(
-                hintText: 'Notas adicionales...',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                hintText: context.t('seller_notes_hint'),
+                border: const OutlineInputBorder(),
               ),
               maxLines: 3,
             ),

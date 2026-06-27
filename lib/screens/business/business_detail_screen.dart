@@ -56,7 +56,7 @@ class _BusinessDetailScreenState extends State<BusinessDetailScreen>
       context.t('tab_products'),
       context.t('tab_sales'),
       context.t('tab_expenses'),
-      if (_hasSellers) 'Vendedores',
+      if (_hasSellers) context.t('tab_sellers'),
       context.t('tab_closings'),
       context.t('tab_analytics'),
       context.t('break_even_title'),

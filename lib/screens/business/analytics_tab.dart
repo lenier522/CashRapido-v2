@@ -37,7 +37,7 @@ class AnalyticsTab extends StatelessWidget {
             const SizedBox(height: 12),
             _buildSummaryCard(
               context,
-              'Beneficio Bruto',
+              context.t('gross_profit'),
               '\$${provider.totalProfit.toFormattedString(2)}',
               Icons.account_balance_wallet,
               Colors.blue,
@@ -53,7 +53,7 @@ class AnalyticsTab extends StatelessWidget {
             const SizedBox(height: 12),
             _buildSummaryCard(
               context,
-              'Ganancia Neta Real',
+              context.t('net_profit_real'),
               '\$${provider.totalNetProfit.toFormattedString(2)}',
               Icons.account_balance_wallet_outlined,
               Colors.teal,

@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../providers/business_provider.dart';
 import '../../models/closing.dart';
 import '../../services/export_service.dart';
+import '../../services/localization_service.dart';
 import 'package:cashrapido/utils/number_format_utils.dart';
 
 class ClosingsTab extends StatelessWidget {
@@ -268,7 +269,7 @@ class _ClosingCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     _InfoRow(
                       icon: Icons.account_balance_wallet_outlined,
-                      label: 'Ganancia Neta',
+                      label: context.t('net_profit'),
                       value: '\$${closing.netProfit.toFormattedString(2)}',
                       color: closing.netProfit >= 0 ? Colors.teal : Colors.red,
                     ),
@@ -508,7 +509,7 @@ class _SummaryRow extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: _SummaryCard(
-            label: 'Beneficio Bruto',
+            label: context.t('gross_profit'),
             value: closing.profit,
             color: closing.profit >= 0 ? Colors.blue : Colors.red,
             icon: closing.profit >= 0 ? Icons.trending_up : Icons.trending_down,
