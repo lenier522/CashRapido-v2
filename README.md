@@ -71,8 +71,11 @@ cashrapido/
 │   │   ├── notification_item.dart    # NotificationItem + .g.dart
 │   │   ├── payment_method.dart       # PaymentMethod enum
 │   │   ├── product.dart              # Product entity
+│   │   ├── product_category.dart      # ProductCategory entity (categorías de productos)
 │   │   ├── recurring_transaction.dart # RecurringTransaction + .g.dart
-│   │   └── sale.dart                 # Sale, SaleItem entities
+│   │   ├── sale.dart                 # Sale, SaleItem entities
+│   │   ├── seller.dart               # Seller entity (vendedores)
+│   │   └── seller_inventory.dart     # SellerInventory entity (inventario por vendedor)
 │   ├── providers/                    # State Management (ChangeNotifier)
 │   │   ├── app_provider.dart         # Provider principal (~2273 líneas)
 │   │   ├── business_provider.dart    # Provider del módulo de negocios
@@ -80,18 +83,25 @@ cashrapido/
 │   ├── screens/                      # Pantallas de la aplicación
 │   │   ├── business/                 # Pantallas del módulo de negocios
 │   │   │   ├── analytics_tab.dart
+│   │   │   ├── barcode_scanner_screen.dart # Escáner de código de barras
+│   │   │   ├── break_even_screen.dart      # Punto de equilibrio
 │   │   │   ├── business_detail_screen.dart
 │   │   │   ├── business_form_screen.dart
 │   │   │   ├── business_gatekeeper.dart
 │   │   │   ├── business_list_screen.dart
 │   │   │   ├── business_locked_screen.dart
+│   │   │   ├── category_manager_screen.dart # Gestión de categorías de productos
 │   │   │   ├── closings_tab.dart
 │   │   │   ├── expense_form_screen.dart
 │   │   │   ├── expenses_tab.dart
 │   │   │   ├── pos_screen.dart
 │   │   │   ├── product_form_screen.dart
 │   │   │   ├── products_tab.dart
-│   │   │   └── sales_tab.dart
+│   │   │   ├── sales_tab.dart
+│   │   │   ├── sellers_tab.dart             # Lista de vendedores
+│   │   │   ├── seller_form_screen.dart      # Formulario de vendedor
+│   │   │   ├── seller_detail_screen.dart    # Reporte financiero del vendedor
+│   │   │   └── seller_assign_products_screen.dart # Asignar productos a vendedor
 │   │   ├── loans/                    # Pantallas del módulo de préstamos
 │   │   │   ├── borrower_form_screen.dart
 │   │   │   ├── borrowers_list_screen.dart
@@ -182,6 +192,9 @@ Todos los modelos principales usan **Hive** como base de datos local NoSQL. A co
 | 27     | `Borrower`           | Deudores                                       |
 | 28     | `Installment`        | Cuotas/plazos de préstamos                     |
 | 29     | `LoanActivity`       | Actividad/auditoría de préstamos               |
+| 30     | `Seller`             | Vendedores                                     |
+| 31     | `ProductCategory`    | Categorías de productos                        |
+| 32     | `SellerInventory`    | Inventario asignado por vendedor               |
 | 15     | `ChatMessage`        | Mensajes del chat AI                           |
 | 16     | `ChatConversation`   | Conversaciones del chat AI                     |
 | —      | `RecurringTransaction` | Transacciones recurrentes                    |
@@ -201,12 +214,17 @@ Todos los modelos principales usan **Hive** como base de datos local NoSQL. A co
 - **Presupuestos:** Límites mensuales por categoría.
 
 ### 2. 🏢 Módulo de Negocio (Enterprise)
-- Gestión de múltiples negocios.
-- **Productos:** Inventario con precios, costo y stock.
-- **Ventas (POS):** Punto de venta integrado con selección de productos.
-- **Gastos:** Registro de gastos del negocio.
-- **Cierres de Caja:** Corte de caja por período.
-- **Analíticas:** ROI, ingresos netos, ganancias, gráficos.
+- Gestión de múltiples negocios con tipo (Retail, Restaurante, Servicios, etc.).
+- **Productos:** Inventario con precios, costo, stock, SKU auto-generado, categorías y subcategorías.
+- **Categorías de Productos:** Organización jerárquica con subcategorías, generación de SKUs automática basada en iniciales del negocio y categoría.
+- **Vendedores:** CRUD completo con datos personales, laborales, salario, comisión y estado activo/inactivo.
+- **Inventario por Vendedor:** Asignación de productos con cantidades específicas a cada vendedor. Descuento automático al realizar una venta.
+- **Reporte Financiero por Vendedor:** Valor asignado, vendido, por vender, comisión calculada y salario.
+- **Ventas (POS):** Punto de venta integrado con carrito, selección de productos, descuentos, métodos de pago y selección opcional de vendedor.
+- **Gastos:** Registro de gastos del negocio con categorías, filtros por período y categoría.
+- **Cierres de Caja:** Corte de caja por período (diario, semanal, mensual) con cálculo de ingresos, gastos, beneficio bruto, ganancia neta (descontando costo de productos vendidos), ROI, productos más vendidos, métodos de pago, gastos por categoría y rendimiento por vendedor. Exportación a PDF y Excel.
+- **Analíticas:** ROI general, ingresos totales, gastos totales, beneficio bruto, ganancia neta real, productos más vendidos y stock bajo.
+- **Punto de Equilibrio:** Simulador con costos fijos, precio unitario, costo variable, margen de contribución y gráfico comparativo.
 
 ### 3. 💳 Módulo de Préstamos (Enterprise)
 - Gestión de deudores con datos de contacto.
@@ -320,8 +338,13 @@ Provider principal que gestiona:
 ### `BusinessProvider` (`lib/providers/business_provider.dart`)
 Gestiona el módulo de negocio:
 - CRUD de negocios, productos, ventas, gastos, cierres.
-- Tasas de cambio y moneda principal.
-- Cálculos de ganancias, ROI, y reportes.
+- CRUD de vendedores, inventario por vendedor, categorías de productos.
+- Asignación/desasignación de productos a vendedores con descuento automático de inventario al vender.
+- Cálculos de ganancias (beneficio bruto, ganancia neta), ROI, comisiones de vendedores.
+- Métricas por vendedor: total ventas, valor asignado, valor restante, comisión.
+- Generación de SKU automática basada en negocio, categoría y fecha.
+- Tasas de cambio y moneda principal del negocio.
+- Filtros por fechas en ventas, gastos y cierres.
 
 ### `LoanProvider` (`lib/providers/loan_provider.dart`)
 Gestiona el módulo de préstamos:
