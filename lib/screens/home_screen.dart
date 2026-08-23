@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
@@ -241,14 +242,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final currency = selectedCard?.currency ?? 'USD';
     final totalBalance = selectedCard?.balance ?? 0.00;
 
-    // Calculate income/expense for this specific card or globally?
-    // Doing strict per-card calculation might be heavy without optimized queries,
-    // but for list size < 1000 it is fine.
-    // Simplifying: Show stats for "This Month" based on currency match if no card selected,
-    // or filtering transactions by cardId if that linking existed.
-    // Since we just started linking, older transactions won't be linked.
-    // We will show "This Month (Currency)" stats.
-
     final expense = provider.getSpentThisMonth(
       currency,
       cardId: _selectedCardId,
@@ -258,145 +251,293 @@ class _HomeScreenState extends State<HomeScreen> {
       cardId: _selectedCardId,
     );
 
+    // Gradient built from the selected card color, with a premium fallback.
+    final int cardColorValue = selectedCard?.colorValue ?? 0xFF7E57C2;
+    final Color baseColor = cardColorValue == 0xFF1A1A1A
+        ? const Color(0xFF4A2E8F)
+        : Color(cardColorValue);
+    final Color endColor = Color.lerp(baseColor, Colors.black, 0.35)!;
+
+    // Sparkline data: last 7 days of spending for this card/currency.
+    final List<double> last7 = _last7DaysSpending(
+      provider.transactions,
+      currency: currency,
+      cardId: _selectedCardId,
+    );
+    final double maxSpending =
+        last7.fold(0.0, (max, value) => value > max ? value : max);
+    final double chartMaxY = maxSpending == 0 ? 20.0 : maxSpending * 1.3;
+
     return Container(
       key: TourKeys.balanceCardKey,
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: Colors.black, // Dark premium card
-        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [baseColor, endColor],
+        ),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
+            color: baseColor.withValues(alpha: 0.35),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                context.t('total_balance'),
-                style: GoogleFonts.outfit(color: Colors.white70, fontSize: 14),
-              ),
-              // Card Selector
-              Flexible(
-                child: Container(
-                  key: TourKeys.cardSelectorKey,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      isExpanded:
-                          true, // Key fix: Allows button to shrink and truncate
-                      value: _selectedCardId,
-                      dropdownColor: Colors.grey[900],
-                      icon: const Icon(
-                        Icons.keyboard_arrow_down,
+          // Background chart: smooth sparkline of the last 7 days of spending.
+          Positioned.fill(
+            left: 0,
+            right: 0,
+            bottom: -8,
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: 0.45,
+                child: LineChart(
+                  LineChartData(
+                    gridData: FlGridData(show: false),
+                    titlesData: FlTitlesData(show: false),
+                    borderData: FlBorderData(show: false),
+                    minX: 0,
+                    maxX: 6,
+                    minY: 0,
+                    maxY: chartMaxY,
+                    lineTouchData: LineTouchData(enabled: false),
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots: [
+                          for (var i = 0; i < last7.length; i++)
+                            FlSpot(i.toDouble(), last7[i]),
+                        ],
+                        isCurved: true,
                         color: Colors.white,
-                        size: 16,
+                        barWidth: 2.5,
+                        isStrokeCapRound: true,
+                        dotData: FlDotData(show: false),
+                        belowBarData: BarAreaData(
+                          show: true,
+                          color: Colors.white.withValues(alpha: 0.12),
+                        ),
                       ),
-                      style: GoogleFonts.outfit(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      hint: Text(
-                        context.t('select_card'),
-                        style: GoogleFonts.outfit(color: Colors.white),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      items: provider.cards.map((AccountCard card) {
-                        String displayName;
-                        if (card.isCash) {
-                          displayName = card.name;
-                        } else {
-                          String bankName = card.bankName ?? 'Tarjeta';
-                          if (bankName == 'Efectivo') {
-                            bankName = context.t('card_cash');
-                          }
-                          displayName = bankName;
-                        }
-
-                        final last4 = card.isCash
-                            ? ''
-                            : (card.cardNumber.length >= 4
-                                  ? card.cardNumber.substring(
-                                      card.cardNumber.length - 4,
-                                    )
-                                  : '****');
-
-                        return DropdownMenuItem<String>(
-                          value: card.id,
-                          child: Text(
-                            card.isCash
-                                ? "${context.t('card_cash')}(${card.name})-${card.currency}"
-                                : "$displayName $last4 ${card.currency}",
-                            style: TextStyle(color: Colors.white, fontSize: 13),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          _selectedCardId = newValue;
-                        });
-                      },
-                    ),
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '\$ ${totalBalance.toFormattedString(2)}',
-            style: GoogleFonts.outfit(
-              color: Colors.white,
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              _buildCardInfoBadge(
-                Icons.arrow_upward,
-                context.t('income_month'),
-                '+ \$${income.toFormattedString(0)}',
+          // Decorative floating orb for a premium feel.
+          Positioned(
+            right: -30,
+            top: -30,
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.06),
               ),
-              const SizedBox(width: 24),
-              _buildCardInfoBadge(
-                Icons.arrow_downward,
-                context.t('expense_month'),
-                '- \$${expense.toFormattedString(0)}',
-              ),
-            ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      context.t('total_balance'),
+                      style: GoogleFonts.outfit(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    // Card Selector
+                    Flexible(
+                      child: Container(
+                        key: TourKeys.cardSelectorKey,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            isExpanded:
+                                true, // Allows button to shrink and truncate
+                            value: _selectedCardId,
+                            dropdownColor: const Color(0xFF2B2340),
+                            icon: const Icon(
+                              Icons.keyboard_arrow_down,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                            style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            hint: Text(
+                              context.t('select_card'),
+                              style: GoogleFonts.outfit(color: Colors.white),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            items: provider.cards.map((AccountCard card) {
+                              String displayName;
+                              if (card.isCash) {
+                                displayName = card.name;
+                              } else {
+                                String bankName = card.bankName ?? 'Tarjeta';
+                                if (bankName == 'Efectivo') {
+                                  bankName = context.t('card_cash');
+                                }
+                                displayName = bankName;
+                              }
+
+                              final last4 = card.isCash
+                                  ? ''
+                                  : (card.cardNumber.length >= 4
+                                        ? card.cardNumber.substring(
+                                            card.cardNumber.length - 4,
+                                          )
+                                        : '****');
+
+                              return DropdownMenuItem<String>(
+                                value: card.id,
+                                child: Text(
+                                  card.isCash
+                                      ? "${context.t('card_cash')}(${card.name})-${card.currency}"
+                                      : "$displayName $last4 ${card.currency}",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                _selectedCardId = newValue;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  '\$ ${totalBalance.toFormattedString(2)}',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 38,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    context.t('monthly_movement'),
+                    style: GoogleFonts.outfit(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    _buildCardInfoBadge(
+                      Icons.arrow_upward,
+                      context.t('income_month'),
+                      '+ \$${income.toFormattedString(0)}',
+                      Colors.white,
+                    ),
+                    const SizedBox(width: 24),
+                    _buildCardInfoBadge(
+                      Icons.arrow_downward,
+                      context.t('expense_month'),
+                      '- \$${expense.toFormattedString(0)}',
+                      Colors.white,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCardInfoBadge(IconData icon, String label, String amount) {
+  // Aggregates net spending per day for the last 7 days.
+  List<double> _last7DaysSpending(
+    List<InternalTransaction> transactions, {
+    required String currency,
+    String? cardId,
+  }) {
+    final List<double> result = List.filled(7, 0);
+    final DateTime today = DateTime.now();
+
+    for (final tx in transactions) {
+      if (tx.currency != currency) continue;
+      if (cardId != null && tx.cardId != cardId) continue;
+      if (tx.amount >= 0) continue;
+
+      final txDate = tx.date;
+      for (var i = 0; i < 7; i++) {
+        final dayDate =
+            DateTime(today.year, today.month, today.day).subtract(
+              Duration(days: 6 - i),
+            );
+        if (txDate.year == dayDate.year &&
+            txDate.month == dayDate.month &&
+            txDate.day == dayDate.day) {
+          result[i] += tx.amount.abs();
+        }
+      }
+    }
+    return result;
+  }
+
+  Widget _buildCardInfoBadge(
+    IconData icon,
+    String label,
+    String amount,
+    Color color,
+  ) {
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
+            color: color.withValues(alpha: 0.15),
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: Colors.white, size: 14),
+          child: Icon(icon, color: color, size: 14),
         ),
         const SizedBox(width: 8),
         Column(
@@ -404,12 +545,15 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Text(
               label,
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
+              style: TextStyle(
+                color: color.withValues(alpha: 0.7),
+                fontSize: 12,
+              ),
             ),
             Text(
               amount,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: color,
                 fontWeight: FontWeight.bold,
               ),
             ),
