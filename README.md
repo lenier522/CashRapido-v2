@@ -223,6 +223,7 @@ Todos los modelos principales usan **Hive** como base de datos local NoSQL. A co
 - **Ventas (POS):** Punto de venta integrado con carrito, selección de productos, descuentos, métodos de pago y selección opcional de vendedor.
 - **Gastos:** Registro de gastos del negocio con categorías, filtros por período y categoría.
 - **Cierres de Caja:** Corte de caja por período (diario, semanal, mensual) con cálculo de ingresos, gastos, beneficio bruto, ganancia neta (descontando costo de productos vendidos), ROI, productos más vendidos, métodos de pago, gastos por categoría y rendimiento por vendedor. Exportación a PDF y Excel.
+- **Transferencia de Ganancia a Cuenta Personal:** Cada cierre permite transferir la ganancia neta a una cuenta personal (tarjeta) de la billetera, con control de transferencia parcial/total y aviso + conversión por tipo de cambio si la moneda del negocio difiere de la de la cuenta destino.
 - **Analíticas:** ROI general, ingresos totales, gastos totales, beneficio bruto, ganancia neta real, productos más vendidos y stock bajo.
 - **Punto de Equilibrio:** Simulador con costos fijos, precio unitario, costo variable, margen de contribución y gráfico comparativo.
 
@@ -254,6 +255,7 @@ Todos los modelos principales usan **Hive** como base de datos local NoSQL. A co
 - **Compartir** archivos exportados vía Share Plus.
 - **Respaldo local** en formato `.cashrapido` (archivo).
 - **Respaldo en Google Drive** (sincronización automática).
+- **Cobertura completa:** El respaldo (local y Drive) incluye **todas las tablas** de la app: transacciones, categorías, tarjetas, negocios, productos, ventas, gastos, cierres, transacciones recurrentes, notificaciones, categorías de producto, vendedores, inventario por vendedor, préstamos (pagos, deudores y actividad) y chats de IA.
 
 ### 7. 🔔 Notificaciones y Recordatorios
 - Recordatorio diario de gastos.
@@ -301,6 +303,14 @@ CashRapido cuenta con un sistema de suscripción basado en licencias. Los detall
 | Apklis    | Tienda de aplicaciones cubana        |
 | Art-Pay   | Billetera digital (token .lic)       |
 | Anuncios  | Ver anuncios de Google Ads           |
+
+### 🎁 Prueba de 24 horas
+
+Al instalar la aplicación se activa automáticamente una **prueba gratuita de 24 horas** con **todas las funcionalidades desbloqueadas** (equivalente al nivel Enterprise). Durante este periodo se muestra un cartel con la cuenta regresiva en la pantalla de inicio y en la de licencias.
+
+- Pasadas las 24 horas, si no se adquirió ninguna licencia, la app vuelve al nivel **Free** (funcionalidades limitadas) hasta que se compre una licencia.
+- Si se compra una licencia durante la prueba, esta toma el control de inmediato y no se vuelve a bloquear.
+- La prueba se activa una sola vez por instalación (borrar los datos de la app reinicia el contador).
 
 ### Matriz de Funcionalidades por Nivel
 
