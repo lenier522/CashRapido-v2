@@ -24,6 +24,7 @@ class Closing {
   final String sellerStatsJson;
   final double costOfGoodsSold;
   final double netProfit;
+  final double transferredAmount;
 
   Closing({
     required this.id,
@@ -47,6 +48,7 @@ class Closing {
     this.sellerStatsJson = '{}',
     this.costOfGoodsSold = 0.0,
     this.netProfit = 0.0,
+    this.transferredAmount = 0.0,
   });
 }
 
@@ -82,13 +84,14 @@ class ClosingAdapter extends TypeAdapter<Closing> {
       sellerStatsJson: fields[18] as String? ?? '{}',
       costOfGoodsSold: (fields[19] as num?)?.toDouble() ?? 0.0,
       netProfit: (fields[20] as num?)?.toDouble() ?? 0.0,
+      transferredAmount: (fields[21] as num?)?.toDouble() ?? 0.0,
     );
   }
 
   @override
   void write(BinaryWriter writer, Closing obj) {
     writer
-      ..writeByte(21)
+      ..writeByte(22)
       ..writeByte(0)..write(obj.id)
       ..writeByte(1)..write(obj.businessId)
       ..writeByte(2)..write(obj.period)
@@ -109,6 +112,7 @@ class ClosingAdapter extends TypeAdapter<Closing> {
       ..writeByte(17)..write(obj.totalDiscounts)
       ..writeByte(18)..write(obj.sellerStatsJson)
       ..writeByte(19)..write(obj.costOfGoodsSold)
-      ..writeByte(20)..write(obj.netProfit);
+      ..writeByte(20)..write(obj.netProfit)
+      ..writeByte(21)..write(obj.transferredAmount);
   }
 }

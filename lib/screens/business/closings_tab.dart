@@ -1,14 +1,12 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:file_picker/file_picker.dart';
 import '../../providers/business_provider.dart';
 import '../../providers/app_provider.dart';
 import '../../models/closing.dart';
-import '../../models/seller.dart';
+import '../../models/models.dart';
 import '../../services/export_service.dart';
 import '../../services/localization_service.dart';
 import 'package:cashrapido/utils/number_format_utils.dart';
@@ -36,28 +34,13 @@ class ClosingsTab extends StatelessWidget {
                     );
                   },
                 ),
-          floatingActionButton: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              FloatingActionButton.extended(
-                heroTag: 'closing_import_fab',
-                onPressed: () => _showImportSellerClosingModal(context, provider),
-                backgroundColor: Colors.blue[700],
-                foregroundColor: Colors.white,
-                icon: const Icon(Icons.upload_file),
-                label: Text(context.t('closing_import')),
-              ),
-              const SizedBox(height: 12),
-              FloatingActionButton.extended(
-                heroTag: 'closing_fab',
-                onPressed: () => _showGenerateClosingModal(context, provider),
-                backgroundColor: Theme.of(context).primaryColor,
-                foregroundColor: Colors.white,
-                icon: const Icon(Icons.assessment_outlined),
-                label: Text(context.t('closing_generate')),
-              ),
-            ],
+          floatingActionButton: FloatingActionButton.extended(
+            heroTag: 'closing_fab',
+            onPressed: () => _showGenerateClosingModal(context, provider),
+            backgroundColor: Theme.of(context).primaryColor,
+            foregroundColor: Colors.white,
+            icon: const Icon(Icons.assessment_outlined),
+            label: Text(context.t('closing_generate')),
           ),
         );
       },
@@ -104,250 +87,6 @@ class ClosingsTab extends StatelessWidget {
       builder: (context) => _GenerateClosingSheet(provider: provider),
     );
   }
-
-  void _showImportSellerClosingModal(BuildContext context, BusinessProvider provider) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _ImportSellerClosingSheet(provider: provider),
-    );
-  }
-}
-
-// ──────────────────────────────────────────────
-// Import Seller Closing Sheet
-// ──────────────────────────────────────────────
-class _ImportSellerClosingSheet extends StatefulWidget {
-  final BusinessProvider provider;
-  const _ImportSellerClosingSheet({required this.provider});
-
-  @override
-  State<_ImportSellerClosingSheet> createState() => _ImportSellerClosingSheetState();
-}
-
-class _ImportSellerClosingSheetState extends State<_ImportSellerClosingSheet> {
-  String? _selectedSellerId;
-  String? _depositCardId;
-  bool _isLoading = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final appProvider = Provider.of<AppProvider>(context);
-    final activeSellers = widget.provider.sellers.where((s) => s.isActive).toList();
-
-    final hasSelectedSeller = _selectedSellerId != null && activeSellers.any((s) => s.id == _selectedSellerId);
-    final currentSellerValue = hasSelectedSeller ? _selectedSellerId : null;
-
-    final hasSelectedCard = _depositCardId != null && appProvider.cards.any((c) => c.id == _depositCardId);
-    final currentCardValue = hasSelectedCard ? _depositCardId : null;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  context.t('closing_import_title'),
-                  style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Text(
-              context.t('closing_import_desc'),
-              style: const TextStyle(fontSize: 13, color: Colors.grey),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              initialValue: currentSellerValue,
-              decoration: InputDecoration(
-                labelText: context.t('seller_optional'),
-                border: const OutlineInputBorder(),
-                prefixIcon: const Icon(Icons.badge_outlined),
-              ),
-              items: [
-                DropdownMenuItem(value: null, child: Text(context.t('closing_detect_file'))),
-                ...activeSellers.map((s) => DropdownMenuItem(
-                      value: s.id,
-                      child: Text(s.fullName),
-                    )),
-              ],
-              onChanged: (val) => setState(() => _selectedSellerId = val),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              initialValue: currentCardValue,
-              decoration: InputDecoration(
-                labelText: context.t('closing_deposit_in'),
-                border: const OutlineInputBorder(),
-                prefixIcon: const Icon(Icons.account_balance_wallet),
-                helperText: context.t('closing_deposit_helper'),
-              ),
-              items: [
-                DropdownMenuItem(value: null, child: Text(context.t('closing_no_deposit'))),
-                ...appProvider.cards.map((c) => DropdownMenuItem(
-                      value: c.id,
-                      child: Text(
-                          '${c.isCash ? context.t('card_cash') : (c.bankName ?? context.t('card_default_name'))} • ${c.balance.toFormattedString(2)} ${c.currency}'),
-                    )),
-              ],
-              onChanged: (val) => setState(() => _depositCardId = val),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                icon: _isLoading
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Icon(Icons.folder_open),
-                label: Text(_isLoading ? context.t('importing') : context.t('select_file_json')),
-                onPressed: _isLoading ? null : _pickAndImportFile,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextButton(
-              onPressed: _isLoading ? null : () => Navigator.pop(context),
-              child: Text(context.t('cancel')),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _pickAndImportFile() async {
-    final appProvider = Provider.of<AppProvider>(context, listen: false);
-
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['json'],
-      withData: true,
-    );
-
-    if (result == null || result.files.isEmpty) return;
-    if (!mounted) return;
-
-    setState(() => _isLoading = true);
-
-    final file = result.files.first;
-    try {
-      String jsonStr;
-      if (file.bytes != null) {
-        jsonStr = utf8.decode(file.bytes!);
-      } else if (file.path != null) {
-        jsonStr = await File(file.path!).readAsString();
-      } else {
-        throw context.t('closing_import_read_error');
-      }
-
-      final dynamic decoded = jsonDecode(jsonStr);
-      if (decoded is! Map && decoded is! List) {
-        throw context.t('closing_import_format_error');
-      }
-
-      Map<String, dynamic> data;
-      if (decoded is Map) {
-        data = Map<String, dynamic>.from(decoded);
-      } else {
-        data = {'sales': decoded};
-      }
-
-      final sellerId = _selectedSellerId ?? (data['sellerId'] as String?);
-      if (sellerId == null) {
-        if (mounted) {
-          setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(context.t('closing_import_select_seller')),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-        return;
-      }
-
-      final Seller? seller = widget.provider.sellers.cast<Seller?>().firstWhere(
-        (s) => s?.id == sellerId,
-        orElse: () => null,
-      );
-
-      final sellerName = seller?.fullName ?? (data['sellerName'] as String?) ?? context.t('seller_singular');
-
-      final closingData = {
-        'sellerId': sellerId,
-        'sellerName': sellerName,
-        'sales': data['sales'] ?? [],
-        'closing': data['closing'] ?? (data.containsKey('sales') ? {} : data),
-      };
-
-      final resultImport = await widget.provider.importSellerClosing(
-        closingData: closingData,
-        depositCardId: _depositCardId,
-        appProvider: appProvider,
-      );
-
-      if (mounted) {
-        setState(() => _isLoading = false);
-        if (resultImport['success'] == true) {
-          Navigator.pop(context);
-          final salesCount = resultImport['salesImported'] ?? 0;
-          final totalIncome = (resultImport['totalIncome'] as num?)?.toDouble() ?? 0.0;
-          final name = resultImport['sellerName'] ?? sellerName;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '✅ $salesCount ${context.t('closing_import_success_count')} $name (${context.t('total_label')}: \$${totalIncome.toFormattedString(2)})',
-              ),
-              backgroundColor: Colors.green,
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('❌ ${resultImport['error'] ?? context.t('closing_error_unknown')}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${context.t('closing_import_file_error')}: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
 }
 
 // ──────────────────────────────────────────────
@@ -389,6 +128,7 @@ class _ClosingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = _periodColor;
     final profitColor = closing.profit >= 0 ? Colors.green : Colors.red;
+    final appProvider = Provider.of<AppProvider>(context);
 
     return Dismissible(
       key: Key(closing.id),
@@ -581,6 +321,16 @@ class _ClosingCard extends StatelessWidget {
                     // ── Export Buttons ──
                     const SizedBox(height: 20),
                     _ClosingExportButtons(closing: closing, provider: provider),
+
+                    // ── Transfer Profit (only when net profit > 0) ──
+                    if (closing.netProfit > 0) ...[
+                      const SizedBox(height: 12),
+                      _TransferProfitButton(
+                        closing: closing,
+                        provider: provider,
+                        appProvider: appProvider,
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -1564,5 +1314,366 @@ class _GenerateClosingSheetState extends State<_GenerateClosingSheet> {
         ),
       );
     }
+  }
+}
+
+// ──────────────────────────────────────────────
+// Transfer Profit to Personal Account
+// ──────────────────────────────────────────────
+class _TransferProfitButton extends StatelessWidget {
+  final Closing closing;
+  final BusinessProvider provider;
+  final AppProvider appProvider;
+
+  const _TransferProfitButton({
+    required this.closing,
+    required this.provider,
+    required this.appProvider,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final remaining = closing.netProfit - closing.transferredAmount;
+    final fullyTransferred = closing.transferredAmount >= closing.netProfit - 0.005;
+
+    // Already fully transferred -> static badge
+    if (fullyTransferred) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.green.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.green.withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_circle, size: 18, color: Colors.green),
+            const SizedBox(width: 8),
+            Text(
+              context.t('transfer_profit_fully_transferred'),
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 13),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final bool hasAccounts = appProvider.cards.isNotEmpty;
+
+    return ElevatedButton(
+      onPressed: () {
+        if (!hasAccounts) return;
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (ctx) => _TransferProfitSheet(
+            closing: closing,
+            provider: provider,
+            appProvider: appProvider,
+          ),
+        );
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        elevation: 0,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.account_balance_wallet, size: 18, color: Colors.white),
+                const SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    context.t('transfer_profit_button'),
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              hasAccounts
+                  ? context.t('transfer_profit_available').replaceAll('{amount}', '\$${remaining.toFormattedString(2)}')
+                  : context.t('transfer_profit_no_accounts'),
+              style: TextStyle(
+                fontSize: 12,
+                color: hasAccounts ? Colors.white.withValues(alpha: 0.85) : Colors.white,
+              ),
+            ),
+            // Show partial-transfer progress line when relevant
+            if (closing.transferredAmount > 0) ...[
+              const SizedBox(height: 2),
+              Text(
+                context
+                    .t('transfer_profit_partial')
+                    .replaceAll('{transferred}', '\$${closing.transferredAmount.toFormattedString(2)}')
+                    .replaceAll('{total}', '\$${closing.netProfit.toFormattedString(2)}'),
+                style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.85)),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TransferProfitSheet extends StatefulWidget {
+  final Closing closing;
+  final BusinessProvider provider;
+  final AppProvider appProvider;
+
+  const _TransferProfitSheet({
+    required this.closing,
+    required this.provider,
+    required this.appProvider,
+  });
+
+  @override
+  State<_TransferProfitSheet> createState() => _TransferProfitSheetState();
+}
+
+class _TransferProfitSheetState extends State<_TransferProfitSheet> {
+  String? _targetCardId;
+  final _amountController = TextEditingController();
+  final _rateController = TextEditingController(text: '1.0');
+  bool _saving = false;
+
+  double get _remaining =>
+      widget.closing.netProfit - widget.closing.transferredAmount;
+
+  double get _rate => double.tryParse(_rateController.text) ?? 1.0;
+
+  AccountCard? get _targetCard {
+    final id = _targetCardId;
+    if (id == null) return null;
+    for (final c in widget.appProvider.cards) {
+      if (c.id == id) return c;
+    }
+    return null;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final cards = widget.appProvider.cards;
+    if (cards.isNotEmpty) _targetCardId = cards.first.id;
+    _amountController.text =
+        _remaining % 1 == 0 ? _remaining.toInt().toString() : _remaining.toString();
+  }
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _rateController.dispose();
+    super.dispose();
+  }
+
+  bool _needsRate(BuildContext context) {
+    final card = _targetCard;
+    if (card == null) return false;
+    final businessCurrency = widget.provider.activeBusiness?.currency ?? widget.appProvider.mainCurrency;
+    return card.currency != businessCurrency;
+  }
+
+  Future<void> _confirm(BuildContext context) async {
+    if (_saving) return;
+    final amount = double.tryParse(_amountController.text) ?? 0.0;
+    final remaining = _remaining;
+
+    if (_targetCard == null || amount <= 0 || amount > remaining + 0.005) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.t('transfer_profit_error')),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final provider = widget.provider;
+    final businessName = provider.activeBusiness?.name ?? context.t('closing_business_fallback');
+    final title = context.t('transfer_profit_title_tx').replaceAll('{name}', businessName);
+
+    setState(() => _saving = true);
+    final error = await provider.transferProfitToAccount(
+      closingId: widget.closing.id,
+      targetCardId: _targetCardId!,
+      amount: amount,
+      exchangeRate: _rate,
+      title: title,
+      appProvider: widget.appProvider,
+    );
+    if (!mounted) return;
+
+    if (error == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.t('transfer_profit_success')),
+          backgroundColor: Colors.green[700],
+        ),
+      );
+      Navigator.pop(context);
+    } else {
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.t('transfer_profit_error')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final businessName = widget.provider.activeBusiness?.name ?? context.t('closing_business_fallback');
+    final businessCurrency = widget.provider.activeBusiness?.currency ?? widget.appProvider.mainCurrency;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.only(
+        left: 24,
+        right: 24,
+        top: 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              context.t('transfer_profit_button'),
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              context.t('transfer_profit_title_tx').replaceAll('{name}', businessName),
+              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 16),
+
+            // ── Profit summary ──
+            _InfoRow(
+              icon: Icons.trending_up,
+              label: context.t('net_profit'),
+              value: '\$${widget.closing.netProfit.toFormattedString(2)} ($businessCurrency)',
+              color: Colors.green,
+            ),
+            const SizedBox(height: 6),
+            _InfoRow(
+              icon: Icons.savings_outlined,
+              label: context.t('transfer_profit_available'),
+              value: '\$${_remaining.toFormattedString(2)}',
+              color: Theme.of(context).colorScheme.primary,
+            ),
+
+            const SizedBox(height: 16),
+
+            // ── Destination account ──
+            _SectionTitle(icon: Icons.wallet_outlined, label: context.t('transfer_profit_select_account'), color: Theme.of(context).colorScheme.primary),
+            const SizedBox(height: 8),
+            DropdownButton<String>(
+              isExpanded: true,
+              hint: Text(context.t('transfer_profit_select_account')),
+              value: _targetCardId,
+              items: widget.appProvider.cards
+                  .map(
+                    (c) => DropdownMenuItem(
+                      value: c.id,
+                      child: Text(
+                        '${c.isCash ? c.name : (c.bankName ?? 'Tarjeta')} (...${c.isCash ? 'CASH' : (c.cardNumber.length >= 4 ? c.cardNumber.substring(c.cardNumber.length - 4) : c.cardNumber)}) - ${c.currency}',
+                      ),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (val) => setState(() => _targetCardId = val),
+            ),
+
+            const SizedBox(height: 16),
+
+            // ── Amount ──
+            TextField(
+              controller: _amountController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                hintText: context.t('transfer_profit_amount'),
+                prefixText: '\$ ',
+                border: const OutlineInputBorder(),
+              ),
+            ),
+
+            // ── Exchange rate when currencies differ ──
+            if (_needsRate(context)) ...[
+              const SizedBox(height: 10),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.info_outline, size: 16, color: Colors.amber),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      context.t('transfer_profit_exchange_rate'),
+                      style: const TextStyle(fontSize: 12, color: Colors.amber),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              TextField(
+                controller: _rateController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  hintText: context.t('transfer_profit_exchange_rate'),
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 20),
+
+            // ── Confirm ──
+            ElevatedButton(
+              onPressed: () => _confirm(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                elevation: 0,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_saving) ...[
+                    const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Text(
+                    context.t('transfer_profit_confirm'),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

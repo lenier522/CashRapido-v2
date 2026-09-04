@@ -11,6 +11,7 @@ import '../models/business_expense.dart';
 import '../models/closing.dart';
 import '../models/seller.dart';
 import '../models/seller_inventory.dart';
+import '../models/models.dart';
 import 'app_provider.dart';
 
 class BusinessProvider with ChangeNotifier {
@@ -1205,6 +1206,91 @@ class BusinessProvider with ChangeNotifier {
       _closings.removeAt(index);
       notifyListeners();
     }
+  }
+
+  /// Transfers part (or all) of a closing's net profit to a personal account.
+  ///
+  /// `amount` is expressed in the business currency. When the destination
+  /// account uses a different currency, `exchangeRate` (business -> account)
+  /// converts the deposited amount. Returns null on success, or an error string.
+  Future<String?> transferProfitToAccount({
+    required String closingId,
+    required String targetCardId,
+    required double amount,
+    double exchangeRate = 1.0,
+    required String title,
+    required AppProvider appProvider,
+  }) async {
+    final index = _closings.indexWhere((c) => c.id == closingId);
+    if (index == -1) return 'closing_not_found';
+
+    final closing = _closings[index];
+    final remaining = closing.netProfit - closing.transferredAmount;
+
+    // Cannot transfer from a loss, or an empty/over-remaining amount.
+    if (closing.netProfit <= 0) return 'no_profit';
+    if (amount <= 0 || amount > remaining + 0.005) return 'invalid_amount';
+
+    final businessCurrency = activeBusiness?.currency ?? appProvider.mainCurrency;
+    AccountCard? targetCard;
+    for (final c in appProvider.cards) {
+      if (c.id == targetCardId) {
+        targetCard = c;
+        break;
+      }
+    }
+    if (targetCard == null) return 'card_not_found';
+
+    final bool differentCurrency = targetCard.currency != businessCurrency;
+    final double deposited = differentCurrency ? amount * exchangeRate : amount;
+    final String txCurrency = differentCurrency ? targetCard.currency : businessCurrency;
+
+    final txError = await appProvider.addTransaction(
+      amount: deposited,
+      title: title,
+      categoryId: 'cat_business_income',
+      currency: txCurrency,
+      cardId: targetCardId,
+      date: DateTime.now(),
+    );
+    if (txError != null) return txError;
+
+    final updatedClosing = Closing(
+      id: closing.id,
+      businessId: closing.businessId,
+      period: closing.period,
+      startDate: closing.startDate,
+      endDate: closing.endDate,
+      income: closing.income,
+      expenses: closing.expenses,
+      profit: closing.profit,
+      roi: closing.roi,
+      salesCount: closing.salesCount,
+      expensesCount: closing.expensesCount,
+      soldProductsJson: closing.soldProductsJson,
+      addedProductsJson: closing.addedProductsJson,
+      bestSellerName: closing.bestSellerName,
+      bestSellerQty: closing.bestSellerQty,
+      paymentMethodsJson: closing.paymentMethodsJson,
+      expenseCategoriesJson: closing.expenseCategoriesJson,
+      totalDiscounts: closing.totalDiscounts,
+      sellerStatsJson: closing.sellerStatsJson,
+      costOfGoodsSold: closing.costOfGoodsSold,
+      netProfit: closing.netProfit,
+      transferredAmount: closing.transferredAmount + amount,
+    );
+
+    final key = _closingBox.keys.firstWhere(
+      (k) => _closingBox.get(k)?.id == closingId,
+      orElse: () => null,
+    );
+    if (key != null) {
+      await _closingBox.put(key, updatedClosing);
+    }
+    _closings[index] = updatedClosing;
+    notifyListeners();
+
+    return null;
   }
 
   // ========== CALCULATIONS & ANALYTICS ==========
