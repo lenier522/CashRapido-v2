@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -31,11 +33,32 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String? _selectedCardId;
+  Timer? _promoTimer;
 
   @override
   void initState() {
     super.initState();
     // Tour moved to MainScreen for multi-screen coverage
+    // Live countdown for the 24h trial banner.
+    // Defer setState out of the build phase so it never throws
+    // "setState called during build" while another widget animates.
+    _promoTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      final phase = SchedulerBinding.instance.schedulerPhase;
+      if (phase == SchedulerPhase.persistentCallbacks) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() {});
+        });
+      } else {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _promoTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -64,6 +87,10 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (provider.isTrialActive) ...[
+                    _buildTrialBanner(context, provider),
+                    const SizedBox(height: 20),
+                  ],
                   _buildHeader(),
                   const SizedBox(height: 24),
                   _buildBalanceCard(context, provider),
@@ -89,6 +116,83 @@ class _HomeScreenState extends State<HomeScreen> {
   // The user mentions "floating bottom se ve x encima del icono de billetera", implying there is a bottom bar.
   // I'll add a dummy one or find it.
   // Actually, let's look at the bottom of the file later.
+
+  Widget _buildTrialBanner(BuildContext context, AppProvider provider) {
+    final remaining = provider.trialRemaining;
+    final hh = remaining.inHours.toString().padLeft(2, '0');
+    final mm = (remaining.inMinutes % 60).toString().padLeft(2, '0');
+    final ss = (remaining.inSeconds % 60).toString().padLeft(2, '0');
+    final time = '$hh:$mm:$ss';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final baseColor = Colors.green;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            baseColor.withValues(alpha: 0.25),
+            Colors.teal.withValues(alpha: 0.15),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: baseColor.withValues(alpha: 0.45)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: baseColor.withValues(alpha: 0.25),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.card_giftcard, color: Colors.greenAccent),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context
+                      .t('trial_active_banner')
+                      .replaceAll('{time}', time),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: isDark ? Colors.white : const Color(0xFF0B3D2E),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const LicensesScreen(),
+                      ),
+                    );
+                  },
+                  child: Text(
+                    context.t('trial_view_plans'),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                      decoration: TextDecoration.underline,
+                      color: isDark
+                          ? Colors.greenAccent
+                          : const Color(0xFF0B7A45),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildHeader() {
     final provider = Provider.of<AppProvider>(context);

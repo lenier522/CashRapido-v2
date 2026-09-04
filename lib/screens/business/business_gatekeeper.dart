@@ -14,7 +14,8 @@ class BusinessGatekeeper extends StatelessWidget {
 
     // Check license (Pro or Enterprise level required)
     if (provider.licenseType.level != LicenseLevel.pro &&
-        provider.licenseType.level != LicenseLevel.enterprise) {
+        provider.licenseType.level != LicenseLevel.enterprise &&
+        !provider.isPromoActive) {
       return const BusinessLockedScreen();
     }
 

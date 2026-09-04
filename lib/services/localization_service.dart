@@ -1091,6 +1091,13 @@ class AppLocalizations {
           'Como regalo de fin de año, disfruta de todas las funciones PRO totalmente gratis hasta el 10 de Enero. ¡Gracias por usar CashRapido!',
       'promo_button': '¡Genial! 🚀',
 
+      // 24h Trial
+      'trial_active_banner':
+          '🎁 Prueba gratuita activa: todo desbloqueado · {time} restantes',
+      'trial_expired':
+          'Tu prueba gratuita ha expirado. Compra una licencia para continuar usando la app.',
+      'trial_view_plans': 'Ver planes →',
+
       // Default License
       'default_license_title': 'Licencia Básica (Gratuita)',
       'default_license_desc':
@@ -2196,6 +2203,13 @@ class AppLocalizations {
       'promo_message':
           'As a year-end gift, enjoy all PRO features completely free until January 10th. Thanks for using CashRapido!',
       'promo_button': 'Awesome! 🚀',
+
+      // 24h Trial
+      'trial_active_banner':
+          '🎁 Free trial active: everything unlocked · {time} left',
+      'trial_expired':
+          'Your free trial has expired. Purchase a license to keep using the app.',
+      'trial_view_plans': 'View plans →',
 
       // Default License
       'default_license_title': 'Basic License (Free)',
@@ -3313,6 +3327,13 @@ class AppLocalizations {
       'promo_message':
           'En cadeau de fin d\'année, profitez de toutes les fonctionnalités PRO gratuitement jusqu\'au 10 janvier. Merci d\'utiliser CashRapido !',
       'promo_button': 'Génial ! 🚀',
+
+      // 24h Trial
+      'trial_active_banner':
+          '🎁 Essai gratuit actif : tout débloqué · {time} restants',
+      'trial_expired':
+          'Votre essai gratuit a expiré. Achetez une licence pour continuer à utiliser l\'application.',
+      'trial_view_plans': 'Voir les forfaits →',
 
       // Default License
       'default_license_title': 'Licence de Base (Gratuite)',

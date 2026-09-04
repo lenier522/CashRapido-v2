@@ -155,6 +155,35 @@ class AppProvider with ChangeNotifier {
   DateTime? _licenseActivationDate;
   DateTime? get licenseActivationDate => _licenseActivationDate;
 
+  // 24h trial (everything unlocked from first launch until license purchase)
+  DateTime? _trialActivationDate;
+  bool _trialCompleted = false;
+  bool get isTrialActive {
+    if (_trialCompleted || _trialActivationDate == null) return false;
+    return DateTime.now().isBefore(
+      _trialActivationDate!.add(const Duration(hours: 24)),
+    );
+  }
+
+  Duration get trialRemaining {
+    if (_trialActivationDate == null) return Duration.zero;
+    final end = _trialActivationDate!.add(const Duration(hours: 24));
+    final d = end.difference(DateTime.now());
+    return d.isNegative ? Duration.zero : d;
+  }
+
+  /// Starts the 24h trial. One-shot: does nothing if already activated/completed.
+  Future<void> activateTrial() async {
+    if (_trialActivationDate != null || _trialCompleted) return;
+    _trialActivationDate = DateTime.now();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      'trial_activation_date',
+      _trialActivationDate!.toIso8601String(),
+    );
+    notifyListeners();
+  }
+
   void setLicenseType(LicenseType type, {DateTime? expirationDate}) {
     _licenseType = type;
     if (type != LicenseType.free) {
@@ -421,10 +450,7 @@ class AppProvider with ChangeNotifier {
 
   bool get isPremium {
     // For backward compatibility or general "Not Free" check
-    // Holiday Promo: Free Premium (PRO) until Jan 10, 2026
-    final isPromoActive = DateTime.now().isBefore(
-      DateTime(2026, 1, 11),
-    ); // Promo ended
+    // Unlocked during the 24h trial (via isPromoActive)
     if (isPromoActive) return true;
     return _licenseType != LicenseType.free;
   }
@@ -451,7 +477,14 @@ class AppProvider with ChangeNotifier {
     return _cards.length < maxCards;
   }
 
-  bool get isPromoActive =>
+  // True while the 24h trial is active OR the (expired) holiday promo would be on.
+  bool get isPromoActive {
+    if (isTrialActive) return true;
+    return isHolidayPromo;
+  }
+
+  // Legacy holiday promo (dead code — date passed).
+  bool get isHolidayPromo =>
       DateTime.now().isBefore(DateTime(2026, 1, 11)); // Promo ended
 
   // Features unlocked at PERSONAL level or higher
@@ -718,6 +751,31 @@ class AppProvider with ChangeNotifier {
 
       // Check Expiration
       _checkLicenseExpiration();
+
+      // 24h trial: start on first launch of this version (only if no paid license),
+      // and never reactivate once it has expired.
+      _trialCompleted = prefs.getBool('trial_completed') ?? false;
+      final savedTrial = prefs.getString('trial_activation_date');
+      if (savedTrial != null) {
+        _trialActivationDate = DateTime.tryParse(savedTrial);
+      }
+      if (_trialActivationDate == null &&
+          !_trialCompleted &&
+          _licenseType == LicenseType.free) {
+        _trialActivationDate = DateTime.now();
+        await prefs.setString(
+          'trial_activation_date',
+          _trialActivationDate!.toIso8601String(),
+        );
+      } else if (_trialActivationDate != null &&
+          !_trialCompleted &&
+          _licenseType == LicenseType.free &&
+          DateTime.now().isAfter(
+            _trialActivationDate!.add(const Duration(hours: 24)),
+          )) {
+        _trialCompleted = true;
+        await prefs.setBool('trial_completed', true);
+      }
 
       // Fallback locale logic if not set above
       if (_currentLocale == null) {

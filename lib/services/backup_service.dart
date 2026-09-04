@@ -6,8 +6,18 @@ import 'package:path/path.dart' as p;
 class BackupService {
   // Hardcoded list of database files to ensure we don't miss anything or include garbage
   static const List<String> _boxNames = [
+    // Core (Wallet)
     'transactions', 'categories', 'cards',
-    'businesses', 'products', 'sales', 'business_expenses', 'closings'
+    // Business
+    'businesses', 'products', 'sales', 'business_expenses', 'closings',
+    // Recurring / notifications
+    'recurring_transactions', 'notifications',
+    // Business extras
+    'product_categories', 'sellers', 'seller_inventory',
+    // Loans (encrypted with a fixed key -> restores fine on any device)
+    'loans', 'loan_payments', 'borrowers', 'loan_activities',
+    // AI chat history
+    'ai_chats',
   ];
 
   /// Creates a validated Zip file containing the Hive databases.

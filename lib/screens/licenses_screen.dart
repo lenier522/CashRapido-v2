@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cashrapido/services/localization_service.dart';
 import 'package:provider/provider.dart';
@@ -16,11 +18,37 @@ class LicensesScreen extends StatefulWidget {
 }
 
 class _LicensesScreenState extends State<LicensesScreen> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Drive the live trial countdown while the screen is open.
+    // Defer setState out of the build phase so it never fights the
+    // TabBarView drag animation ("setState called during build").
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      final phase = SchedulerBinding.instance.schedulerPhase;
+      if (phase == SchedulerPhase.persistentCallbacks) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() {});
+        });
+      } else {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<AppProvider>(context);
     final isCuba = provider.isCuba;
-    final isPromoActive = provider.isPromoActive;
 
     return DefaultTabController(
       length: 3,
@@ -30,7 +58,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
         body: Stack(
           children: [
             _buildBackground(),
-            isPromoActive
+            provider.isHolidayPromo
                 ? _buildHolidayPromo(context)
                 : _buildContent(context, provider),
           ],
@@ -138,9 +166,60 @@ class _LicensesScreenState extends State<LicensesScreen> {
   Widget _buildContent(BuildContext context, AppProvider provider) {
     return Column(
       children: [
+        if (provider.isTrialActive) ...[
+          _buildTrialBanner(context, provider),
+        ],
         Expanded(child: _buildTabBarView(provider)),
         _buildCurrentLicenseBanner(context, provider),
       ],
+    );
+  }
+
+  Widget _buildTrialBanner(BuildContext context, AppProvider provider) {
+    final remaining = provider.trialRemaining;
+    final hh = remaining.inHours.toString().padLeft(2, '0');
+    final mm = (remaining.inMinutes % 60).toString().padLeft(2, '0');
+    final ss = (remaining.inSeconds % 60).toString().padLeft(2, '0');
+    final time = '$hh:$mm:$ss';
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.green.withValues(alpha: 0.18),
+            Colors.teal.withValues(alpha: 0.10),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.green.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.green.withValues(alpha: 0.22),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.card_giftcard, color: Colors.greenAccent),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              context
+                  .t('trial_active_banner')
+                  .replaceAll('{time}', time),
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
