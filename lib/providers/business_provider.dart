@@ -11,6 +11,7 @@ import '../models/business_expense.dart';
 import '../models/closing.dart';
 import '../models/seller.dart';
 import '../models/seller_inventory.dart';
+import 'app_provider.dart';
 
 class BusinessProvider with ChangeNotifier {
   // Hive Boxes
@@ -479,6 +480,14 @@ class BusinessProvider with ChangeNotifier {
     }
   }
 
+  Product? getProductById(String id) {
+    try {
+      return _products.firstWhere((p) => p.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
   // ========== SELLER MANAGEMENT ==========
 
   Future<void> addSeller({
@@ -561,6 +570,22 @@ class BusinessProvider with ChangeNotifier {
 
   // ========== SELLER INVENTORY MANAGEMENT ==========
 
+  double getTotalAssignedQuantityForProduct(String productId) {
+    return _sellerInventory
+        .where((si) => si.productId == productId && si.businessId == _activeBusinessId)
+        .fold<double>(0.0, (sum, si) => sum + si.assignedQuantity);
+  }
+
+  double getMaxAssignableToSeller(String productId, String sellerId) {
+    final product = getProductById(productId);
+    if (product == null) return 0.0;
+    final assignedToOthers = _sellerInventory
+        .where((si) => si.productId == productId && si.sellerId != sellerId && si.businessId == _activeBusinessId)
+        .fold<double>(0.0, (sum, si) => sum + si.assignedQuantity);
+    final maxAllowed = product.currentStock - assignedToOthers;
+    return maxAllowed > 0 ? maxAllowed : 0.0;
+  }
+
   Future<void> assignProductToSeller({
     required String sellerId,
     required String productId,
@@ -568,6 +593,9 @@ class BusinessProvider with ChangeNotifier {
     required double quantity,
   }) async {
     if (_activeBusinessId == null) return;
+
+    final maxAssignable = getMaxAssignableToSeller(productId, sellerId);
+    final safeQty = quantity > maxAssignable ? maxAssignable : quantity;
 
     final existing = _sellerInventory.where(
       (si) => si.sellerId == sellerId && si.productId == productId,
@@ -580,7 +608,7 @@ class BusinessProvider with ChangeNotifier {
         sellerId: sellerId,
         productId: productId,
         productName: productName,
-        assignedQuantity: quantity,
+        assignedQuantity: safeQty,
       );
       final key = _sellerInventoryBox.keys.firstWhere(
         (k) => _sellerInventoryBox.get(k)?.id == existing.first.id,
@@ -598,7 +626,7 @@ class BusinessProvider with ChangeNotifier {
         sellerId: sellerId,
         productId: productId,
         productName: productName,
-        assignedQuantity: quantity,
+        assignedQuantity: safeQty,
       );
       await _sellerInventoryBox.add(inventory);
       _sellerInventory.add(inventory);
@@ -673,6 +701,9 @@ class BusinessProvider with ChangeNotifier {
     String status = 'paid',
     String? sellerId,
     String? sellerName,
+    String? cardId,
+    AppProvider? appProvider,
+    bool depositToCard = false,
   }) async {
     if (_activeBusinessId == null) return;
 
@@ -698,9 +729,12 @@ class BusinessProvider with ChangeNotifier {
 
     // Update stock for each product
     for (var item in items) {
-      final product = _products.firstWhere((p) => p.id == item.productId);
-      final newStock = product.currentStock - item.quantity;
-      await updateStock(product.id, newStock);
+      final productIdx = _products.indexWhere((p) => p.id == item.productId);
+      if (productIdx != -1) {
+        final product = _products[productIdx];
+        final newStock = product.currentStock - item.quantity;
+        await updateStock(product.id, newStock < 0.0 ? 0.0 : newStock);
+      }
     }
 
     // Deduct from seller's assigned inventory
@@ -726,7 +760,192 @@ class BusinessProvider with ChangeNotifier {
       }
     }
 
+    // Deposit to personal account if requested
+    if (depositToCard && cardId != null && appProvider != null && status == 'paid' && total > 0) {
+      final activeBiz = activeBusiness;
+      final currency = activeBiz?.currency ?? appProvider.mainCurrency;
+      final productNames = items.map((i) => i.productName).join(', ');
+      await appProvider.addTransaction(
+        amount: total,
+        title: "Venta Negocio: $productNames",
+        categoryId: 'cat_business_income',
+        currency: currency,
+        cardId: cardId,
+        date: DateTime.now(),
+      );
+    }
+
     notifyListeners();
+  }
+
+  Future<Map<String, dynamic>> importSellerClosing({
+    required Map<String, dynamic> closingData,
+    String? depositCardId,
+    AppProvider? appProvider,
+  }) async {
+    if (_activeBusinessId == null) return {'success': false, 'error': 'No active business'};
+
+    final sellerId = closingData['sellerId'] as String?;
+    final sellerName = (closingData['sellerName'] as String?) ?? 'Vendedor';
+    final salesList = (closingData['sales'] as List<dynamic>?) ?? [];
+    final closingMap = (closingData['closing'] as Map<String, dynamic>?) ?? {};
+
+    int salesImported = 0;
+    double totalIncome = 0.0;
+    final Map<String, Map<String, dynamic>> soldProductsMap = {};
+    final Map<String, double> paymentMethodsMap = {};
+
+    for (var s in salesList) {
+      final saleId = s['id'] as String? ?? _uuid.v4();
+      // Check if this sale was already imported
+      if (_sales.any((existing) => existing.id == saleId)) continue;
+
+      final itemsRaw = (s['items'] as List<dynamic>?) ?? [];
+      final items = itemsRaw.map((it) => SaleItem(
+        productId: it['productId'] as String,
+        productName: it['productName'] as String,
+        quantity: (it['quantity'] as num).toDouble(),
+        unitPrice: (it['unitPrice'] as num).toDouble(),
+        subtotal: (it['subtotal'] as num).toDouble(),
+      )).toList();
+
+      final saleTotal = (s['total'] as num?)?.toDouble() ?? items.fold<double>(0.0, (sum, i) => sum + i.subtotal);
+      final paymentMethod = (s['paymentMethod'] as String?) ?? 'Efectivo';
+      final saleDate = s['date'] != null ? DateTime.parse(s['date'] as String) : DateTime.now();
+      final discount = (s['discount'] as num?)?.toDouble() ?? 0.0;
+      final clientName = s['clientName'] as String?;
+      final status = (s['status'] as String?) ?? 'paid';
+
+      final sale = Sale(
+        id: saleId,
+        businessId: _activeBusinessId!,
+        items: items,
+        total: saleTotal,
+        paymentMethod: paymentMethod,
+        date: saleDate,
+        discount: discount,
+        clientName: clientName,
+        status: status,
+        sellerId: sellerId,
+        sellerName: sellerName,
+      );
+
+      await _saleBox.add(sale);
+      _sales.add(sale);
+      salesImported++;
+      totalIncome += saleTotal;
+
+      // Track payment methods and sold items for closing metrics
+      paymentMethodsMap[paymentMethod] = (paymentMethodsMap[paymentMethod] ?? 0.0) + saleTotal;
+      for (final item in items) {
+        if (soldProductsMap.containsKey(item.productId)) {
+          soldProductsMap[item.productId]!['qty'] =
+              (soldProductsMap[item.productId]!['qty'] as double) + item.quantity;
+          soldProductsMap[item.productId]!['revenue'] =
+              (soldProductsMap[item.productId]!['revenue'] as double) + item.subtotal;
+        } else {
+          soldProductsMap[item.productId] = {
+            'name': item.productName,
+            'qty': item.quantity,
+            'revenue': item.subtotal,
+          };
+        }
+      }
+
+      // Update product stock
+      for (var item in items) {
+        final prodIdx = _products.indexWhere((p) => p.id == item.productId);
+        if (prodIdx != -1) {
+          final product = _products[prodIdx];
+          final newStock = (product.currentStock - item.quantity).clamp(0.0, double.infinity);
+          await updateStock(product.id, newStock);
+        }
+      }
+
+      // Deduct from seller's assigned inventory
+      if (sellerId != null) {
+        for (var item in items) {
+          final existing = _sellerInventory.where(
+            (si) => si.sellerId == sellerId && si.productId == item.productId,
+          ).toList();
+          if (existing.isNotEmpty) {
+            final inv = existing.first;
+            final remaining = inv.assignedQuantity - item.quantity;
+            if (remaining <= 0) {
+              await removeProductFromSeller(inv.id);
+            } else {
+              await assignProductToSeller(
+                sellerId: sellerId,
+                productId: item.productId,
+                productName: item.productName,
+                quantity: remaining,
+              );
+            }
+          }
+        }
+      }
+    }
+
+    final computedSoldProductsJson = jsonEncode(soldProductsMap.values.toList());
+    final computedPaymentMethodsJson = jsonEncode(paymentMethodsMap);
+
+    // Save Closing Report
+    final closingId = (closingMap['id'] as String?) ?? _uuid.v4();
+    if (!_closings.any((c) => c.id == closingId)) {
+      final closing = Closing(
+        id: closingId,
+        businessId: _activeBusinessId!,
+        period: (closingMap['period'] as String?) ?? 'Cierre Vendedor: $sellerName',
+        startDate: closingMap['startDate'] != null ? DateTime.parse(closingMap['startDate'] as String) : DateTime.now(),
+        endDate: closingMap['endDate'] != null ? DateTime.parse(closingMap['endDate'] as String) : DateTime.now(),
+        income: (closingMap['income'] as num?)?.toDouble() ?? totalIncome,
+        expenses: (closingMap['expenses'] as num?)?.toDouble() ?? 0.0,
+        profit: (closingMap['profit'] as num?)?.toDouble() ?? totalIncome,
+        roi: (closingMap['roi'] as num?)?.toDouble() ?? 0.0,
+        salesCount: (closingMap['salesCount'] as int?) ?? salesImported,
+        expensesCount: (closingMap['expensesCount'] as int?) ?? 0,
+        soldProductsJson: (closingMap['soldProductsJson'] as String?) ??
+            (soldProductsMap.isNotEmpty ? computedSoldProductsJson : '[]'),
+        addedProductsJson: (closingMap['addedProductsJson'] as String?) ?? '[]',
+        bestSellerName: sellerName,
+        bestSellerQty: salesImported,
+        paymentMethodsJson: (closingMap['paymentMethodsJson'] as String?) ??
+            (paymentMethodsMap.isNotEmpty ? computedPaymentMethodsJson : '{}'),
+        expenseCategoriesJson: (closingMap['expenseCategoriesJson'] as String?) ?? '{}',
+        totalDiscounts: (closingMap['totalDiscounts'] as num?)?.toDouble() ?? 0.0,
+        sellerStatsJson: jsonEncode({
+          sellerName: {'total': totalIncome, 'count': salesImported}
+        }),
+        costOfGoodsSold: (closingMap['costOfGoodsSold'] as num?)?.toDouble() ?? 0.0,
+        netProfit: (closingMap['netProfit'] as num?)?.toDouble() ?? totalIncome,
+      );
+
+      await _closingBox.add(closing);
+      _closings.add(closing);
+    }
+
+    // Deposit to personal account if requested
+    if (depositCardId != null && appProvider != null && totalIncome > 0) {
+      final activeBiz = activeBusiness;
+      final currency = activeBiz?.currency ?? appProvider.mainCurrency;
+      await appProvider.addTransaction(
+        amount: totalIncome,
+        title: "Cierre Importado: $sellerName",
+        categoryId: 'cat_business_income',
+        currency: currency,
+        cardId: depositCardId,
+        date: DateTime.now(),
+      );
+    }
+
+    notifyListeners();
+
+    return {
+      'success': true,
+      'salesImported': salesImported,
+      'totalIncome': totalIncome,
+      'sellerName': sellerName,
+    };
   }
 
   Future<void> deleteSale(String id) async {

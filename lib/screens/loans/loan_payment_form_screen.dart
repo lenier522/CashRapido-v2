@@ -197,7 +197,7 @@ class _LoanPaymentFormScreenState extends State<LoanPaymentFormScreen> {
                     prefixIcon: const Icon(Icons.price_check_rounded),
                     suffixIcon: TextButton(
                       child: Text(
-                        Localizations.localeOf(context).languageCode == 'es' ? 'TODO' : 'ALL',
+                        context.t('payment_pay_all'),
                         style: GoogleFonts.outfit(
                           fontWeight: FontWeight.bold,
                           color: theme.colorScheme.primary,
@@ -223,9 +223,7 @@ class _LoanPaymentFormScreenState extends State<LoanPaymentFormScreen> {
                       return context.t('complete_data_error');
                     }
                     if (parsed > widget.loan.remainingAmount) {
-                      return Localizations.localeOf(context).languageCode == 'es'
-                          ? 'El monto excede el saldo restante'
-                          : 'Amount exceeds outstanding balance';
+                      return context.t('payment_exceeds_balance');
                     }
                     return null;
                   },

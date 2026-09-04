@@ -69,14 +69,14 @@ class LoansLockedScreen extends StatelessWidget {
               const SizedBox(height: 40),
               
               // Feature list with elegant icons
-              _buildFeatureItem(context, Icons.people_outline_rounded, 
-                Localizations.localeOf(context).languageCode == 'es' ? 'Gestión de deudores y clientes' : 'Manage debtors and clients'),
-              _buildFeatureItem(context, Icons.percent_rounded, 
-                Localizations.localeOf(context).languageCode == 'es' ? 'Tasas de interés simple, compuesto y fijo' : 'Simple, compound and fixed interest rates'),
-              _buildFeatureItem(context, Icons.notifications_active_outlined, 
-                Localizations.localeOf(context).languageCode == 'es' ? 'Alertas y notificaciones locales automáticas' : 'Automatic local alerts and notifications'),
-              _buildFeatureItem(context, Icons.account_balance_wallet_outlined, 
-                Localizations.localeOf(context).languageCode == 'es' ? 'Integración opcional con tus tarjetas y saldo' : 'Optional integration with your cards and balance'),
+              _buildFeatureItem(context, Icons.people_outline_rounded,
+                context.t('loans_feature_debtors')),
+              _buildFeatureItem(context, Icons.percent_rounded,
+                context.t('loans_feature_interest_rates')),
+              _buildFeatureItem(context, Icons.notifications_active_outlined,
+                context.t('loans_feature_alerts')),
+              _buildFeatureItem(context, Icons.account_balance_wallet_outlined,
+                context.t('loans_feature_integration')),
               
               const SizedBox(height: 48),
               

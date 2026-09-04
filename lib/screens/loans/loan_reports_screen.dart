@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../providers/loan_provider.dart';
 import '../../providers/app_provider.dart';
 import '../../services/export_service.dart';
+import '../../services/localization_service.dart';
 
 class LoanReportsScreen extends StatelessWidget {
   const LoanReportsScreen({super.key});
@@ -35,7 +36,7 @@ class LoanReportsScreen extends StatelessWidget {
       backgroundColor: isDark ? const Color(0xFF0A0A14) : Colors.grey[50],
       appBar: AppBar(
         title: Text(
-          Localizations.localeOf(context).languageCode == 'es' ? 'Reportes Financieros' : 'Financial Reports',
+          context.t('loan_reports_title'),
           style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -53,7 +54,7 @@ class LoanReportsScreen extends StatelessWidget {
           children: [
             // Headline Section
             Text(
-              Localizations.localeOf(context).languageCode == 'es' ? 'Resumen de Cartera' : 'Portfolio Analytics',
+              context.t('reports_portfolio'),
               style: GoogleFonts.outfit(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -68,7 +69,7 @@ class LoanReportsScreen extends StatelessWidget {
 
             // Credit Risk Analysis
             Text(
-              Localizations.localeOf(context).languageCode == 'es' ? 'Análisis de Riesgo Crediticio' : 'Credit Risk Indicators',
+              context.t('reports_risk'),
               style: GoogleFonts.outfit(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -82,7 +83,7 @@ class LoanReportsScreen extends StatelessWidget {
 
             // Operational Projection
             Text(
-              Localizations.localeOf(context).languageCode == 'es' ? 'Proyecciones y Flujo Operativo' : 'Cash Flow Projections',
+              context.t('reports_projections'),
               style: GoogleFonts.outfit(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -96,7 +97,7 @@ class LoanReportsScreen extends StatelessWidget {
 
             // Backup & Data Exports Title
             Text(
-              Localizations.localeOf(context).languageCode == 'es' ? 'Copia de Seguridad y Exportación' : 'Backup & Data Exports',
+              context.t('reports_backup_section'),
               style: GoogleFonts.outfit(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -127,11 +128,11 @@ class LoanReportsScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.grid_on_rounded, color: Colors.green),
             title: Text(
-              Localizations.localeOf(context).languageCode == 'es' ? 'Exportar a Excel (XLSX)' : 'Export to Excel (XLSX)',
+              context.t('reports_export_excel'),
               style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600),
             ),
             subtitle: Text(
-              Localizations.localeOf(context).languageCode == 'es' ? 'Listado de préstamos y saldos' : 'Loan portfolios and balances',
+              context.t('reports_export_excel_desc'),
               style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey),
             ),
             trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
@@ -146,11 +147,11 @@ class LoanReportsScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.table_chart_rounded, color: Colors.blue),
             title: Text(
-              Localizations.localeOf(context).languageCode == 'es' ? 'Exportar a CSV' : 'Export to CSV',
+              context.t('reports_export_csv'),
               style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600),
             ),
             subtitle: Text(
-              Localizations.localeOf(context).languageCode == 'es' ? 'Compatible con hojas de cálculo' : 'Spreadsheet compatible text format',
+              context.t('reports_export_csv_desc'),
               style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey),
             ),
             trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
@@ -165,11 +166,11 @@ class LoanReportsScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.cloud_upload_rounded, color: Colors.purpleAccent),
             title: Text(
-              Localizations.localeOf(context).languageCode == 'es' ? 'Exportar Respaldo JSON' : 'Export JSON Backup',
+              context.t('reports_export_json'),
               style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600),
             ),
             subtitle: Text(
-              Localizations.localeOf(context).languageCode == 'es' ? 'Copia cifrada de clientes y préstamos' : 'Encrypted borrower and loan database copy',
+              context.t('reports_export_json_desc'),
               style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey),
             ),
             trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
@@ -180,7 +181,7 @@ class LoanReportsScreen extends StatelessWidget {
                 final file = File('${dir.path}/cashrapido_prestamos_backup.json');
                 await file.writeAsString(jsonString);
                 await SharePlus.instance.share(
-                  ShareParams(files: [XFile(file.path)], text: 'Respaldo de Préstamos CashRapido'),
+                  ShareParams(files: [XFile(file.path)], text: context.t('reports_share_text')),
                 );
               } catch (e) {
                 if (context.mounted) {
@@ -194,11 +195,11 @@ class LoanReportsScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.cloud_download_rounded, color: Colors.orangeAccent),
             title: Text(
-              Localizations.localeOf(context).languageCode == 'es' ? 'Restaurar Respaldo JSON' : 'Restore JSON Backup',
+              context.t('reports_import_json'),
               style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600),
             ),
             subtitle: Text(
-              Localizations.localeOf(context).languageCode == 'es' ? 'Importar base de datos (.json)' : 'Import database file (.json)',
+              context.t('reports_import_json_desc'),
               style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey),
             ),
             trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
@@ -217,12 +218,12 @@ class LoanReportsScreen extends StatelessWidget {
                   if (context.mounted) {
                     if (success) {
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(Localizations.localeOf(context).languageCode == 'es' ? 'Datos importados correctamente' : 'Data imported successfully'),
+                        content: Text(context.t('reports_import_success')),
                         backgroundColor: Colors.green,
                       ));
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(Localizations.localeOf(context).languageCode == 'es' ? 'Error al procesar archivo JSON' : 'Failed to parse JSON file'),
+                        content: Text(context.t('reports_import_error')),
                         backgroundColor: Colors.red,
                       ));
                     }
@@ -261,7 +262,7 @@ class LoanReportsScreen extends StatelessWidget {
           _buildReportRow(
             context,
             Icons.account_balance_wallet_outlined,
-            Localizations.localeOf(context).languageCode == 'es' ? 'Total Prestado (Capital)' : 'Total Loaned Out',
+            context.t('reports_total_loaned'),
             totalLoaned,
             currency,
             isDark,
@@ -270,7 +271,7 @@ class LoanReportsScreen extends StatelessWidget {
           _buildReportRow(
             context,
             Icons.check_circle_outline,
-            Localizations.localeOf(context).languageCode == 'es' ? 'Total Recuperado (Cobros)' : 'Total Collected Back',
+            context.t('reports_total_collected'),
             collected,
             currency,
             isDark,
@@ -280,7 +281,7 @@ class LoanReportsScreen extends StatelessWidget {
           _buildReportRow(
             context,
             Icons.pending_actions,
-            Localizations.localeOf(context).languageCode == 'es' ? 'Total Pendiente de Cobro' : 'Outstanding Balance',
+            context.t('reports_outstanding'),
             outstanding,
             currency,
             isDark,
@@ -290,7 +291,7 @@ class LoanReportsScreen extends StatelessWidget {
           _buildReportRow(
             context,
             Icons.trending_up_rounded,
-            Localizations.localeOf(context).languageCode == 'es' ? 'Intereses / Rendimiento Esperado' : 'Expected Interest Profits',
+            context.t('reports_expected_interest'),
             profit,
             currency,
             isDark,
@@ -344,14 +345,14 @@ class LoanReportsScreen extends StatelessWidget {
     bool isDark,
   ) {
     Color indicatorColor = Colors.greenAccent;
-    String riskLabel = Localizations.localeOf(context).languageCode == 'es' ? 'Saludable' : 'Healthy';
+    String riskLabel = context.t('reports_risk_healthy');
 
     if (riskRate > 25.0) {
       indicatorColor = Colors.redAccent;
-      riskLabel = Localizations.localeOf(context).languageCode == 'es' ? 'Peligro Crítico' : 'Critical Hazard';
+      riskLabel = context.t('reports_risk_critical');
     } else if (riskRate > 10.0) {
       indicatorColor = Colors.orangeAccent;
-      riskLabel = Localizations.localeOf(context).languageCode == 'es' ? 'Moderado' : 'Moderate';
+      riskLabel = context.t('reports_risk_moderate');
     }
 
     return Container(
@@ -367,7 +368,7 @@ class LoanReportsScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                Localizations.localeOf(context).languageCode == 'es' ? 'Tasa de Morosidad:' : 'Default Risk Rate:',
+                context.t('reports_default_rate'),
                 style: GoogleFonts.outfit(color: Colors.grey, fontSize: 14),
               ),
               Container(
@@ -393,7 +394,7 @@ class LoanReportsScreen extends StatelessWidget {
               Expanded(
                 child: _buildRiskStatCard(
                   context,
-                  Localizations.localeOf(context).languageCode == 'es' ? 'Clientes Morosos' : 'Overdue Debtors',
+                  context.t('reports_delinquent_clients'),
                   morososCount.toString(),
                   Colors.redAccent,
                   isDark,
@@ -403,7 +404,7 @@ class LoanReportsScreen extends StatelessWidget {
               Expanded(
                 child: _buildRiskStatCard(
                   context,
-                  Localizations.localeOf(context).languageCode == 'es' ? 'Cartera Activa' : 'Active Portfolio',
+                  context.t('reports_active_portfolio'),
                   activeCount.toString(),
                   Colors.blueAccent,
                   isDark,
@@ -460,13 +461,15 @@ class LoanReportsScreen extends StatelessWidget {
     // Proyecciones de cobro para los siguientes 7 días
     double next7DaysExpected = 0.0;
     final now = DateTime.now();
-    final next7Days = now.add(const Duration(days: 7));
+    final today = DateTime(now.year, now.month, now.day);
+    final next7Days = today.add(const Duration(days: 8));
 
     for (var l in provider.loans) {
       if (l.currency == currency && (l.status == 'active' || l.status == 'overdue')) {
         for (var inst in l.installments) {
           if (inst.status != 'paid') {
-            if (inst.dueDate.isAfter(now) && inst.dueDate.isBefore(next7Days)) {
+            final instDate = DateTime(inst.dueDate.year, inst.dueDate.month, inst.dueDate.day);
+            if (!instDate.isBefore(today) && instDate.isBefore(next7Days)) {
               next7DaysExpected += inst.remainingAmount;
             }
           }
@@ -488,7 +491,7 @@ class LoanReportsScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                Localizations.localeOf(context).languageCode == 'es' ? 'Cobros Esperados (7 días):' : 'Expected Payouts (Next 7 Days):',
+                context.t('reports_expected_7days'),
                 style: GoogleFonts.outfit(color: isDark ? Colors.white70 : Colors.black87, fontSize: 14),
               ),
               Text(
@@ -503,9 +506,7 @@ class LoanReportsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            Localizations.localeOf(context).languageCode == 'es'
-                ? '* Este monto representa la suma de los saldos pendientes de cuotas programadas para vencer en la próxima semana.'
-                : '* This amount represents the sum of outstanding installment balances scheduled to mature in the upcoming week.',
+            context.t('reports_projections_footnote'),
             style: GoogleFonts.outfit(color: Colors.grey, fontSize: 11, fontStyle: FontStyle.italic),
           ),
         ],

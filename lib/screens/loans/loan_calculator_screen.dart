@@ -1,6 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../services/localization_service.dart';
+
 class LoanCalculatorScreen extends StatefulWidget {
   const LoanCalculatorScreen({super.key});
 
@@ -30,7 +32,7 @@ class _LoanCalculatorScreenState extends State<LoanCalculatorScreen> {
       backgroundColor: isDark ? const Color(0xFF0A0A14) : Colors.grey[50],
       appBar: AppBar(
         title: Text(
-          Localizations.localeOf(context).languageCode == 'es' ? 'Simulador de Préstamos' : 'Repayment Simulator',
+          context.t('calc_title'),
           style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -51,7 +53,7 @@ class _LoanCalculatorScreenState extends State<LoanCalculatorScreen> {
             const SizedBox(height: 28),
 
             Text(
-              Localizations.localeOf(context).languageCode == 'es' ? 'Parámetros del Préstamo' : 'Simulating Parameters',
+              context.t('calc_parameters'),
               style: GoogleFonts.outfit(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -62,7 +64,7 @@ class _LoanCalculatorScreenState extends State<LoanCalculatorScreen> {
 
             // Principal
             _buildSliderSection(
-              title: Localizations.localeOf(context).languageCode == 'es' ? 'Monto Solicitado (Capital)' : 'Principal Capital',
+              title: context.t('calc_principal'),
               value: _principal,
               min: 100,
               max: 20000,
@@ -84,8 +86,8 @@ class _LoanCalculatorScreenState extends State<LoanCalculatorScreen> {
             // Interest Rate
             _buildSliderSection(
               title: _interestType == 'fixed'
-                  ? (Localizations.localeOf(context).languageCode == 'es' ? 'Monto de Interés Fijo' : 'Fixed Interest Payout')
-                  : (Localizations.localeOf(context).languageCode == 'es' ? 'Tasa de Interés (%)' : 'Interest Rate (%)'),
+                  ? context.t('calc_fixed_interest')
+                  : context.t('calc_rate'),
               value: _interestRate,
               min: 1,
               max: _interestType == 'fixed' ? 5000 : 100,
@@ -108,12 +110,12 @@ class _LoanCalculatorScreenState extends State<LoanCalculatorScreen> {
 
             // Duration
             _buildSliderSection(
-              title: Localizations.localeOf(context).languageCode == 'es' ? 'Plazo de Amortización (Cuotas)' : 'Amortization Term (Installments)',
+              title: context.t('calc_term'),
               value: _duration.toDouble(),
               min: 1,
               max: 60,
               divisions: 59,
-              displayVal: "${_duration.toStringAsFixed(0)} cuotas",
+              displayVal: context.t('calc_installments_count').replaceAll('{count}', _duration.toStringAsFixed(0)),
               onChanged: (val) {
                 setState(() {
                   _duration = val.toInt();
@@ -125,7 +127,7 @@ class _LoanCalculatorScreenState extends State<LoanCalculatorScreen> {
 
             // Schedule breakdown
             Text(
-              Localizations.localeOf(context).languageCode == 'es' ? 'Tabla de Amortización Estimada' : 'Simulated Amortization Schedule',
+              context.t('calc_amort_table'),
               style: GoogleFonts.outfit(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -188,7 +190,7 @@ class _LoanCalculatorScreenState extends State<LoanCalculatorScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    Localizations.localeOf(context).languageCode == 'es' ? 'TOTAL A PAGAR' : 'TOTAL REPAYMENT',
+                    context.t('calc_total_to_pay'),
                     style: GoogleFonts.outfit(color: Colors.white60, fontSize: 11, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
@@ -206,7 +208,7 @@ class _LoanCalculatorScreenState extends State<LoanCalculatorScreen> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    Localizations.localeOf(context).languageCode == 'es' ? 'INTERÉS GANADO' : 'NET PROFIT',
+                    context.t('calc_interest_earned'),
                     style: GoogleFonts.outfit(color: Colors.white60, fontSize: 11, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
@@ -227,7 +229,7 @@ class _LoanCalculatorScreenState extends State<LoanCalculatorScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                Localizations.localeOf(context).languageCode == 'es' ? 'Monto estimado de la cuota:' : 'Estimated quota amount:',
+                context.t('calc_estimated_quota'),
                 style: GoogleFonts.outfit(color: Colors.white70, fontSize: 14),
               ),
               Text(
@@ -300,16 +302,16 @@ class _LoanCalculatorScreenState extends State<LoanCalculatorScreen> {
   Widget _buildInterestTypeSelector(bool isDark) {
     final theme = Theme.of(context);
     final types = [
-      {'val': 'fixed', 'lbl': Localizations.localeOf(context).languageCode == 'es' ? 'Interés Fijo' : 'Fixed'},
-      {'val': 'simple', 'lbl': Localizations.localeOf(context).languageCode == 'es' ? 'Porcentual' : 'Percentage'},
-      {'val': 'compound', 'lbl': Localizations.localeOf(context).languageCode == 'es' ? 'Compuesto' : 'Compound'},
+      {'val': 'fixed', 'lbl': context.t('calc_type_fixed')},
+      {'val': 'simple', 'lbl': context.t('calc_type_percentage')},
+      {'val': 'compound', 'lbl': context.t('calc_type_compound')},
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          Localizations.localeOf(context).languageCode == 'es' ? 'Tipo de Interés' : 'Interest Scheme',
+          context.t('calc_interest_scheme'),
           style: GoogleFonts.outfit(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
@@ -363,17 +365,17 @@ class _LoanCalculatorScreenState extends State<LoanCalculatorScreen> {
   Widget _buildFrequencySelector(bool isDark) {
     final theme = Theme.of(context);
     final freqs = [
-      {'val': 'daily', 'lbl': Localizations.localeOf(context).languageCode == 'es' ? 'Diario' : 'Daily'},
-      {'val': 'weekly', 'lbl': Localizations.localeOf(context).languageCode == 'es' ? 'Semanal' : 'Weekly'},
-      {'val': 'biweekly', 'lbl': Localizations.localeOf(context).languageCode == 'es' ? 'Quincenal' : 'Biweekly'},
-      {'val': 'monthly', 'lbl': Localizations.localeOf(context).languageCode == 'es' ? 'Mensual' : 'Monthly'},
+      {'val': 'daily', 'lbl': context.t('freq_daily')},
+      {'val': 'weekly', 'lbl': context.t('freq_weekly')},
+      {'val': 'biweekly', 'lbl': context.t('freq_biweekly')},
+      {'val': 'monthly', 'lbl': context.t('freq_monthly')},
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          Localizations.localeOf(context).languageCode == 'es' ? 'Frecuencia de Pago' : 'Installment Schedule',
+          context.t('calc_frequency_label'),
           style: GoogleFonts.outfit(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
@@ -420,6 +422,9 @@ class _LoanCalculatorScreenState extends State<LoanCalculatorScreen> {
   }
 
   Widget _buildAmortizationBreakdown(double quotaAmount, bool isDark) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF141428) : Colors.white,
@@ -433,17 +438,54 @@ class _LoanCalculatorScreenState extends State<LoanCalculatorScreen> {
         separatorBuilder: (context, idx) => Divider(color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.grey[200], height: 1),
         itemBuilder: (context, idx) {
           final count = idx + 1;
+          DateTime simDate;
+          switch (_frequency) {
+            case 'daily':
+              simDate = today.add(Duration(days: count));
+              break;
+            case 'weekly':
+              simDate = today.add(Duration(days: count * 7));
+              break;
+            case 'biweekly':
+              simDate = today.add(Duration(days: count * 14));
+              break;
+            case 'monthly':
+              int y = today.year;
+              int m = today.month + count;
+              while (m > 12) {
+                y++;
+                m -= 12;
+              }
+              int d = today.day;
+              int maxDays = DateUtils.getDaysInMonth(y, m);
+              if (d > maxDays) d = maxDays;
+              simDate = DateTime(y, m, d);
+              break;
+            default:
+              simDate = today.add(Duration(days: count * 30));
+              break;
+          }
+
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  "${Localizations.localeOf(context).languageCode == 'es' ? 'Cuota' : 'Quota'} #$count",
-                  style: GoogleFonts.outfit(
-                    color: isDark ? Colors.white70 : Colors.black87,
-                    fontWeight: FontWeight.w500,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "${context.t('calc_quota')} #$count",
+                      style: GoogleFonts.outfit(
+                        color: isDark ? Colors.white70 : Colors.black87,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      "${simDate.day}/${simDate.month}/${simDate.year}",
+                      style: GoogleFonts.outfit(fontSize: 11, color: Colors.grey),
+                    ),
+                  ],
                 ),
                 Row(
                   children: [
@@ -462,7 +504,7 @@ class _LoanCalculatorScreenState extends State<LoanCalculatorScreen> {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        Localizations.localeOf(context).languageCode == 'es' ? 'Simulada' : 'Simulated',
+                        context.t('calc_simulated'),
                         style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey),
                       ),
                     ),

@@ -1092,13 +1092,24 @@ class ExportService {
 
   List<Map<String, dynamic>> _parseSellerStats(String jsonData) {
     try {
-      final data = jsonDecode(jsonData) as Map<String, dynamic>;
+      final decoded = jsonDecode(jsonData);
+      if (decoded is! Map) return [];
+      final data = Map<String, dynamic>.from(decoded);
       return data.entries.map((e) {
-        final stats = e.value as Map<String, dynamic>;
+        double total = 0.0;
+        int count = 0;
+        if (e.value is Map) {
+          final stats = e.value as Map<String, dynamic>;
+          total = (stats['total'] as num?)?.toDouble() ?? 0.0;
+          count = (stats['count'] as num?)?.toInt() ?? 0;
+        } else if (e.value is num) {
+          total = (e.value as num).toDouble();
+          count = 1;
+        }
         return {
           'name': e.key,
-          'count': (stats['count'] as num?)?.toInt() ?? 0,
-          'total': (stats['total'] as num?)?.toDouble() ?? 0.0,
+          'count': count,
+          'total': total,
         };
       }).toList();
     } catch (_) {
@@ -1270,14 +1281,24 @@ class ExportService {
   pw.Widget _buildSellerStatsSection(Closing closing, String mainCurrency) {
     Map<String, dynamic> data = {};
     try {
-      data = jsonDecode(closing.sellerStatsJson) as Map<String, dynamic>;
+      final decoded = jsonDecode(closing.sellerStatsJson);
+      if (decoded is Map) {
+        data = Map<String, dynamic>.from(decoded);
+      }
     } catch (_) {}
     if (data.isEmpty) return pw.SizedBox.shrink();
 
     final rows = data.entries.map((e) {
-      final stats = e.value as Map<String, dynamic>;
-      final total = (stats['total'] as num?)?.toDouble() ?? 0.0;
-      final count = (stats['count'] as num?)?.toInt() ?? 0;
+      double total = 0.0;
+      int count = 0;
+      if (e.value is Map) {
+        final stats = e.value as Map<String, dynamic>;
+        total = (stats['total'] as num?)?.toDouble() ?? 0.0;
+        count = (stats['count'] as num?)?.toInt() ?? 0;
+      } else if (e.value is num) {
+        total = (e.value as num).toDouble();
+        count = 1;
+      }
       return [e.key, '$count', _formatCurrency(total)];
     }).toList();
 
@@ -1711,8 +1732,9 @@ class ExportService {
       final xlsio.Worksheet sh = workbook.worksheets.add();
       sh.name = 'Prod. Vendidos';
       final hdrs = ['Producto', 'Cantidad', 'Ingresos ($mainCurrency)'];
-      for (int i = 0; i < hdrs.length; i++)
+      for (int i = 0; i < hdrs.length; i++) {
         sh.getRangeByIndex(1, i + 1).setText(hdrs[i]);
+      }
       sh.getRangeByIndex(1, 1, 1, hdrs.length).cellStyle = hStyle;
       for (int i = 0; i < soldList.length; i++) {
         final item = soldList[i];
@@ -1725,7 +1747,9 @@ class ExportService {
             .getRangeByIndex(r, 3)
             .setNumber((item['revenue'] as num?)?.toDouble() ?? 0);
       }
-      for (int i = 1; i <= hdrs.length; i++) sh.autoFitColumn(i);
+      for (int i = 1; i <= hdrs.length; i++) {
+        sh.autoFitColumn(i);
+      }
     }
 
     // ---- Sheet 3: Nuevos Productos ----
@@ -1733,8 +1757,9 @@ class ExportService {
       final xlsio.Worksheet sh = workbook.worksheets.add();
       sh.name = 'Nuevos Productos';
       final hdrs = ['Producto', 'Cantidad Comprada', 'Costo/Unidad'];
-      for (int i = 0; i < hdrs.length; i++)
+      for (int i = 0; i < hdrs.length; i++) {
         sh.getRangeByIndex(1, i + 1).setText(hdrs[i]);
+      }
       sh.getRangeByIndex(1, 1, 1, hdrs.length).cellStyle = greenH;
       for (int i = 0; i < addedList.length; i++) {
         final item = addedList[i];
@@ -1747,7 +1772,9 @@ class ExportService {
             .getRangeByIndex(r, 3)
             .setNumber((item['cost'] as num?)?.toDouble() ?? 0);
       }
-      for (int i = 1; i <= hdrs.length; i++) sh.autoFitColumn(i);
+      for (int i = 1; i <= hdrs.length; i++) {
+        sh.autoFitColumn(i);
+      }
     }
 
     // ---- Sheet 4: Métodos de Pago ----
@@ -1755,8 +1782,9 @@ class ExportService {
       final xlsio.Worksheet sh = workbook.worksheets.add();
       sh.name = 'Métodos de Pago';
       final hdrs = ['Método', 'Total ($mainCurrency)', '% del Ingreso'];
-      for (int i = 0; i < hdrs.length; i++)
+      for (int i = 0; i < hdrs.length; i++) {
         sh.getRangeByIndex(1, i + 1).setText(hdrs[i]);
+      }
       sh.getRangeByIndex(1, 1, 1, hdrs.length).cellStyle = hStyle;
       int pmRow = 2;
       for (final e in paymentMethods.entries) {
@@ -1767,7 +1795,9 @@ class ExportService {
         sh.getRangeByIndex(pmRow, 3).setNumber(pct);
         pmRow++;
       }
-      for (int i = 1; i <= hdrs.length; i++) sh.autoFitColumn(i);
+      for (int i = 1; i <= hdrs.length; i++) {
+        sh.autoFitColumn(i);
+      }
     }
 
     // ---- Sheet 5: Gastos por Categoría ----
@@ -1775,8 +1805,9 @@ class ExportService {
       final xlsio.Worksheet sh = workbook.worksheets.add();
       sh.name = 'Gastos Categoría';
       final hdrs = ['Categoría', 'Total ($mainCurrency)', '% del Gasto'];
-      for (int i = 0; i < hdrs.length; i++)
+      for (int i = 0; i < hdrs.length; i++) {
         sh.getRangeByIndex(1, i + 1).setText(hdrs[i]);
+      }
       sh.getRangeByIndex(1, 1, 1, hdrs.length).cellStyle = redH;
       int ecRow = 2;
       for (final e in expenseCategories.entries) {
@@ -1787,7 +1818,9 @@ class ExportService {
         sh.getRangeByIndex(ecRow, 3).setNumber(pct);
         ecRow++;
       }
-      for (int i = 1; i <= hdrs.length; i++) sh.autoFitColumn(i);
+      for (int i = 1; i <= hdrs.length; i++) {
+        sh.autoFitColumn(i);
+      }
     }
 
     // ---- Sheet 6: Ventas por Vendedor ----
@@ -1796,8 +1829,9 @@ class ExportService {
       final xlsio.Worksheet sh = workbook.worksheets.add();
       sh.name = 'Ventas Vendedor';
       final hdrs = ['Vendedor', 'Ventas (#)', 'Total ($mainCurrency)'];
-      for (int i = 0; i < hdrs.length; i++)
+      for (int i = 0; i < hdrs.length; i++) {
         sh.getRangeByIndex(1, i + 1).setText(hdrs[i]);
+      }
       sh.getRangeByIndex(1, 1, 1, hdrs.length).cellStyle = hStyle;
       int sRow = 2;
       for (final row in sellerData) {
@@ -1806,7 +1840,9 @@ class ExportService {
         sh.getRangeByIndex(sRow, 3).setNumber(row['total'] as double);
         sRow++;
       }
-      for (int i = 1; i <= hdrs.length; i++) sh.autoFitColumn(i);
+      for (int i = 1; i <= hdrs.length; i++) {
+        sh.autoFitColumn(i);
+      }
     }
 
     final directory = await _getExportDirectory();

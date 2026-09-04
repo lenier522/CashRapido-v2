@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cashrapido/services/localization_service.dart';
 import '../../providers/loan_provider.dart';
 import '../../models/borrower.dart';
 
@@ -68,12 +69,8 @@ class _BorrowerFormScreenState extends State<BorrowerFormScreen> {
       appBar: AppBar(
         title: Text(
           isEditing
-              ? (Localizations.localeOf(context).languageCode == 'es'
-                    ? 'Editar Cliente'
-                    : 'Edit Client')
-              : (Localizations.localeOf(context).languageCode == 'es'
-                    ? 'Nuevo Cliente'
-                    : 'New Client'),
+              ? context.t('borrower_form_title_edit')
+              : context.t('borrower_form_title_new'),
           style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -96,9 +93,7 @@ class _BorrowerFormScreenState extends State<BorrowerFormScreen> {
             children: [
               // Subsection Title
               Text(
-                Localizations.localeOf(context).languageCode == 'es'
-                    ? 'Datos Básicos'
-                    : 'Basic Information',
+                context.t('borrower_basic_info'),
                 style: GoogleFonts.outfit(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -110,16 +105,10 @@ class _BorrowerFormScreenState extends State<BorrowerFormScreen> {
               // Name
               _buildTextField(
                 controller: _nameController,
-                label: Localizations.localeOf(context).languageCode == 'es'
-                    ? 'Nombre *'
-                    : 'First Name *',
-                hint: Localizations.localeOf(context).languageCode == 'es'
-                    ? 'Ej. Juan'
-                    : 'e.g. John',
+                label: context.t('borrower_first_name'),
+                hint: context.t('borrower_hint_name'),
                 validator: (val) => val == null || val.trim().isEmpty
-                    ? (Localizations.localeOf(context).languageCode == 'es'
-                          ? 'Campo requerido'
-                          : 'Required field')
+                    ? context.t('borrower_required_field')
                     : null,
                 isDark: isDark,
               ),
@@ -128,16 +117,10 @@ class _BorrowerFormScreenState extends State<BorrowerFormScreen> {
               // Last Name
               _buildTextField(
                 controller: _lastNameController,
-                label: Localizations.localeOf(context).languageCode == 'es'
-                    ? 'Apellidos *'
-                    : 'Last Name *',
-                hint: Localizations.localeOf(context).languageCode == 'es'
-                    ? 'Ej. Pérez'
-                    : 'e.g. Doe',
+                label: context.t('borrower_last_name'),
+                hint: context.t('borrower_hint_last'),
                 validator: (val) => val == null || val.trim().isEmpty
-                    ? (Localizations.localeOf(context).languageCode == 'es'
-                          ? 'Campo requerido'
-                          : 'Required field')
+                    ? context.t('borrower_required_field')
                     : null,
                 isDark: isDark,
               ),
@@ -146,15 +129,11 @@ class _BorrowerFormScreenState extends State<BorrowerFormScreen> {
               // Phone
               _buildTextField(
                 controller: _phoneController,
-                label: Localizations.localeOf(context).languageCode == 'es'
-                    ? 'Teléfono *'
-                    : 'Phone *',
-                hint: 'Ej. +53 51234567',
+                label: context.t('borrower_phone'),
+                hint: context.t('borrower_hint_phone'),
                 keyboardType: TextInputType.phone,
                 validator: (val) => val == null || val.trim().isEmpty
-                    ? (Localizations.localeOf(context).languageCode == 'es'
-                          ? 'Campo requerido'
-                          : 'Required field')
+                    ? context.t('borrower_required_field')
                     : null,
                 isDark: isDark,
               ),
@@ -163,17 +142,11 @@ class _BorrowerFormScreenState extends State<BorrowerFormScreen> {
               // Address
               _buildTextField(
                 controller: _addressController,
-                label: Localizations.localeOf(context).languageCode == 'es'
-                    ? 'Dirección Física *'
-                    : 'Physical Address *',
-                hint: Localizations.localeOf(context).languageCode == 'es'
-                    ? 'Calle, número, entre calles...'
-                    : 'Street, number, details...',
+                label: context.t('borrower_address'),
+                hint: context.t('borrower_hint_address'),
                 maxLines: 2,
                 validator: (val) => val == null || val.trim().isEmpty
-                    ? (Localizations.localeOf(context).languageCode == 'es'
-                          ? 'Campo requerido'
-                          : 'Required field')
+                    ? context.t('borrower_required_field')
                     : null,
                 isDark: isDark,
               ),
@@ -181,9 +154,7 @@ class _BorrowerFormScreenState extends State<BorrowerFormScreen> {
 
               // Additional Details Title
               Text(
-                Localizations.localeOf(context).languageCode == 'es'
-                    ? 'Datos Adicionales y de Seguridad'
-                    : 'Additional Information',
+                context.t('borrower_additional_info'),
                 style: GoogleFonts.outfit(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -194,33 +165,25 @@ class _BorrowerFormScreenState extends State<BorrowerFormScreen> {
 
               // Risk Level Dropdown
               _buildDropdownField(
-                label: Localizations.localeOf(context).languageCode == 'es'
-                    ? 'Nivel de Riesgo'
-                    : 'Risk Level',
+                label: context.t('borrower_risk_level'),
                 value: _riskLevel,
                 items: [
                   DropdownMenuItem(
                     value: 'low',
                     child: Text(
-                      Localizations.localeOf(context).languageCode == 'es'
-                          ? 'Riesgo Bajo (Seguro)'
-                          : 'Low Risk',
+                      context.t('borrower_risk_low'),
                     ),
                   ),
                   DropdownMenuItem(
                     value: 'medium',
                     child: Text(
-                      Localizations.localeOf(context).languageCode == 'es'
-                          ? 'Riesgo Medio (Moderar)'
-                          : 'Medium Risk',
+                      context.t('borrower_risk_medium'),
                     ),
                   ),
                   DropdownMenuItem(
                     value: 'high',
                     child: Text(
-                      Localizations.localeOf(context).languageCode == 'es'
-                          ? 'Riesgo Alto (Peligroso)'
-                          : 'High Risk',
+                      context.t('borrower_risk_high'),
                     ),
                   ),
                 ],
@@ -238,12 +201,8 @@ class _BorrowerFormScreenState extends State<BorrowerFormScreen> {
               // Written Location / References
               _buildTextField(
                 controller: _writtenLocationController,
-                label: Localizations.localeOf(context).languageCode == 'es'
-                    ? 'Ubicación Escrita / Referencias visuales'
-                    : 'Location / Visual references',
-                hint: Localizations.localeOf(context).languageCode == 'es'
-                    ? 'Ej. Casa azul de rejas blancas al lado de la bodega...'
-                    : 'e.g. Blue house with white fence next to the store...',
+                label: context.t('borrower_location'),
+                hint: context.t('borrower_hint_location'),
                 maxLines: 2,
                 isDark: isDark,
               ),
@@ -252,10 +211,8 @@ class _BorrowerFormScreenState extends State<BorrowerFormScreen> {
               // Personal Reference
               _buildTextField(
                 controller: _referenceController,
-                label: Localizations.localeOf(context).languageCode == 'es'
-                    ? 'Referencia Personal (Familiar o Amigo)'
-                    : 'Personal Reference (Name and Phone)',
-                hint: 'Ej. María Pérez (Madre) - +53 58765432',
+                label: context.t('borrower_personal_ref'),
+                hint: context.t('borrower_hint_ref'),
                 isDark: isDark,
               ),
               const SizedBox(height: 16),
@@ -263,12 +220,8 @@ class _BorrowerFormScreenState extends State<BorrowerFormScreen> {
               // Notes
               _buildTextField(
                 controller: _notesController,
-                label: Localizations.localeOf(context).languageCode == 'es'
-                    ? 'Notas / Observaciones del prestamista'
-                    : 'Notes / Observations',
-                hint: Localizations.localeOf(context).languageCode == 'es'
-                    ? 'Ej. Buen cliente, paga a tiempo pero prefiere transferencias...'
-                    : 'e.g. Good client, pays on time...',
+                label: context.t('borrower_notes'),
+                hint: context.t('borrower_hint_notes'),
                 maxLines: 3,
                 isDark: isDark,
               ),
@@ -290,12 +243,8 @@ class _BorrowerFormScreenState extends State<BorrowerFormScreen> {
                   ),
                   child: Text(
                     isEditing
-                        ? (Localizations.localeOf(context).languageCode == 'es'
-                              ? 'Guardar Cambios'
-                              : 'Save Changes')
-                        : (Localizations.localeOf(context).languageCode == 'es'
-                              ? 'Registrar Cliente'
-                              : 'Create Client Profile'),
+                        ? context.t('borrower_save_changes')
+                        : context.t('borrower_create'),
                     style: GoogleFonts.outfit(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -417,7 +366,6 @@ class _BorrowerFormScreenState extends State<BorrowerFormScreen> {
     final provider = Provider.of<LoanProvider>(context, listen: false);
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
-    final lang = Localizations.localeOf(context).languageCode;
 
     if (widget.borrower != null) {
       // Editing
@@ -452,11 +400,7 @@ class _BorrowerFormScreenState extends State<BorrowerFormScreen> {
       navigator.pop();
       messenger.showSnackBar(
         SnackBar(
-          content: Text(
-            lang == 'es'
-                ? 'Cliente guardado correctamente'
-                : 'Client profile saved successfully',
-          ),
+          content: Text(context.t('borrower_saved_msg')),
           backgroundColor: Colors.green,
         ),
       );

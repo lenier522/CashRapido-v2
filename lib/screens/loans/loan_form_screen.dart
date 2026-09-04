@@ -51,6 +51,11 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
     _durationController = TextEditingController(text: loan?.durationValue != null ? loan!.durationValue.toString() : '1');
     _notesController = TextEditingController(text: loan?.notes ?? '');
 
+    // Add listeners so the live calculation preview updates in real time
+    _amountController.addListener(_onFieldChanged);
+    _rateController.addListener(_onFieldChanged);
+    _durationController.addListener(_onFieldChanged);
+
     if (loan != null) {
       _interestType = loan.interestType;
       _frequency = loan.frequency;
@@ -64,18 +69,32 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
       // Default currency from app main settings
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final appProvider = Provider.of<AppProvider>(context, listen: false);
+        final loanProvider = Provider.of<LoanProvider>(context, listen: false);
         setState(() {
           _selectedCurrency = appProvider.mainCurrency;
           if (appProvider.cards.isNotEmpty) {
             _selectedCardId = appProvider.cards.first.id;
           }
+          final duration = int.tryParse(_durationController.text.trim()) ?? 1;
+          _dueDate = loanProvider.calculateDueDateFromFrequency(
+            startDate: _startDate,
+            frequency: _frequency,
+            durationValue: duration,
+          );
         });
       });
     }
   }
 
+  void _onFieldChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    _amountController.removeListener(_onFieldChanged);
+    _rateController.removeListener(_onFieldChanged);
+    _durationController.removeListener(_onFieldChanged);
     _nameController.dispose();
     _amountController.dispose();
     _rateController.dispose();
@@ -93,12 +112,15 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
       builder: (context, child) => _buildDatePickerTheme(context, child!),
     );
     if (picked != null) {
+      final loanProvider = Provider.of<LoanProvider>(context, listen: false);
+      final duration = int.tryParse(_durationController.text.trim()) ?? 1;
       setState(() {
         _startDate = picked;
-        // Adjust due date if simple default frequency
-        if (_dueDate.isBefore(_startDate)) {
-          _dueDate = _startDate.add(const Duration(days: 30));
-        }
+        _dueDate = loanProvider.calculateDueDateFromFrequency(
+          startDate: _startDate,
+          frequency: _frequency,
+          durationValue: duration,
+        );
       });
     }
   }
@@ -106,14 +128,21 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
   Future<void> _selectDueDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _dueDate,
+      initialDate: _dueDate.isBefore(_startDate) ? _startDate : _dueDate,
       firstDate: _startDate,
       lastDate: DateTime(2100),
       builder: (context, child) => _buildDatePickerTheme(context, child!),
     );
     if (picked != null) {
+      final loanProvider = Provider.of<LoanProvider>(context, listen: false);
       setState(() {
         _dueDate = picked;
+        final newDuration = loanProvider.calculateDurationFromDates(
+          startDate: _startDate,
+          dueDate: _dueDate,
+          frequency: _frequency,
+        );
+        _durationController.text = newDuration.toString();
       });
     }
   }
@@ -133,6 +162,151 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
     );
   }
 
+  Widget _buildLiveCalculationSummary(BuildContext context, bool isDark) {
+    final loanProvider = Provider.of<LoanProvider>(context);
+    final theme = Theme.of(context);
+
+    final amount = double.tryParse(_amountController.text.trim()) ?? 0.0;
+    final rate = double.tryParse(_rateController.text.trim()) ?? 0.0;
+    final duration = int.tryParse(_durationController.text.trim()) ?? 1;
+
+    final totalRepayment = loanProvider.calculateTotalWithInterest(
+      amount,
+      rate,
+      _interestType,
+      duration,
+    );
+    final profit = (totalRepayment - amount).clamp(0.0, double.infinity);
+    final quotaAmount = duration > 0 ? totalRepayment / duration : totalRepayment;
+
+    String freqLabel;
+    switch (_frequency) {
+      case 'daily':
+        freqLabel = context.t('freq_daily');
+        break;
+      case 'weekly':
+        freqLabel = context.t('freq_weekly');
+        break;
+      case 'biweekly':
+        freqLabel = context.t('freq_biweekly');
+        break;
+      case 'monthly':
+        freqLabel = context.t('freq_monthly');
+        break;
+      case 'single':
+      default:
+        freqLabel = context.t('freq_single');
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF141428) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.25),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.calculate_outlined, size: 18, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                context.t('loan_summary_plan'),
+                style: GoogleFonts.outfit(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.t('loan_total_repayment'),
+                    style: GoogleFonts.outfit(fontSize: 11, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '\$ ${totalRepayment.toStringAsFixed(2)} $_selectedCurrency',
+                    style: GoogleFonts.outfit(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    _frequency == 'single'
+                        ? context.t('loan_single_payment')
+                        : context.t('loan_estimated_installment'),
+                    style: GoogleFonts.outfit(fontSize: 11, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '\$ ${quotaAmount.toStringAsFixed(2)} $_selectedCurrency',
+                    style: GoogleFonts.outfit(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey[100],
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _frequency == 'single'
+                      ? context.t('loan_summary_single').replaceAll('{date}', '${_dueDate.day}/${_dueDate.month}/${_dueDate.year}')
+                      : context.t('loan_summary_multi')
+                          .replaceAll('{count}', '$duration')
+                          .replaceAll('{freqLabel}', freqLabel)
+                          .replaceAll('{date}', '${_dueDate.day}/${_dueDate.month}/${_dueDate.year}'),
+                  style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  context.t('loan_summary_interest').replaceAll('{profit}', '\$${profit.toStringAsFixed(2)}'),
+                  style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _submitForm() {
     if (!_formKey.currentState!.validate()) return;
 
@@ -147,12 +321,36 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
 
     if (_isEditing) {
       final oldLoan = widget.loan!;
-      
-      // Calculate new remaining based on total repaid and edits
-      final totalNewWithInterest = loanProvider.calculateTotalWithInterest(amount, interestRate, _interestType, duration);
-      final paidAmount = loanProvider.calculateTotalWithInterest(oldLoan.amount, oldLoan.interestRate, oldLoan.interestType, oldLoan.durationValue) - oldLoan.remainingAmount;
-      double newRemaining = totalNewWithInterest - paidAmount;
-      if (newRemaining < 0) newRemaining = 0;
+      final oldTotalWithInterest = loanProvider.calculateTotalWithInterest(
+        oldLoan.amount,
+        oldLoan.interestRate,
+        oldLoan.interestType,
+        oldLoan.durationValue,
+      );
+      final paidAmount = (oldTotalWithInterest - oldLoan.remainingAmount).clamp(0.0, double.infinity);
+
+      final totalNewWithInterest = loanProvider.calculateTotalWithInterest(
+        amount,
+        interestRate,
+        _interestType,
+        duration,
+      );
+      double newRemaining = (totalNewWithInterest - paidAmount).clamp(0.0, double.infinity);
+
+      // Regenerate schedule with new parameters and allocate already paid amount
+      final updatedInstallments = loanProvider.generateOrUpdateSchedule(
+        principal: amount,
+        rate: interestRate,
+        interestType: _interestType,
+        frequency: _frequency,
+        durationValue: duration,
+        startDate: _startDate,
+        explicitDueDate: _dueDate,
+        paidAmountTotal: paidAmount,
+      );
+
+      final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+      final normalizedDue = DateTime(_dueDate.year, _dueDate.month, _dueDate.day);
 
       final updated = oldLoan.copyWith(
         borrowerName: name,
@@ -168,8 +366,9 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
         remainingAmount: newRemaining,
         status: newRemaining == 0 
             ? 'paid' 
-            : (DateTime.now().isAfter(_dueDate) ? 'overdue' : 'active'),
+            : (today.isAfter(normalizedDue) ? 'overdue' : 'active'),
         currency: _selectedCurrency,
+        installments: updatedInstallments,
       );
 
       loanProvider.editLoan(updated);
@@ -470,57 +669,92 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
                 const SizedBox(height: 20),
 
                 // Frequency & Duration Row
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _frequency,
-                        decoration: InputDecoration(
-                          labelText: context.t('frequency'),
-                          labelStyle: GoogleFonts.outfit(),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                Consumer<LoanProvider>(
+                  builder: (context, loanProvider, _) {
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            initialValue: _frequency,
+                            decoration: InputDecoration(
+                              labelText: context.t('frequency'),
+                              labelStyle: GoogleFonts.outfit(),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                            items: [
+                              DropdownMenuItem(value: 'daily', child: Text(context.t('freq_daily'), style: GoogleFonts.outfit())),
+                              DropdownMenuItem(value: 'weekly', child: Text(context.t('freq_weekly'), style: GoogleFonts.outfit())),
+                              DropdownMenuItem(value: 'biweekly', child: Text(context.t('freq_biweekly'), style: GoogleFonts.outfit())),
+                              DropdownMenuItem(value: 'monthly', child: Text(context.t('freq_monthly'), style: GoogleFonts.outfit())),
+                              DropdownMenuItem(value: 'single', child: Text(context.t('freq_single'), style: GoogleFonts.outfit())),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() {
+                                  _frequency = val;
+                                  if (_frequency == 'single') {
+                                    _durationController.text = '1';
+                                  } else if (_dueDate.isAfter(_startDate)) {
+                                    final newDuration = loanProvider.calculateDurationFromDates(
+                                      startDate: _startDate,
+                                      dueDate: _dueDate,
+                                      frequency: _frequency,
+                                    );
+                                    _durationController.text = newDuration.toString();
+                                  } else {
+                                    final duration = int.tryParse(_durationController.text.trim()) ?? 1;
+                                    _dueDate = loanProvider.calculateDueDateFromFrequency(
+                                      startDate: _startDate,
+                                      frequency: _frequency,
+                                      durationValue: duration,
+                                    );
+                                  }
+                                });
+                              }
+                            },
+                          ),
                         ),
-                        items: [
-                          DropdownMenuItem(value: 'daily', child: Text(context.t('freq_daily'), style: GoogleFonts.outfit())),
-                          DropdownMenuItem(value: 'weekly', child: Text(context.t('freq_weekly'), style: GoogleFonts.outfit())),
-                          DropdownMenuItem(value: 'monthly', child: Text(context.t('freq_monthly'), style: GoogleFonts.outfit())),
-                          DropdownMenuItem(value: 'single', child: Text(context.t('freq_single'), style: GoogleFonts.outfit())),
-                        ],
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() {
-                              _frequency = val;
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _durationController,
-                        style: GoogleFonts.outfit(),
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: context.t('loan_terms'),
-                          labelStyle: GoogleFonts.outfit(),
-                          prefixIcon: const Icon(Icons.onetwothree_rounded),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _durationController,
+                            style: GoogleFonts.outfit(),
+                            keyboardType: TextInputType.number,
+                            enabled: _frequency != 'single',
+                            decoration: InputDecoration(
+                              labelText: context.t('loan_terms'),
+                              labelStyle: GoogleFonts.outfit(),
+                              prefixIcon: const Icon(Icons.onetwothree_rounded),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                            onChanged: (val) {
+                              final parsed = int.tryParse(val.trim());
+                              if (parsed != null && parsed > 0) {
+                                setState(() {
+                                  _dueDate = loanProvider.calculateDueDateFromFrequency(
+                                    startDate: _startDate,
+                                    frequency: _frequency,
+                                    durationValue: parsed,
+                                  );
+                                });
+                              }
+                            },
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return context.t('complete_data_error');
+                              }
+                              final parsed = int.tryParse(value);
+                              if (parsed == null || parsed <= 0) {
+                                return context.t('complete_data_error');
+                              }
+                              return null;
+                            },
+                          ),
                         ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return context.t('complete_data_error');
-                          }
-                          final parsed = int.tryParse(value);
-                          if (parsed == null || parsed <= 0) {
-                            return context.t('complete_data_error');
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                  ],
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 20),
 
@@ -565,6 +799,10 @@ class _LoanFormScreenState extends State<LoanFormScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 20),
+
+                // Live Calculation Preview Card
+                _buildLiveCalculationSummary(context, isDark),
                 const SizedBox(height: 20),
 
                 // Wallet Integration Options (Only during creation)

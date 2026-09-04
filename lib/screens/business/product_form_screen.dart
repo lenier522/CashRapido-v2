@@ -7,6 +7,7 @@ import '../../models/product_category.dart';
 import 'barcode_scanner_screen.dart';
 import 'category_manager_screen.dart';
 import 'package:cashrapido/utils/number_format_utils.dart';
+import '../../services/localization_service.dart';
 
 class ProductFormScreen extends StatefulWidget {
   final Product? product;
@@ -34,13 +35,15 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
   final List<String> _currencies = ['CUP', 'USD', 'EUR', 'MLC'];
 
-  final List<Map<String, String>> _units = [
-    {'value': 'uds', 'label': 'Unidades (uds)'},
-    {'value': 'kg', 'label': 'Kilogramos (kg)'},
-    {'value': 'lb', 'label': 'Libras (lb)'},
-    {'value': 'L', 'label': 'Litros (L)'},
-    {'value': 'g', 'label': 'Gramos (g)'},
+  List<Map<String, String>> _buildUnits(BuildContext context) => [
+    {'value': 'uds', 'label': context.t('unit_uds')},
+    {'value': 'kg', 'label': context.t('unit_kg')},
+    {'value': 'lb', 'label': context.t('unit_lb')},
+    {'value': 'L', 'label': context.t('unit_l')},
+    {'value': 'g', 'label': context.t('unit_g')},
   ];
+
+  late TextEditingController _addStockController;
 
   @override
   void initState() {
@@ -68,6 +71,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     _additionalCostsController = TextEditingController(
       text: widget.product?.additionalCosts.toString() ?? '',
     );
+    _addStockController = TextEditingController();
     _investmentDate = widget.product?.investmentDate ?? DateTime.now();
     _currency = widget.product?.currency ?? 'CUP';
     _selectedUnit = widget.product?.unit ?? 'uds';
@@ -94,6 +98,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     _costController.dispose();
     _salePriceController.dispose();
     _additionalCostsController.dispose();
+    _addStockController.dispose();
     super.dispose();
   }
 
@@ -111,7 +116,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Código escaneado: $code'),
+            content: Text(context.t('product_barcode_scanned').replaceAll('{code}', code)),
             backgroundColor: Colors.green,
           ),
         );
@@ -126,7 +131,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          isEdit ? 'Editar Producto' : 'Nuevo Producto',
+          isEdit ? context.t('edit_product') : context.t('product_new'),
           style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -140,14 +145,14 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             TextFormField(
               controller: _nameController,
               decoration: InputDecoration(
-                labelText: 'Nombre del Producto',
+                labelText: context.t('product_name_label'),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 prefixIcon: const Icon(Icons.inventory_2),
               ),
               validator: (value) => value == null || value.trim().isEmpty
-                  ? 'Ingresa un nombre'
+                  ? context.t('product_enter_name')
                   : null,
             ),
             const SizedBox(height: 16),
@@ -156,7 +161,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             TextFormField(
               controller: _descriptionController,
               decoration: InputDecoration(
-                labelText: 'Descripción',
+                labelText: context.t('product_description'),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -173,7 +178,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   child: TextFormField(
                     controller: _skuController,
                     decoration: InputDecoration(
-                      labelText: 'SKU / Código de Barras',
+                      labelText: context.t('product_sku_barcode'),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -185,7 +190,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 IconButton.filledTonal(
                   onPressed: _scanBarcode,
                   icon: const Icon(Icons.photo_camera),
-                  tooltip: 'Escanear Código de Barras',
+                  tooltip: context.t('product_scan_barcode'),
                   style: IconButton.styleFrom(
                     padding: const EdgeInsets.all(14),
                     shape: RoundedRectangleBorder(
@@ -199,7 +204,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
             // ====== CATEGORY SECTION ======
             Text(
-              'Categorización del Producto',
+              context.t('product_categorization'),
               style: GoogleFonts.outfit(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -220,14 +225,14 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                     DropdownButtonFormField<String>(
                       value: _selectedCategoryId,
                       decoration: InputDecoration(
-                        labelText: 'Categoría',
+                        labelText: context.t('category_label'),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         prefixIcon: const Icon(Icons.folder_outlined),
                         suffixIcon: IconButton(
                           icon: const Icon(Icons.settings),
-                          tooltip: 'Gestionar categorías',
+                          tooltip: context.t('product_category_manage'),
                           onPressed: () => Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -237,9 +242,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                         ),
                       ),
                       items: [
-                        const DropdownMenuItem<String>(
+                        DropdownMenuItem<String>(
                           value: null,
-                          child: Text('Sin categoría'),
+                          child: Text(context.t('no_category')),
                         ),
                         ...rootCats.map((c) => DropdownMenuItem<String>(
                           value: c.id,
@@ -260,16 +265,16 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                       DropdownButtonFormField<String>(
                         value: _selectedSubcategoryId,
                         decoration: InputDecoration(
-                          labelText: 'Subcategoría',
+                          labelText: context.t('product_subcategory'),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           prefixIcon: const Icon(Icons.subdirectory_arrow_right),
                         ),
                         items: [
-                          const DropdownMenuItem<String>(
+                          DropdownMenuItem<String>(
                             value: null,
-                            child: Text('Sin subcategoría'),
+                            child: Text(context.t('product_no_subcategory')),
                           ),
                           ...subcats.map((s) => DropdownMenuItem<String>(
                             value: s.id,
@@ -290,7 +295,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                           ),
                         ),
                         icon: const Icon(Icons.add, size: 16),
-                        label: const Text('Agregar subcategorías a esta categoría'),
+                        label: Text(context.t('product_add_subcategories')),
                       ),
                   ],
                 );
@@ -300,7 +305,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
             // Investment Section
             Text(
-              'Inversión Inicial',
+              context.t('product_initial_investment'),
               style: GoogleFonts.outfit(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -315,7 +320,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 side: BorderSide(color: Colors.grey[300]!),
               ),
               leading: const Icon(Icons.calendar_today),
-              title: const Text('Fecha de Inversión'),
+              title: Text(context.t('product_investment_date')),
               subtitle: Text(
                 '${_investmentDate.day}/${_investmentDate.month}/${_investmentDate.year}',
               ),
@@ -337,13 +342,13 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             DropdownButtonFormField<String>(
               initialValue: _selectedUnit,
               decoration: InputDecoration(
-                labelText: 'Unidad de Medida',
+                labelText: context.t('product_unit_measure'),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 prefixIcon: const Icon(Icons.scale),
               ),
-              items: _units.map((u) {
+              items: _buildUnits(context).map((u) {
                 return DropdownMenuItem(
                   value: u['value'],
                   child: Text(u['label']!),
@@ -363,7 +368,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             TextFormField(
               controller: _quantityController,
               decoration: InputDecoration(
-                labelText: 'Cantidad Comprada',
+                labelText: context.t('product_qty_purchased'),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -373,9 +378,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Ingresa la cantidad';
+                  return context.t('product_enter_qty');
                 }
-                if (double.tryParse(value) == null) return 'Debe ser un número';
+                if (double.tryParse(value) == null) return context.t('product_must_be_number');
                 return null;
               },
             ),
@@ -385,7 +390,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             TextFormField(
               controller: _costController,
               decoration: InputDecoration(
-                labelText: 'Costo por Unidad',
+                labelText: context.t('product_cost_per_unit'),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -393,8 +398,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               ),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               validator: (value) {
-                if (value == null || value.isEmpty) return 'Ingresa el costo';
-                if (double.tryParse(value) == null) return 'Debe ser un número';
+                if (value == null || value.isEmpty) return context.t('product_enter_cost');
+                if (double.tryParse(value) == null) return context.t('product_must_be_number');
                 return null;
               },
             ),
@@ -404,7 +409,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             DropdownButtonFormField<String>(
               initialValue: _currency,
               decoration: InputDecoration(
-                labelText: 'Moneda',
+                labelText: context.t('product_currency'),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -423,16 +428,134 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             TextFormField(
               controller: _additionalCostsController,
               decoration: InputDecoration(
-                labelText: 'Gastos Adicionales (transporte, tasas, etc.)',
+                labelText: context.t('product_additional_costs'),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 prefixIcon: const Icon(Icons.local_shipping),
-                helperText: 'Ej: flete, aduana, envase',
+                helperText: context.t('product_additional_costs_helper'),
               ),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
             ),
             const SizedBox(height: 16),
+
+            // In edit mode: show Investment Info (read-only) + Add Stock field
+            if (widget.product != null) ...[
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          context.t('product_original_investment'),
+                          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.blue),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildInfoChip(
+                          context.t('product_qty_purchased'),
+                          '${widget.product!.initialQuantity.toStringAsFixed(widget.product!.initialQuantity % 1 == 0 ? 0 : 2)} ${widget.product!.unit}',
+                          Icons.inventory_2,
+                        ),
+                        _buildInfoChip(
+                          context.t('product_unit_cost'),
+                          '\$${widget.product!.costPerUnit.toFormattedString(2)} ${widget.product!.currency}',
+                          Icons.attach_money,
+                        ),
+                        _buildInfoChip(
+                          context.t('product_current_stock'),
+                          '${widget.product!.currentStock.toStringAsFixed(widget.product!.currentStock % 1 == 0 ? 0 : 2)} ${widget.product!.unit}',
+                          Icons.warehouse,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.add_circle_outline, color: Colors.green, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          context.t('product_add_stock'),
+                          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.green),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _addStockController,
+                      decoration: InputDecoration(
+                        labelText: context.t('product_units_to_add'),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        prefixIcon: const Icon(Icons.add),
+                        suffixText: _selectedUnit,
+                        helperText: context.t('product_units_to_add_helper'),
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ] else ...[
+              // NEW PRODUCT: show editable Quantity + Cost fields
+              // Quantity (supports decimals)
+              TextFormField(
+                controller: _quantityController,
+                decoration: InputDecoration(
+                  labelText: context.t('product_qty_initial'),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  prefixIcon: const Icon(Icons.numbers),
+                  suffixText: _selectedUnit,
+                ),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Ingresa la cantidad';
+                  }
+                  if (double.tryParse(value) == null) return 'Debe ser un número';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // Cost per Unit
+              TextFormField(
+                controller: _costController,
+                decoration: InputDecoration(
+                  labelText: 'Costo por Unidad',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  prefixIcon: const Icon(Icons.attach_money),
+                ),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Ingresa el costo';
+                  if (double.tryParse(value) == null) return 'Debe ser un número';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
 
             // Total Investment (Auto-calculated)
             Container(
@@ -447,9 +570,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Inversión en Producto:',
-                        style: TextStyle(fontSize: 13),
+                      Text(
+                        context.t('product_investment_label'),
+                        style: const TextStyle(fontSize: 13),
                       ),
                       Text(
                         '\$${_calculateProductInvestment().toFormattedString(2)}',
@@ -463,9 +586,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Gastos Adicionales:',
-                        style: TextStyle(fontSize: 13),
+                      Text(
+                        context.t('product_additional_label'),
+                        style: const TextStyle(fontSize: 13),
                       ),
                       Text(
                         '\$${_additionalAmount.toFormattedString(2)}',
@@ -481,9 +604,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Inversión Total Real:',
-                        style: TextStyle(
+                      Text(
+                        context.t('product_total_investment_label'),
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -507,7 +630,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             TextFormField(
               controller: _salePriceController,
               decoration: InputDecoration(
-                labelText: 'Precio de Venta',
+                labelText: context.t('product_sale_price'),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -516,9 +639,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Ingresa el precio de venta';
+                  return context.t('product_enter_sale_price');
                 }
-                if (double.tryParse(value) == null) return 'Debe ser un número';
+                if (double.tryParse(value) == null) return context.t('product_must_be_number');
                 return null;
               },
             ),
@@ -534,7 +657,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 ),
               ),
               child: Text(
-                isEdit ? 'Guardar Cambios' : 'Crear Producto',
+                isEdit ? context.t('product_save_changes') : context.t('product_create'),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -625,12 +748,13 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         subcategoryId: _selectedSubcategoryId,
       );
     } else {
-      // Edit
-      final double newInitialQty = double.parse(_quantityController.text);
-      final double newCostPerUnit = double.parse(_costController.text);
-      final double qtyDiff = newInitialQty - widget.product!.initialQuantity;
-      final double calculatedStock = widget.product!.currentStock + qtyDiff;
-      final double newCurrentStock = calculatedStock < 0.0 ? 0.0 : calculatedStock;
+      // Edit: investment data never changes sold units.
+      // "Cantidad Comprada" stays read-only = initialQuantity.
+      // Only _addStockController qty is added to currentStock.
+      final double stockToAdd = double.tryParse(_addStockController.text) ?? 0.0;
+      final double newCurrentStock = widget.product!.currentStock + stockToAdd;
+      final double newInitialQty = widget.product!.initialQuantity + stockToAdd;
+      final double newCostPerUnit = double.tryParse(_costController.text) ?? widget.product!.costPerUnit;
 
       final updated = widget.product!.copyWith(
         name: _nameController.text.trim(),
@@ -654,5 +778,26 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     if (mounted) {
       Navigator.pop(context);
     }
+  }
+
+  Widget _buildInfoChip(String label, String value, IconData icon) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 4),
+            ],
+          ),
+          child: Icon(icon, size: 20, color: Colors.blue),
+        ),
+        const SizedBox(height: 4),
+        Text(value, style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold)),
+        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+      ],
+    );
   }
 }

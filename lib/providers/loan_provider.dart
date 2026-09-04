@@ -230,15 +230,87 @@ class LoanProvider with ChangeNotifier {
 
   // ========== CALCULATIONS & AMORTIZATION ==========
 
+  DateTime _normalizeDate(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  DateTime _addMonths(DateTime date, int months) {
+    int year = date.year;
+    int month = date.month + months;
+    while (month > 12) {
+      year++;
+      month -= 12;
+    }
+    while (month < 1) {
+      year--;
+      month += 12;
+    }
+    int day = date.day;
+    int maxDays = DateUtils.getDaysInMonth(year, month);
+    if (day > maxDays) day = maxDays;
+    return DateTime(year, month, day);
+  }
+
+  DateTime calculateDueDateFromFrequency({
+    required DateTime startDate,
+    required String frequency,
+    required int durationValue,
+  }) {
+    final start = _normalizeDate(startDate);
+    final count = durationValue > 0 ? durationValue : 1;
+
+    switch (frequency) {
+      case 'daily':
+        return start.add(Duration(days: count));
+      case 'weekly':
+        return start.add(Duration(days: count * 7));
+      case 'biweekly':
+        return start.add(Duration(days: count * 14));
+      case 'monthly':
+        return _addMonths(start, count);
+      case 'single':
+      default:
+        return _addMonths(start, 1);
+    }
+  }
+
+  int calculateDurationFromDates({
+    required DateTime startDate,
+    required DateTime dueDate,
+    required String frequency,
+  }) {
+    final start = _normalizeDate(startDate);
+    final due = _normalizeDate(dueDate);
+    final totalDays = due.difference(start).inDays;
+    if (totalDays <= 0) return 1;
+
+    switch (frequency) {
+      case 'daily':
+        return totalDays;
+      case 'weekly':
+        return max(1, (totalDays / 7).round());
+      case 'biweekly':
+        return max(1, (totalDays / 14).round());
+      case 'monthly':
+        int months = (due.year - start.year) * 12 + (due.month - start.month);
+        if (due.day > start.day + 15) {
+          months++;
+        }
+        return max(1, months);
+      case 'single':
+      default:
+        return 1;
+    }
+  }
+
   double calculateTotalWithInterest(double principal, double rate, String type, int duration) {
     if (rate <= 0) return principal;
+    final int count = duration > 0 ? duration : 1;
     switch (type) {
       case 'fixed':
         return principal + rate;
       case 'simple':
         return principal + (principal * (rate / 100));
       case 'compound':
-        return principal * pow(1 + (rate / 100), duration);
+        return principal * pow(1 + (rate / 100), count);
       default:
         return principal;
     }
@@ -251,45 +323,100 @@ class LoanProvider with ChangeNotifier {
     required String frequency,
     required int durationValue,
     required DateTime startDate,
+    DateTime? explicitDueDate,
   }) {
-    final totalRepayment = calculateTotalWithInterest(principal, rate, interestType, durationValue);
-    final installmentAmount = totalRepayment / durationValue;
+    final count = durationValue > 0 ? durationValue : 1;
+    final totalRepayment = calculateTotalWithInterest(principal, rate, interestType, count);
+    final installmentAmount = totalRepayment / count;
 
     final schedule = <Installment>[];
-    var currentDate = startDate;
+    final start = _normalizeDate(startDate);
+    final today = _normalizeDate(DateTime.now());
 
-    for (int i = 1; i <= durationValue; i++) {
-      switch (frequency) {
-        case 'daily':
-          currentDate = currentDate.add(const Duration(days: 1));
-          break;
-        case 'weekly':
-          currentDate = currentDate.add(const Duration(days: 7));
-          break;
-        case 'biweekly': // quincenal
-          currentDate = currentDate.add(const Duration(days: 15));
-          break;
-        case 'monthly':
-          currentDate = DateTime(
-            currentDate.year,
-            currentDate.month + 1,
-            currentDate.day,
-          );
-          break;
-        case 'single':
-        default:
-          currentDate = currentDate.add(const Duration(days: 30));
-          break;
+    for (int i = 1; i <= count; i++) {
+      DateTime instDueDate;
+
+      if (frequency == 'single') {
+        instDueDate = explicitDueDate != null ? _normalizeDate(explicitDueDate) : _addMonths(start, 1);
+      } else {
+        switch (frequency) {
+          case 'daily':
+            instDueDate = start.add(Duration(days: i));
+            break;
+          case 'weekly':
+            instDueDate = start.add(Duration(days: i * 7));
+            break;
+          case 'biweekly':
+            instDueDate = start.add(Duration(days: i * 14));
+            break;
+          case 'monthly':
+            instDueDate = _addMonths(start, i);
+            break;
+          default:
+            instDueDate = start.add(Duration(days: i * 30));
+            break;
+        }
+
+        // Align last installment with explicitDueDate if provided
+        if (i == count && explicitDueDate != null) {
+          instDueDate = _normalizeDate(explicitDueDate);
+        }
       }
+
+      final isOverdue = today.isAfter(instDueDate);
 
       schedule.add(Installment(
         number: i,
-        dueDate: currentDate,
+        dueDate: instDueDate,
         amount: installmentAmount,
         paidAmount: 0.0,
-        status: 'pending',
+        status: isOverdue ? 'overdue' : 'pending',
       ));
     }
+    return schedule;
+  }
+
+  List<Installment> generateOrUpdateSchedule({
+    required double principal,
+    required double rate,
+    required String interestType,
+    required String frequency,
+    required int durationValue,
+    required DateTime startDate,
+    DateTime? explicitDueDate,
+    double paidAmountTotal = 0.0,
+  }) {
+    final schedule = generateAmortizationSchedule(
+      principal: principal,
+      rate: rate,
+      interestType: interestType,
+      frequency: frequency,
+      durationValue: durationValue,
+      startDate: startDate,
+      explicitDueDate: explicitDueDate,
+    );
+
+    if (paidAmountTotal > 0) {
+      double left = paidAmountTotal;
+      for (int i = 0; i < schedule.length; i++) {
+        if (left <= 0) break;
+        final inst = schedule[i];
+        if (left >= inst.amount) {
+          schedule[i] = inst.copyWith(
+            paidAmount: inst.amount,
+            status: 'paid',
+          );
+          left -= inst.amount;
+        } else {
+          schedule[i] = inst.copyWith(
+            paidAmount: left,
+            status: 'partial',
+          );
+          left = 0.0;
+        }
+      }
+    }
+
     return schedule;
   }
 
@@ -315,7 +442,8 @@ class LoanProvider with ChangeNotifier {
     bool deductFromCard = false,
   }) async {
     final id = _uuid.v4();
-    final totalExpected = calculateTotalWithInterest(amount, interestRate, interestType, durationValue);
+    final count = durationValue > 0 ? durationValue : 1;
+    final totalExpected = calculateTotalWithInterest(amount, interestRate, interestType, count);
 
     // Schedule installments
     final installmentsList = generateAmortizationSchedule(
@@ -323,9 +451,13 @@ class LoanProvider with ChangeNotifier {
       rate: interestRate,
       interestType: interestType,
       frequency: frequency,
-      durationValue: durationValue,
+      durationValue: count,
       startDate: startDate,
+      explicitDueDate: dueDate,
     );
+
+    final normalizedDue = _normalizeDate(dueDate);
+    final today = _normalizeDate(DateTime.now());
 
     final loan = Loan(
       id: id,
@@ -335,13 +467,13 @@ class LoanProvider with ChangeNotifier {
       interestRate: interestRate,
       interestType: interestType,
       frequency: frequency,
-      durationValue: durationValue,
+      durationValue: count,
       startDate: startDate,
       dueDate: dueDate,
       isNotificationsEnabled: isNotificationsEnabled,
       notes: notes,
       remainingAmount: totalExpected,
-      status: DateTime.now().isAfter(dueDate) ? 'overdue' : 'active',
+      status: today.isAfter(normalizedDue) ? 'overdue' : 'active',
       cardId: cardId,
       currency: currency,
       lateFeeType: lateFeeType,
@@ -972,7 +1104,8 @@ class LoanProvider with ChangeNotifier {
   }
 
   Future<void> _rescheduleLoanNotifications(Loan loan) async {
-    for (int i = 1; i <= 100; i++) {
+    final maxCancel = max(200, loan.installments.length + 50);
+    for (int i = 1; i <= maxCancel; i++) {
       await NotificationService().cancelInstallmentReminder(loan.id, i);
     }
 
@@ -994,7 +1127,7 @@ class LoanProvider with ChangeNotifier {
   }
 
   Future<void> _cancelAllLoanNotifications(String loanId) async {
-    for (int i = 1; i <= 100; i++) {
+    for (int i = 1; i <= 200; i++) {
       await NotificationService().cancelInstallmentReminder(loanId, i);
     }
   }

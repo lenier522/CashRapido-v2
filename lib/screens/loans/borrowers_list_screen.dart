@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/loan_provider.dart';
 import '../../models/borrower.dart';
+import '../../services/localization_service.dart';
 import 'borrower_form_screen.dart';
 
 class BorrowersListScreen extends StatefulWidget {
@@ -25,7 +26,7 @@ class _BorrowersListScreenState extends State<BorrowersListScreen> {
       backgroundColor: isDark ? const Color(0xFF0A0A14) : Colors.grey[50],
       appBar: AppBar(
         title: Text(
-          Localizations.localeOf(context).languageCode == 'es' ? 'Directorio de Clientes' : 'Client Directory',
+          context.t('borrowers_title'),
           style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -70,9 +71,7 @@ class _BorrowersListScreenState extends State<BorrowersListScreen> {
                     },
                     style: GoogleFonts.outfit(color: isDark ? Colors.white : Colors.black87),
                     decoration: InputDecoration(
-                      hintText: Localizations.localeOf(context).languageCode == 'es'
-                          ? 'Buscar cliente por nombre o teléfono...'
-                          : 'Search client by name or phone...',
+                      hintText: context.t('borrowers_search_hint'),
                       hintStyle: GoogleFonts.outfit(color: Colors.grey),
                       prefixIcon: const Icon(Icons.search, color: Colors.grey),
                       border: InputBorder.none,
@@ -111,7 +110,7 @@ class _BorrowersListScreenState extends State<BorrowersListScreen> {
         foregroundColor: Colors.white,
         icon: const Icon(Icons.person_add),
         label: Text(
-          Localizations.localeOf(context).languageCode == 'es' ? 'Nuevo Cliente' : 'New Client',
+          context.t('borrower_new_client'),
           style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -132,16 +131,16 @@ class _BorrowersListScreenState extends State<BorrowersListScreen> {
     switch (borrower.riskLevel) {
       case 'high':
         riskColor = Colors.redAccent;
-        riskLabel = Localizations.localeOf(context).languageCode == 'es' ? 'Alto Riesgo' : 'High Risk';
+        riskLabel = context.t('borrower_list_risk_high');
         break;
       case 'medium':
         riskColor = Colors.orangeAccent;
-        riskLabel = Localizations.localeOf(context).languageCode == 'es' ? 'Riesgo Medio' : 'Medium Risk';
+        riskLabel = context.t('borrower_list_risk_medium');
         break;
       case 'low':
       default:
         riskColor = Colors.greenAccent;
-        riskLabel = Localizations.localeOf(context).languageCode == 'es' ? 'Riesgo Bajo' : 'Low Risk';
+        riskLabel = context.t('borrower_list_risk_low');
         break;
     }
 
@@ -262,7 +261,7 @@ class _BorrowersListScreenState extends State<BorrowersListScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            Localizations.localeOf(context).languageCode == 'es' ? 'Sin Clientes' : 'No Clients',
+            context.t('borrowers_empty_title'),
             style: GoogleFonts.outfit(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -273,9 +272,7 @@ class _BorrowersListScreenState extends State<BorrowersListScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 40),
             child: Text(
-              Localizations.localeOf(context).languageCode == 'es'
-                  ? 'Aún no has agregado ningún deudor. Registra a tus clientes para poder asociarlos a los préstamos de forma ordenada.'
-                  : 'You haven\'t added any debtors yet. Register your clients to associate them with loans neatly.',
+              context.t('borrowers_empty_desc'),
               textAlign: TextAlign.center,
               style: GoogleFonts.outfit(
                 fontSize: 14,
@@ -365,7 +362,7 @@ class _BorrowersListScreenState extends State<BorrowersListScreen> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          "${Localizations.localeOf(context).languageCode == 'es' ? 'Registrado el' : 'Registered on'} $regDateStr",
+                          "${context.t('borrower_registered_on')} $regDateStr",
                           style: GoogleFonts.outfit(color: Colors.grey, fontSize: 13),
                         ),
                       ],
@@ -376,19 +373,19 @@ class _BorrowersListScreenState extends State<BorrowersListScreen> {
               const SizedBox(height: 28),
 
               // Fields Grid
-              _buildDetailTile(context, Icons.phone_android_rounded, 
-                  Localizations.localeOf(context).languageCode == 'es' ? 'Teléfono' : 'Phone', borrower.phone, isDark),
-              _buildDetailTile(context, Icons.home_rounded, 
-                  Localizations.localeOf(context).languageCode == 'es' ? 'Dirección' : 'Address', borrower.address, isDark),
+              _buildDetailTile(context, Icons.phone_android_rounded,
+                  context.t('borrower_phone_label'), borrower.phone, isDark),
+              _buildDetailTile(context, Icons.home_rounded,
+                  context.t('borrower_address_label'), borrower.address, isDark),
               if (borrower.writtenLocation != null && borrower.writtenLocation!.isNotEmpty)
-                _buildDetailTile(context, Icons.map_outlined, 
-                    Localizations.localeOf(context).languageCode == 'es' ? 'Ubicación / Referencias escritas' : 'Written Location / References', borrower.writtenLocation!, isDark),
+                _buildDetailTile(context, Icons.map_outlined,
+                    context.t('borrower_location_label'), borrower.writtenLocation!, isDark),
               if (borrower.personalReference != null && borrower.personalReference!.isNotEmpty)
-                _buildDetailTile(context, Icons.people_outline, 
-                    Localizations.localeOf(context).languageCode == 'es' ? 'Referencia Personal' : 'Personal Reference', borrower.personalReference!, isDark),
+                _buildDetailTile(context, Icons.people_outline,
+                    context.t('borrower_personal_ref_label'), borrower.personalReference!, isDark),
               if (borrower.notes != null && borrower.notes!.isNotEmpty)
-                _buildDetailTile(context, Icons.notes_rounded, 
-                    Localizations.localeOf(context).languageCode == 'es' ? 'Notas' : 'Notes', borrower.notes!, isDark),
+                _buildDetailTile(context, Icons.notes_rounded,
+                    context.t('borrower_notes_label'), borrower.notes!, isDark),
 
               const SizedBox(height: 32),
 
@@ -406,7 +403,7 @@ class _BorrowersListScreenState extends State<BorrowersListScreen> {
                         );
                       },
                       icon: const Icon(Icons.edit_outlined),
-                      label: Text(Localizations.localeOf(context).languageCode == 'es' ? 'Editar' : 'Edit'),
+                      label: Text(context.t('borrower_edit')),
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -420,7 +417,7 @@ class _BorrowersListScreenState extends State<BorrowersListScreen> {
                     child: TextButton.icon(
                       onPressed: () => _confirmDeleteBorrower(context, borrower, provider),
                       icon: const Icon(Icons.delete_forever_outlined),
-                      label: Text(Localizations.localeOf(context).languageCode == 'es' ? 'Eliminar' : 'Delete'),
+                      label: Text(context.t('borrower_delete')),
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -484,19 +481,17 @@ class _BorrowersListScreenState extends State<BorrowersListScreen> {
         backgroundColor: const Color(0xFF141428),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
-          Localizations.localeOf(context).languageCode == 'es' ? '¿Eliminar Cliente?' : 'Delete Client?',
+          context.t('borrower_delete_title'),
           style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         content: Text(
-          Localizations.localeOf(context).languageCode == 'es'
-              ? '¿Estás seguro de que deseas eliminar a ${borrower.fullName}? Esto no eliminará sus préstamos existentes, pero perderás la vinculación.'
-              : 'Are you sure you want to delete ${borrower.fullName}? This will not delete their existing loans, but you will lose the association.',
+          context.t('borrower_delete_desc').replaceAll('{name}', borrower.fullName),
           style: GoogleFonts.outfit(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(Localizations.localeOf(context).languageCode == 'es' ? 'Cancelar' : 'Cancel'),
+            child: Text(context.t('cancel')),
           ),
           TextButton(
             onPressed: () async {
@@ -505,7 +500,7 @@ class _BorrowersListScreenState extends State<BorrowersListScreen> {
               if (context.mounted) Navigator.pop(context); // Close details sheet
             },
             child: Text(
-              Localizations.localeOf(context).languageCode == 'es' ? 'Eliminar' : 'Delete',
+              context.t('borrower_delete'),
               style: const TextStyle(color: Colors.redAccent),
             ),
           ),

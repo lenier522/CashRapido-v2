@@ -7,6 +7,7 @@ class Business {
   String iconCode; // Material icon code name
   int colorValue; // Color as int
   final DateTime createdAt;
+  String currency; // Default currency for this business
 
   Business({
     required this.id,
@@ -15,6 +16,7 @@ class Business {
     required this.iconCode,
     required this.colorValue,
     required this.createdAt,
+    this.currency = 'CUP',
   });
 
   Business copyWith({
@@ -24,6 +26,7 @@ class Business {
     String? iconCode,
     int? colorValue,
     DateTime? createdAt,
+    String? currency,
   }) {
     return Business(
       id: id ?? this.id,
@@ -32,6 +35,7 @@ class Business {
       iconCode: iconCode ?? this.iconCode,
       colorValue: colorValue ?? this.colorValue,
       createdAt: createdAt ?? this.createdAt,
+      currency: currency ?? this.currency,
     );
   }
 }
@@ -53,13 +57,14 @@ class BusinessAdapter extends TypeAdapter<Business> {
       iconCode: fields[3] as String,
       colorValue: fields[4] as int,
       createdAt: fields[5] as DateTime,
+      currency: fields[6] as String? ?? 'CUP',
     );
   }
 
   @override
   void write(BinaryWriter writer, Business obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -71,6 +76,8 @@ class BusinessAdapter extends TypeAdapter<Business> {
       ..writeByte(4)
       ..write(obj.colorValue)
       ..writeByte(5)
-      ..write(obj.createdAt);
+      ..write(obj.createdAt)
+      ..writeByte(6)
+      ..write(obj.currency);
   }
 }
