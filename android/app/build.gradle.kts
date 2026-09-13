@@ -70,3 +70,19 @@ flutter {
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
+
+// Android 15+ requires 16 KB page-size support (Play Store policy).
+// Transitive SDKs shipped 4 KB-aligned .so files, so force minimum versions
+// that ship 16 KB-aligned native libraries:
+//  - ML Kit barcode-scanning 17.3.0 (libbarhopper_v3.so aligned to 16 KB)
+//  - CameraX 1.4.2 (libimage_processing_util_jni.so aligned to 16 KB)
+configurations.all {
+    resolutionStrategy {
+        force(
+            "com.google.mlkit:barcode-scanning:17.3.0",
+            "androidx.camera:camera-core:1.4.2",
+            "androidx.camera:camera-camera2:1.4.2",
+            "androidx.camera:camera-lifecycle:1.4.2",
+        )
+    }
+}
