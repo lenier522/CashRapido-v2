@@ -304,14 +304,6 @@ CashRapido cuenta con un sistema de suscripción basado en licencias. Los detall
 | Art-Pay   | Billetera digital (token .lic)       |
 | Anuncios  | Ver anuncios de Google Ads           |
 
-### 🎁 Prueba de 24 horas
-
-Al instalar la aplicación se activa automáticamente una **prueba gratuita de 24 horas** con **todas las funcionalidades desbloqueadas** (equivalente al nivel Enterprise). Durante este periodo se muestra un cartel con la cuenta regresiva en la pantalla de inicio y en la de licencias.
-
-- Pasadas las 24 horas, si no se adquirió ninguna licencia, la app vuelve al nivel **Free** (funcionalidades limitadas) hasta que se compre una licencia.
-- Si se compra una licencia durante la prueba, esta toma el control de inmediato y no se vuelve a bloquear.
-- La prueba se activa una sola vez por instalación (borrar los datos de la app reinicia el contador).
-
 ### Matriz de Funcionalidades por Nivel
 
 | Característica           | Free | Personal | Pro | Enterprise |
