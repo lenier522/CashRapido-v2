@@ -422,8 +422,6 @@ class AppProvider with ChangeNotifier {
 
   bool get isPremium {
     // For backward compatibility or general "Not Free" check
-    // Unlocked during the 24h trial (via isPromoActive)
-    if (isPromoActive) return true;
     return _licenseType != LicenseType.free;
   }
 
@@ -449,11 +447,11 @@ class AppProvider with ChangeNotifier {
     return _cards.length < maxCards;
   }
 
-  bool get isPromoActive => isHolidayPromo;
-
   // Legacy holiday promo (dead code — date passed).
   bool get isHolidayPromo =>
       DateTime.now().isBefore(DateTime(2026, 1, 11)); // Promo ended
+
+  bool get isPromoActive => isHolidayPromo;
 
   // Features unlocked at PERSONAL level or higher
   bool get canTransfer =>

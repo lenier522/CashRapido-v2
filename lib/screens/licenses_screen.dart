@@ -16,7 +16,6 @@ class LicensesScreen extends StatefulWidget {
 }
 
 class _LicensesScreenState extends State<LicensesScreen> {
-
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<AppProvider>(context);
@@ -28,12 +27,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
         backgroundColor: const Color(0xFF0A0A14),
         appBar: _buildAppBar(context, isCuba, provider),
         body: Stack(
-          children: [
-            _buildBackground(),
-            provider.isHolidayPromo
-                ? _buildHolidayPromo(context)
-                : _buildContent(context, provider),
-          ],
+          children: [_buildBackground(), _buildContent(context, provider)],
         ),
       ),
     );
@@ -143,7 +137,6 @@ class _LicensesScreenState extends State<LicensesScreen> {
       ],
     );
   }
-
 
   Widget _buildTabBarView(AppProvider provider) {
     return TabBarView(
@@ -513,64 +506,6 @@ class _LicensesScreenState extends State<LicensesScreen> {
     );
   }
 
-  Widget _buildHolidayPromo(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Container(
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-            ),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.celebration, color: Colors.white, size: 64),
-              const SizedBox(height: 20),
-              Text(
-                context.t('promo_title'),
-                textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                context.t('promo_message'),
-                textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(fontSize: 14, color: Colors.white),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text(
-                    context.t('promo_button'),
-                    style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   // ==================== HELPERS ====================
 
   Color _getTheme(LicenseLevel level) {
@@ -864,12 +799,12 @@ class _LicensesScreenState extends State<LicensesScreen> {
       );
 
       final errorMsg = await provider.simulatePayment(method.id, licenseType);
-      
+
       if (!mounted) return;
-      
+
       // Close dialog
       Navigator.of(context, rootNavigator: true).pop();
-      
+
       if (errorMsg == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -881,10 +816,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMsg),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
         );
       }
       return;
@@ -920,12 +852,12 @@ class _LicensesScreenState extends State<LicensesScreen> {
       );
 
       final errorMsg = await provider.simulatePayment(method.id, licenseType);
-      
+
       if (!mounted) return;
-      
+
       // Cerrar dialog
       Navigator.of(context, rootNavigator: true).pop();
-      
+
       if (errorMsg == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -935,10 +867,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMsg),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
         );
       }
     }
