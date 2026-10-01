@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/business_provider.dart';
 import '../../models/business_expense.dart';
+import '../../providers/app_provider.dart';
 
 class ExpenseFormScreen extends StatefulWidget {
   final BusinessExpense? expense;
@@ -33,7 +34,11 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     );
     _selectedCategory =
         widget.expense?.category ?? BusinessProvider.expenseCategories.first;
-    _selectedCurrency = widget.expense?.currency ?? 'CUP';
+    final biz = Provider.of<BusinessProvider>(context, listen: false).activeBusiness;
+    _selectedCurrency = widget.expense?.currency ?? biz?.currency ?? 'CUP';
+    if (!_currencies.contains(_selectedCurrency)) {
+      _currencies.add(_selectedCurrency);
+    }
   }
 
   @override
@@ -163,10 +168,28 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final provider = Provider.of<BusinessProvider>(context, listen: false);
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
 
     if (_isEdit) {
+      final oldAmount = widget.expense!.amount;
+      final newAmount = double.parse(_amountController.text);
+      final diff = newAmount - oldAmount;
+      if (provider.linkedCardId != null && diff.abs() > 0.005) {
+        final desc = _descriptionController.text.trim().isNotEmpty
+            ? _descriptionController.text.trim()
+            : _selectedCategory;
+        await appProvider.addTransaction(
+          amount: -diff,
+          title: diff > 0 ? "Aumento Gasto: $desc" : "Ajuste Gasto: $desc",
+          categoryId: 'cat_business',
+          currency: _selectedCurrency,
+          cardId: provider.linkedCardId,
+          date: DateTime.now(),
+          bypassBalanceCheck: true,
+        );
+      }
       final updated = widget.expense!.copyWith(
-        amount: double.parse(_amountController.text),
+        amount: newAmount,
         category: _selectedCategory,
         description: _descriptionController.text.trim(),
         currency: _selectedCurrency,
@@ -178,6 +201,7 @@ class _ExpenseFormScreenState extends State<ExpenseFormScreen> {
         category: _selectedCategory,
         description: _descriptionController.text.trim(),
         currency: _selectedCurrency,
+        appProvider: appProvider,
       );
     }
 

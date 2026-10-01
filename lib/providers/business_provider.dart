@@ -179,6 +179,10 @@ class BusinessProvider with ChangeNotifier {
     required String type,
     required String iconCode,
     required int colorValue,
+    double initialCapital = 0.0,
+    String? linkedCardId,
+    String currency = 'CUP',
+    AppProvider? appProvider,
   }) async {
     final business = Business(
       id: _uuid.v4(),
@@ -187,6 +191,9 @@ class BusinessProvider with ChangeNotifier {
       iconCode: iconCode,
       colorValue: colorValue,
       createdAt: DateTime.now(),
+      initialCapital: initialCapital,
+      linkedCardId: linkedCardId,
+      currency: currency,
     );
 
     await _businessBox.add(business);
@@ -214,6 +221,25 @@ class BusinessProvider with ChangeNotifier {
       _businesses[index] = updatedBusiness;
       notifyListeners();
     }
+  }
+
+  Future<void> updateBusinessCapital({
+    required String businessId,
+    required double initialCapital,
+    String? linkedCardId,
+    String? currency,
+    AppProvider? appProvider,
+  }) async {
+    final index = _businesses.indexWhere((b) => b.id == businessId);
+    if (index == -1) return;
+    final b = _businesses[index];
+
+    final updated = b.copyWith(
+      initialCapital: initialCapital,
+      linkedCardId: linkedCardId,
+      currency: currency,
+    );
+    await editBusiness(updated);
   }
 
   Future<void> deleteBusiness(String id) async {
@@ -257,7 +283,7 @@ class BusinessProvider with ChangeNotifier {
         .where((s) => s.businessId == businessId)
         .toList();
     for (var sale in salesToDelete) {
-      await deleteSale(sale.id);
+      await deleteSale(sale.id, restoreStock: false);
     }
 
     // Delete expenses
@@ -328,6 +354,7 @@ class BusinessProvider with ChangeNotifier {
     String unit = 'uds',
     String? categoryId,
     String? subcategoryId,
+    AppProvider? appProvider,
   }) async {
     if (_activeBusinessId == null) return;
 
@@ -354,6 +381,22 @@ class BusinessProvider with ChangeNotifier {
 
     await _productBox.add(product);
     _products.add(product);
+
+    // Deduct purchase cost from linked card if available
+    final cardId = linkedCardId;
+    final totalCost = totalInvestment + additionalCosts;
+    if (appProvider != null && cardId != null && totalCost > 0) {
+      await appProvider.addTransaction(
+        amount: -totalCost,
+        title: "Compra Inventario: $name",
+        categoryId: 'cat_business',
+        currency: currency,
+        cardId: cardId,
+        date: investmentDate,
+        bypassBalanceCheck: true,
+      );
+    }
+
     notifyListeners();
   }
 
@@ -669,20 +712,22 @@ class BusinessProvider with ChangeNotifier {
     ).fold<double>(0.0, (sum, s) => sum + s.total);
   }
 
-  double getSellerAssignedValue(String sellerId) {
+  /// Valor del inventario que le queda actualmente al vendedor por vender (stock actual en mano).
+  double getSellerRemainingValue(String sellerId) {
     final inv = getSellerInventoryBySeller(sellerId);
-    double total = 0;
+    double remaining = 0;
     for (final item in inv) {
       try {
         final product = _products.firstWhere((p) => p.id == item.productId);
-        total += item.assignedQuantity * product.salePrice;
+        remaining += item.assignedQuantity * product.salePrice;
       } catch (_) {}
     }
-    return total;
+    return remaining;
   }
 
-  double getSellerRemainingValue(String sellerId) {
-    return getSellerAssignedValue(sellerId);
+  /// Valor total asignado históricamente/globalmente al vendedor (lo vendido + lo que le queda por vender).
+  double getSellerAssignedValue(String sellerId) {
+    return getSellerRemainingValue(sellerId) + getSellerTotalSales(sellerId);
   }
 
   double calculateSellerCommission(String sellerId) {
@@ -761,8 +806,9 @@ class BusinessProvider with ChangeNotifier {
       }
     }
 
-    // Deposit to personal account if requested
-    if (depositToCard && cardId != null && appProvider != null && status == 'paid' && total > 0) {
+    // Deposit to personal account if requested or if business has linked card
+    final effectiveCardId = cardId ?? linkedCardId;
+    if (effectiveCardId != null && appProvider != null && status == 'paid' && total > 0) {
       final activeBiz = activeBusiness;
       final currency = activeBiz?.currency ?? appProvider.mainCurrency;
       final productNames = items.map((i) => i.productName).join(', ');
@@ -771,8 +817,9 @@ class BusinessProvider with ChangeNotifier {
         title: "Venta Negocio: $productNames",
         categoryId: 'cat_business_income',
         currency: currency,
-        cardId: cardId,
+        cardId: effectiveCardId,
         date: DateTime.now(),
+        bypassBalanceCheck: true,
       );
     }
 
@@ -936,6 +983,7 @@ class BusinessProvider with ChangeNotifier {
         currency: currency,
         cardId: depositCardId,
         date: DateTime.now(),
+        bypassBalanceCheck: true,
       );
     }
 
@@ -949,9 +997,67 @@ class BusinessProvider with ChangeNotifier {
     };
   }
 
-  Future<void> deleteSale(String id) async {
+  Future<void> deleteSale(String id, {bool restoreStock = true, AppProvider? appProvider}) async {
     final index = _sales.indexWhere((s) => s.id == id);
     if (index == -1) return;
+
+    final sale = _sales[index];
+
+    // Revert deposit on linked card if it was paid
+    final effectiveCardId = linkedCardId;
+    if (appProvider != null && effectiveCardId != null && sale.status == 'paid' && sale.total > 0) {
+      final activeBiz = activeBusiness;
+      final currency = activeBiz?.currency ?? appProvider.mainCurrency;
+      final productNames = sale.items.map((i) => i.productName).join(', ');
+      await appProvider.addTransaction(
+        amount: -sale.total,
+        title: "Venta Cancelada: $productNames",
+        categoryId: 'cat_business',
+        currency: currency,
+        cardId: effectiveCardId,
+        date: DateTime.now(),
+        bypassBalanceCheck: true,
+      );
+    }
+
+    if (restoreStock) {
+      // Revert inventory deduction: return sold units to available stock
+      for (var item in sale.items) {
+        final productIdx = _products.indexWhere((p) => p.id == item.productId);
+        if (productIdx != -1) {
+          final product = _products[productIdx];
+          final updated = product.copyWith(
+            currentStock: product.currentStock + item.quantity,
+          );
+          await editProduct(updated);
+        }
+      }
+
+      // If assigned to a seller, also restore seller's assigned inventory
+      if (sale.sellerId != null) {
+        for (var item in sale.items) {
+          final existing = _sellerInventory.where(
+            (si) => si.sellerId == sale.sellerId && si.productId == item.productId,
+          ).toList();
+          if (existing.isNotEmpty) {
+            final inv = existing.first;
+            await assignProductToSeller(
+              sellerId: sale.sellerId!,
+              productId: item.productId,
+              productName: item.productName,
+              quantity: inv.assignedQuantity + item.quantity,
+            );
+          } else {
+            await assignProductToSeller(
+              sellerId: sale.sellerId!,
+              productId: item.productId,
+              productName: item.productName,
+              quantity: item.quantity,
+            );
+          }
+        }
+      }
+    }
 
     final key = _saleBox.keys.firstWhere(
       (k) => _saleBox.get(k)?.id == id,
@@ -965,7 +1071,7 @@ class BusinessProvider with ChangeNotifier {
     }
   }
 
-  Future<void> markSaleAsPaid(String id) async {
+  Future<void> markSaleAsPaid(String id, {AppProvider? appProvider}) async {
     final index = _sales.indexWhere((s) => s.id == id);
     if (index == -1) return;
 
@@ -992,6 +1098,24 @@ class BusinessProvider with ChangeNotifier {
       
       await _saleBox.put(key, newSale);
       _sales[index] = newSale;
+
+      // Deposit to linked card
+      final effectiveCardId = linkedCardId;
+      if (appProvider != null && effectiveCardId != null && oldSale.total > 0) {
+        final activeBiz = activeBusiness;
+        final currency = activeBiz?.currency ?? appProvider.mainCurrency;
+        final productNames = oldSale.items.map((i) => i.productName).join(', ');
+        await appProvider.addTransaction(
+          amount: oldSale.total,
+          title: "Cobro Venta Negocio: $productNames",
+          categoryId: 'cat_business_income',
+          currency: currency,
+          cardId: effectiveCardId,
+          date: DateTime.now(),
+          bypassBalanceCheck: true,
+        );
+      }
+
       notifyListeners();
     }
   }
@@ -1003,6 +1127,7 @@ class BusinessProvider with ChangeNotifier {
     required String category,
     required String description,
     required String currency,
+    AppProvider? appProvider,
   }) async {
     if (_activeBusinessId == null) return;
 
@@ -1018,12 +1143,45 @@ class BusinessProvider with ChangeNotifier {
 
     await _expenseBox.add(expense);
     _expenses.add(expense);
+
+    // Deduct expense from linked card on main screen
+    final cardId = linkedCardId;
+    if (appProvider != null && cardId != null && amount > 0) {
+      final desc = description.trim().isNotEmpty ? description.trim() : category;
+      await appProvider.addTransaction(
+        amount: -amount,
+        title: "Gasto Negocio: $desc",
+        categoryId: 'cat_business',
+        currency: currency,
+        cardId: cardId,
+        date: DateTime.now(),
+        bypassBalanceCheck: true,
+      );
+    }
+
     notifyListeners();
   }
 
-  Future<void> deleteExpense(String id) async {
+  Future<void> deleteExpense(String id, {AppProvider? appProvider}) async {
     final index = _expenses.indexWhere((e) => e.id == id);
     if (index == -1) return;
+
+    final expense = _expenses[index];
+    final cardId = linkedCardId;
+
+    // Refund expense to linked card on main screen if applicable
+    if (appProvider != null && cardId != null && expense.amount > 0) {
+      final desc = expense.description.trim().isNotEmpty ? expense.description.trim() : expense.category;
+      await appProvider.addTransaction(
+        amount: expense.amount,
+        title: "Gasto Cancelado: $desc",
+        categoryId: 'cat_business',
+        currency: expense.currency,
+        cardId: cardId,
+        date: DateTime.now(),
+        bypassBalanceCheck: true,
+      );
+    }
 
     final key = _expenseBox.keys.firstWhere(
       (k) => _expenseBox.get(k)?.id == id,
@@ -1367,6 +1525,23 @@ class BusinessProvider with ChangeNotifier {
   // Overall ROI
   double get overallROI {
     return totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0;
+  }
+
+  // ========== INVENTORY REVOLVING FUND & CAPITAL ==========
+
+  double get initialCapital => activeBusiness?.initialCapital ?? 0.0;
+  String? get linkedCardId => activeBusiness?.linkedCardId;
+
+  /// Total invertido en compra de mercancía/inventario (inicial + reposiciones)
+  double get totalInventoryPurchases => totalInvestment;
+
+  /// Total recaudado por ventas del negocio activo
+  double get totalSalesRevenue => totalRevenue;
+
+  /// Balance total disponible para operar y renovar inventario
+  /// (Capital Inicial - Compras de Inventario - Gastos + Ventas)
+  double get availableInventoryBalance {
+    return initialCapital - totalInventoryPurchases - totalExpenses + totalSalesRevenue;
   }
 
   // Low stock products (stock < 10)

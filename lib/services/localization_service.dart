@@ -523,6 +523,25 @@ class AppLocalizations {
       'seller_without': 'Sin vendedor',
       'seller_optional': 'Vendedor (Opcional)',
 
+      // Inventory Fund & Capital
+      'inventory_fund_title': 'Fondo para Renovación de Inventario',
+      'available_balance': 'Balance Disponible',
+      'initial_capital': 'Capital Inicial / Crédito',
+      'initial_capital_desc': 'Monto con el que inicia el negocio para compras y rotación de stock',
+      'initial_capital_hint': 'Ej. 50000',
+      'linked_account': 'Cuenta Principal Asociada',
+      'select_linked_account': 'Seleccionar cuenta principal',
+      'no_linked_account': 'Sin cuenta asociada',
+      'assigned_capital': 'Capital Asignado',
+      'inventory_purchases': 'Compras / Inversión',
+      'sales_revenue': 'Ingresos por Ventas',
+      'edit_capital_title': 'Ajustar Capital de Inventario',
+      'btn_save': 'Guardar',
+      'delete_sale_confirm_title': '¿Eliminar Venta?',
+      'delete_sale_confirm_msg': 'Al eliminar esta venta, las unidades vendidas volverán a sumarse automáticamente al inventario disponible.',
+      'sale_deleted_stock_restored': 'Venta eliminada. Las unidades se reintegraron al inventario.',
+      'available_to_renew': 'Disponible para renovar',
+
       // Empty States & Analytics
       'no_products': 'No hay productos',
       'no_products_desc': 'Comienza agregando tus productos',
@@ -1606,6 +1625,25 @@ class AppLocalizations {
       'seller_validation': 'First and Last name are required',
       'seller_without': 'Without seller',
       'seller_optional': 'Seller (Optional)',
+
+      // Inventory Fund & Capital
+      'inventory_fund_title': 'Inventory Restocking Fund',
+      'available_balance': 'Available Balance',
+      'initial_capital': 'Initial Capital / Credit',
+      'initial_capital_desc': 'Starting amount for purchasing and renewing inventory',
+      'initial_capital_hint': 'e.g. 50000',
+      'linked_account': 'Linked Main Account',
+      'select_linked_account': 'Select main account',
+      'no_linked_account': 'No linked account',
+      'assigned_capital': 'Assigned Capital',
+      'inventory_purchases': 'Purchases / Investment',
+      'sales_revenue': 'Sales Revenue',
+      'edit_capital_title': 'Adjust Inventory Capital',
+      'btn_save': 'Save',
+      'delete_sale_confirm_title': 'Delete Sale?',
+      'delete_sale_confirm_msg': 'When deleting this sale, sold units will be automatically restored to available inventory.',
+      'sale_deleted_stock_restored': 'Sale deleted. Units returned to inventory.',
+      'available_to_renew': 'Available to restock',
 
       // Empty States & Analytics
       'no_products': 'No products',
@@ -2754,6 +2792,25 @@ class AppLocalizations {
       'closing_expense_categories': 'Dépenses par Catégorie',
       'net_profit': 'Profit Net',
       'items_sold': 'Articles Vendus',
+
+      // Inventory Fund & Capital
+      'inventory_fund_title': 'Fonds de Renouvellement des Stocks',
+      'available_balance': 'Solde Disponible',
+      'initial_capital': 'Capital Initial / Crédit',
+      'initial_capital_desc': 'Montant initial pour l\'achat et le renouvellement des stocks',
+      'initial_capital_hint': 'ex. 50000',
+      'linked_account': 'Compte Principal Associé',
+      'select_linked_account': 'Sélectionner le compte principal',
+      'no_linked_account': 'Aucun compte associé',
+      'assigned_capital': 'Capital Attribué',
+      'inventory_purchases': 'Achats / Investissement',
+      'sales_revenue': 'Revenus des Ventes',
+      'edit_capital_title': 'Ajuster le Capital des Stocks',
+      'btn_save': 'Enregistrer',
+      'delete_sale_confirm_title': 'Supprimer la Vente ?',
+      'delete_sale_confirm_msg': 'En supprimant cette vente, les unités vendues seront automatiquement réintégrées au stock disponible.',
+      'sale_deleted_stock_restored': 'Vente supprimée. Les unités ont été réintégrées au stock.',
+      'available_to_renew': 'Disponible pour réapprovisionner',
 
       // Empty States & Analytics
       'no_products': 'Aucun produit',

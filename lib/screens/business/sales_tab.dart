@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../providers/business_provider.dart';
+import '../../providers/app_provider.dart';
 import '../../models/sale.dart';
 import '../../services/localization_service.dart';
 import 'pos_screen.dart';
@@ -179,38 +180,41 @@ class _SalesTabState extends State<SalesTab> {
   Widget _buildSalesList(BuildContext context, BusinessProvider provider, List<Sale> sortedSales) {
     if (sortedSales.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
-                shape: BoxShape.circle,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.point_of_sale_rounded,
+                  size: 60,
+                  color: Colors.green,
+                ),
               ),
-              child: const Icon(
-                Icons.point_of_sale_rounded,
-                size: 60,
-                color: Colors.green,
+              const SizedBox(height: 20),
+              Text(
+                'No hay ventas',
+                style: GoogleFonts.outfit(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[700],
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'No hay ventas',
-              style: GoogleFonts.outfit(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[700],
+              const SizedBox(height: 8),
+              Text(
+                _dateFilter == 'all'
+                    ? 'Realiza tu primera venta'
+                    : 'No hay ventas en este período',
+                style: TextStyle(fontSize: 14, color: Colors.grey[500]),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _dateFilter == 'all'
-                  ? 'Realiza tu primera venta'
-                  : 'No hay ventas en este período',
-              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }
@@ -337,7 +341,10 @@ class _SalesTabState extends State<SalesTab> {
                       ),
                       if (sale.status == 'pending')
                         ElevatedButton.icon(
-                          onPressed: () => provider.markSaleAsPaid(sale.id),
+                          onPressed: () {
+                            final appProvider = Provider.of<AppProvider>(context, listen: false);
+                            provider.markSaleAsPaid(sale.id, appProvider: appProvider);
+                          },
                           icon: const Icon(Icons.check, size: 18),
                           label: const Text('Marcar Pagado'),
                           style: ElevatedButton.styleFrom(
@@ -347,7 +354,49 @@ class _SalesTabState extends State<SalesTab> {
                         )
                       else
                         TextButton.icon(
-                          onPressed: () => provider.deleteSale(sale.id),
+                          onPressed: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                title: Row(
+                                  children: const [
+                                    Icon(Icons.warning_amber_rounded, color: Colors.red, size: 22),
+                                    SizedBox(width: 8),
+                                    Text('Eliminar Venta'),
+                                  ],
+                                ),
+                                content: const Text(
+                                  'Esta acción eliminará la venta permanentemente.\n\n'
+                                  '📦 Las unidades vendidas serán devueltas al inventario automáticamente.\n\n'
+                                  '¿Deseas continuar?',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: const Text('Cancelar'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red,
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                    child: const Text('Eliminar'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirm == true) {
+                              final appProvider = Provider.of<AppProvider>(context, listen: false);
+                              await provider.deleteSale(sale.id, appProvider: appProvider);
+                            }
+                          },
                           icon: const Icon(Icons.delete, size: 18, color: Colors.red),
                           label: const Text('Eliminar', style: TextStyle(color: Colors.red)),
                         ),

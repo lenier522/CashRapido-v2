@@ -5,6 +5,7 @@ import '../../providers/business_provider.dart';
 import '../../models/business.dart';
 import '../../utils/business_icon_helper.dart';
 import '../../services/localization_service.dart';
+import '../../providers/app_provider.dart';
 
 class BusinessFormScreen extends StatefulWidget {
   final Business? business; // null = create, non-null = edit
@@ -18,9 +19,12 @@ class BusinessFormScreen extends StatefulWidget {
 class _BusinessFormScreenState extends State<BusinessFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
+  late TextEditingController _capitalController;
+  String? _selectedCardId;
   late String _selectedType;
   late String _selectedIcon;
   late Color _selectedColor;
+  late String _selectedCurrency;
 
   final List<String> _businessTypes = [
     'Retail',
@@ -47,6 +51,13 @@ class _BusinessFormScreenState extends State<BusinessFormScreen> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.business?.name ?? '');
+    _capitalController = TextEditingController(
+      text: widget.business != null && widget.business!.initialCapital > 0
+          ? widget.business!.initialCapital.toStringAsFixed(2)
+          : '',
+    );
+    _selectedCardId = widget.business?.linkedCardId;
+    _selectedCurrency = widget.business?.currency ?? 'CUP';
     _selectedType = widget.business?.type ?? _businessTypes.first;
 
     // Handle Icon Selection (Backward Compatibility)
@@ -78,6 +89,7 @@ class _BusinessFormScreenState extends State<BusinessFormScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _capitalController.dispose();
     super.dispose();
   }
 
@@ -165,6 +177,177 @@ class _BusinessFormScreenState extends State<BusinessFormScreen> {
                   setState(() => _selectedType = value);
                 }
               },
+            ),
+            const SizedBox(height: 24),
+
+            // Capital Inicial & Cuenta Vinculada Section
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _selectedColor.withOpacity(0.3),
+                  width: 1.5,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.savings_outlined, color: _selectedColor, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        context.t('initial_capital'),
+                        style: GoogleFonts.outfit(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    context.t('initial_capital_desc'),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _capitalController,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: InputDecoration(
+                            labelText: context.t('initial_capital'),
+                            hintText: context.t('initial_capital_hint'),
+                            prefixText: '\$ ',
+                            prefixIcon: const Icon(Icons.monetization_on_outlined),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: Theme.of(context).scaffoldBackgroundColor,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      PopupMenuButton<String>(
+                        initialValue: _selectedCurrency,
+                        tooltip: 'Seleccionar moneda',
+                        onSelected: (curr) {
+                          setState(() => _selectedCurrency = curr);
+                        },
+                        itemBuilder: (context) {
+                          final List<String> currs = ['CUP', 'USD', 'EUR', 'MLC'];
+                          if (!currs.contains(_selectedCurrency)) {
+                            currs.add(_selectedCurrency);
+                          }
+                          return currs.map((c) => PopupMenuItem(
+                            value: c,
+                            child: Row(
+                              children: [
+                                Text(
+                                  c,
+                                  style: GoogleFonts.outfit(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                if (c == _selectedCurrency) ...[
+                                  const Spacer(),
+                                  Icon(Icons.check, color: _selectedColor, size: 18),
+                                ],
+                              ],
+                            ),
+                          )).toList();
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: _selectedColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: _selectedColor.withOpacity(0.4)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _selectedCurrency,
+                                style: GoogleFonts.outfit(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: _selectedColor,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(Icons.arrow_drop_down, color: _selectedColor, size: 20),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Consumer<AppProvider>(
+                    builder: (context, appProv, _) {
+                      final cards = appProv.cards;
+                      final validCardId = cards.any((c) => c.id == _selectedCardId)
+                          ? _selectedCardId
+                          : null;
+
+                      return DropdownButtonFormField<String?>(
+                        value: validCardId,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          labelText: context.t('linked_account'),
+                          prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: Theme.of(context).scaffoldBackgroundColor,
+                        ),
+                        items: [
+                          DropdownMenuItem<String?>(
+                            value: null,
+                            child: Text(
+                              context.t('no_linked_account'),
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                          ),
+                          ...cards.map((c) {
+                            final last4 = c.isCash
+                                ? 'EFECTIVO'
+                                : (c.cardNumber.length >= 4
+                                    ? c.cardNumber.substring(c.cardNumber.length - 4)
+                                    : c.cardNumber);
+                            final label = '${c.isCash ? c.name : (c.bankName ?? 'Tarjeta')} (...$last4) - ${c.currency}';
+                            return DropdownMenuItem<String?>(
+                              value: c.id,
+                              child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+                            );
+                          }),
+                        ],
+                        onChanged: (val) {
+                          setState(() {
+                            _selectedCardId = val;
+                            if (val != null) {
+                              // Auto-fill balance and currency from selected card
+                              final selectedCard = cards.firstWhere(
+                                (c) => c.id == val,
+                              );
+                              _capitalController.text =
+                                  selectedCard.balance.toStringAsFixed(2);
+                              _selectedCurrency = selectedCard.currency;
+                            }
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 32),
 
@@ -299,6 +482,12 @@ class _BusinessFormScreenState extends State<BusinessFormScreen> {
     // Get the codePoint for the selected icon
     final iconCodePoint = BusinessIconHelper.legacyIcons[_selectedIcon]!;
 
+    final double initialCapital = double.tryParse(
+      _capitalController.text.trim().replaceAll(',', '.'),
+    ) ?? 0.0;
+
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+
     if (widget.business == null) {
       // Create
       await provider.createBusiness(
@@ -306,14 +495,44 @@ class _BusinessFormScreenState extends State<BusinessFormScreen> {
         type: _selectedType,
         iconCode: iconCodePoint.toString(),
         colorValue: _selectedColor.value,
+        initialCapital: initialCapital,
+        linkedCardId: _selectedCardId,
+        currency: _selectedCurrency,
+        appProvider: appProvider,
       );
     } else {
       // Edit
+      final oldCap = widget.business!.initialCapital;
+      final diff = initialCapital - oldCap;
+      if (_selectedCardId != null && diff.abs() > 0.005) {
+        if (diff > 0) {
+          await appProvider.addTransaction(
+            amount: -diff,
+            title: "Aumento Capital: ${_nameController.text.trim()}",
+            categoryId: 'cat_business',
+            currency: _selectedCurrency,
+            cardId: _selectedCardId,
+            date: DateTime.now(),
+          );
+        } else {
+          await appProvider.addTransaction(
+            amount: diff.abs(),
+            title: "Ajuste Capital: ${_nameController.text.trim()}",
+            categoryId: 'cat_business',
+            currency: _selectedCurrency,
+            cardId: _selectedCardId,
+            date: DateTime.now(),
+          );
+        }
+      }
       final updated = widget.business!.copyWith(
         name: _nameController.text.trim(),
         type: _selectedType,
         iconCode: iconCodePoint.toString(),
         colorValue: _selectedColor.value,
+        initialCapital: initialCapital,
+        linkedCardId: _selectedCardId,
+        currency: _selectedCurrency,
       );
       await provider.editBusiness(updated);
     }

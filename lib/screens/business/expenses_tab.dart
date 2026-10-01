@@ -6,6 +6,7 @@ import '../../providers/business_provider.dart';
 import '../../models/business_expense.dart';
 import 'expense_form_screen.dart';
 import 'package:cashrapido/utils/number_format_utils.dart';
+import '../../providers/app_provider.dart';
 
 class ExpensesTab extends StatefulWidget {
   const ExpensesTab({super.key});
@@ -286,27 +287,30 @@ class _ExpensesTabState extends State<ExpensesTab> {
 
   Widget _buildEmptyState(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.receipt_long, size: 80, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          Text(
-            'No hay gastos registrados',
-            style: GoogleFonts.outfit(fontSize: 18, color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 8),
-          TextButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ExpenseFormScreen()),
-              );
-            },
-            icon: const Icon(Icons.add),
-            label: const Text('Agregar Gasto'),
-          ),
-        ],
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.receipt_long, size: 80, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'No hay gastos registrados',
+              style: GoogleFonts.outfit(fontSize: 18, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ExpenseFormScreen()),
+                );
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Agregar Gasto'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -371,7 +375,8 @@ class _ExpenseCard extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () {
-              provider.deleteExpense(expense.id);
+              final appProvider = Provider.of<AppProvider>(context, listen: false);
+              provider.deleteExpense(expense.id, appProvider: appProvider);
               Navigator.pop(ctx);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -424,7 +429,10 @@ class _ExpenseCard extends StatelessWidget {
         );
         return confirmed;
       },
-      onDismissed: (_) => provider.deleteExpense(expense.id),
+      onDismissed: (_) {
+        final appProvider = Provider.of<AppProvider>(context, listen: false);
+        provider.deleteExpense(expense.id, appProvider: appProvider);
+      },
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),

@@ -8,6 +8,8 @@ class Business {
   int colorValue; // Color as int
   final DateTime createdAt;
   String currency; // Default currency for this business
+  double initialCapital; // Initial assigned capital/credit for inventory
+  String? linkedCardId; // Linked main card/account
 
   Business({
     required this.id,
@@ -17,6 +19,8 @@ class Business {
     required this.colorValue,
     required this.createdAt,
     this.currency = 'CUP',
+    this.initialCapital = 0.0,
+    this.linkedCardId,
   });
 
   Business copyWith({
@@ -27,6 +31,8 @@ class Business {
     int? colorValue,
     DateTime? createdAt,
     String? currency,
+    double? initialCapital,
+    String? linkedCardId,
   }) {
     return Business(
       id: id ?? this.id,
@@ -36,6 +42,8 @@ class Business {
       colorValue: colorValue ?? this.colorValue,
       createdAt: createdAt ?? this.createdAt,
       currency: currency ?? this.currency,
+      initialCapital: initialCapital ?? this.initialCapital,
+      linkedCardId: linkedCardId ?? this.linkedCardId,
     );
   }
 }
@@ -58,13 +66,15 @@ class BusinessAdapter extends TypeAdapter<Business> {
       colorValue: fields[4] as int,
       createdAt: fields[5] as DateTime,
       currency: fields[6] as String? ?? 'CUP',
+      initialCapital: (fields[7] as num?)?.toDouble() ?? 0.0,
+      linkedCardId: fields[8] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Business obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -78,6 +88,10 @@ class BusinessAdapter extends TypeAdapter<Business> {
       ..writeByte(5)
       ..write(obj.createdAt)
       ..writeByte(6)
-      ..write(obj.currency);
+      ..write(obj.currency)
+      ..writeByte(7)
+      ..write(obj.initialCapital)
+      ..writeByte(8)
+      ..write(obj.linkedCardId);
   }
 }

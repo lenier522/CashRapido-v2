@@ -5,6 +5,7 @@ import '../../providers/business_provider.dart';
 import '../../models/product.dart';
 import 'product_form_screen.dart';
 import 'category_manager_screen.dart';
+import '../../services/localization_service.dart';
 import 'package:cashrapido/utils/number_format_utils.dart';
 
 class ProductsTab extends StatefulWidget {
@@ -54,9 +55,10 @@ class _ProductsTabState extends State<ProductsTab> {
           children: [
             Column(
               children: [
+                _buildInventoryFundQuickStatus(context, provider),
                 // Search bar
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                   child: TextField(
                     decoration: InputDecoration(
                       hintText: 'Buscar por nombre / SKU',
@@ -220,32 +222,80 @@ class _ProductsTabState extends State<ProductsTab> {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildInventoryFundQuickStatus(BuildContext context, BusinessProvider provider) {
+    final available = provider.availableInventoryBalance;
+    final currency = provider.activeBusiness?.currency ?? 'CUP';
+    final isPositive = available >= 0;
+    final statusColor = isPositive ? Colors.green : Colors.red;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: statusColor.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: statusColor.withOpacity(0.2)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Icon(Icons.inventory_2_outlined, size: 80, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          Text(
-            'No hay productos',
-            style: GoogleFonts.outfit(fontSize: 18, color: Colors.grey[600]),
+          Row(
+            children: [
+              Icon(Icons.savings_outlined, color: statusColor, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                context.t('available_to_renew'),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          TextButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ProductFormScreen()),
-              );
-            },
-            icon: const Icon(Icons.add),
-            label: const Text('Agregar Producto'),
+          Text(
+            '\$${available.toFormattedString(2)} $currency',
+            style: GoogleFonts.outfit(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: statusColor,
+            ),
           ),
         ],
       ),
     );
   }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.inventory_2_outlined, size: 80, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'No hay productos',
+              style: GoogleFonts.outfit(fontSize: 18, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProductFormScreen()),
+                );
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Agregar Producto'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildProductCard(
     BuildContext context,

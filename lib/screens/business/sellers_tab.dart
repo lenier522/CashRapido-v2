@@ -27,36 +27,39 @@ class SellersTab extends StatelessWidget {
           children: [
             sellers.isEmpty
                 ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.1),
-                            shape: BoxShape.circle,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.badge_outlined,
+                              size: 60,
+                              color: Colors.blue,
+                            ),
                           ),
-                          child: const Icon(
-                            Icons.badge_outlined,
-                            size: 60,
-                            color: Colors.blue,
+                          const SizedBox(height: 20),
+                          Text(
+                            context.t('no_sellers'),
+                            style: GoogleFonts.outfit(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[700],
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          context.t('no_sellers'),
-                          style: GoogleFonts.outfit(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey[700],
+                          const SizedBox(height: 8),
+                          Text(
+                            context.t('no_sellers_desc'),
+                            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          context.t('no_sellers_desc'),
-                          style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   )
                 : ListView.builder(

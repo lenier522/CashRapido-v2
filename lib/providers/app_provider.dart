@@ -155,7 +155,6 @@ class AppProvider with ChangeNotifier {
   DateTime? _licenseActivationDate;
   DateTime? get licenseActivationDate => _licenseActivationDate;
 
-
   void setLicenseType(LicenseType type, {DateTime? expirationDate}) {
     _licenseType = type;
     if (type != LicenseType.free) {
@@ -718,7 +717,6 @@ class AppProvider with ChangeNotifier {
       // Check Expiration
       _checkLicenseExpiration();
 
-
       // Fallback locale logic if not set above
       if (_currentLocale == null) {
         final systemLoc = ui.window.locale;
@@ -982,6 +980,11 @@ class AppProvider with ChangeNotifier {
     _lastLoginDate = now;
     prefs.setInt('streak_days', _streakDays);
     prefs.setString('last_login_date', _lastLoginDate!.toIso8601String());
+
+    WidgetService.updateStreakWidget(
+      streakDays: _streakDays,
+      loginDates: _loginDates,
+    );
   }
 
   Future<void> claimRandomPlan() async {
@@ -1041,9 +1044,11 @@ class AppProvider with ChangeNotifier {
     required String currency, // 'CUP', 'USD', 'EUR'
     String? cardId, // Optional link to card
     DateTime? date,
+    bool bypassBalanceCheck =
+        false, // Set true for business-linked transactions
   }) async {
-    // Validate balance before adding expense
-    if (cardId != null && amount < 0) {
+    // Validate balance before adding expense (skip for business transactions)
+    if (!bypassBalanceCheck && cardId != null && amount < 0) {
       final cardIndex = _cards.indexWhere((c) => c.id == cardId);
       if (cardIndex != -1) {
         final card = _cards[cardIndex];
@@ -1108,13 +1113,37 @@ class AppProvider with ChangeNotifier {
     return null; // Success
   }
 
-  /// Update widgets with current main card balance
+  /// Update widgets with current main card balance and stats
   Future<void> _updateWidgetsIfNeeded() async {
-    if (_cards.isEmpty) return;
+    try {
+      if (_cards.isEmpty) return;
 
-    // Find main card (first card or explicitly marked main)
-    final mainCard = _cards.first;
-    await WidgetService.updateAllWidgets(mainCard.balance, mainCard.currency);
+      // Find main card (first card or explicitly marked main)
+      final mainCard = _cards.first;
+      await WidgetService.updateAllWidgets(mainCard.balance, mainCard.currency);
+
+      // Update stats widget with this month's transactions
+      final now = DateTime.now();
+      final thisMonthTxs = _transactions
+          .where((t) {
+            return t.date.year == now.year && t.date.month == now.month;
+          })
+          .map((t) => (amount: t.amount, date: t.date))
+          .toList();
+
+      await WidgetService.computeAndUpdateStatsWidget(
+        transactions: thisMonthTxs,
+        currency: mainCard.currency,
+      );
+
+      // Update streak widget
+      await WidgetService.updateStreakWidget(
+        streakDays: _streakDays,
+        loginDates: _loginDates,
+      );
+    } catch (e) {
+      debugPrint('Error updating widgets: $e');
+    }
   }
 
   Future<void> deleteTransaction(String transactionId) async {

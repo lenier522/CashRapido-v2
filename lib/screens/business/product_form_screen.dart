@@ -8,6 +8,7 @@ import 'barcode_scanner_screen.dart';
 import 'category_manager_screen.dart';
 import 'package:cashrapido/utils/number_format_utils.dart';
 import '../../services/localization_service.dart';
+import '../../providers/app_provider.dart';
 
 class ProductFormScreen extends StatefulWidget {
   final Product? product;
@@ -73,7 +74,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     );
     _addStockController = TextEditingController();
     _investmentDate = widget.product?.investmentDate ?? DateTime.now();
-    _currency = widget.product?.currency ?? 'CUP';
     _selectedUnit = widget.product?.unit ?? 'uds';
     _selectedCategoryId = widget.product?.categoryId;
     _selectedSubcategoryId = widget.product?.subcategoryId;
@@ -87,6 +87,12 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     _costController.addListener(() {
       if (mounted) setState(() {});
     });
+
+    final biz = Provider.of<BusinessProvider>(context, listen: false).activeBusiness;
+    _currency = widget.product?.currency ?? biz?.currency ?? 'CUP';
+    if (!_currencies.contains(_currency)) {
+      _currencies.add(_currency);
+    }
   }
 
   @override
@@ -731,6 +737,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       sku = '$bizInitials$catSubcatInitials$shortName$dateStr';
     }
 
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+
     if (widget.product == null) {
       // Create
       await provider.addProduct(
@@ -746,6 +754,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         unit: _selectedUnit,
         categoryId: _selectedCategoryId,
         subcategoryId: _selectedSubcategoryId,
+        appProvider: appProvider,
       );
     } else {
       // Edit: investment data never changes sold units.
@@ -755,6 +764,21 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       final double newCurrentStock = widget.product!.currentStock + stockToAdd;
       final double newInitialQty = widget.product!.initialQuantity + stockToAdd;
       final double newCostPerUnit = double.tryParse(_costController.text) ?? widget.product!.costPerUnit;
+
+      // Deduct restocking cost from linked card if stock is added
+      if (stockToAdd > 0 && provider.linkedCardId != null) {
+        final restockCost = stockToAdd * newCostPerUnit;
+        if (restockCost > 0) {
+          await appProvider.addTransaction(
+            amount: -restockCost,
+            title: "Reabastecimiento: ${_nameController.text.trim()}",
+            categoryId: 'cat_business',
+            currency: _currency,
+            cardId: provider.linkedCardId,
+            date: DateTime.now(),
+          );
+        }
+      }
 
       final updated = widget.product!.copyWith(
         name: _nameController.text.trim(),

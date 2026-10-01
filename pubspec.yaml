@@ -4,7 +4,7 @@ description: "A new Flutter project."
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 1.26.55+34070184
+version: 1.26.60+34070185
 
 environment:
   sdk: ^3.10.3
@@ -69,6 +69,8 @@ dependencies:
   # artpay_lib:
   #   path: ../artpay_lib
   artpay_lib: ^0.0.8
+  flutter_markdown: ^0.7.7+1
+  markdown: ^7.3.1
 
 
 dev_dependencies:

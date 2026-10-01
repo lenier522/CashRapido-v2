@@ -4,10 +4,45 @@ import 'package:provider/provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:markdown/markdown.dart' as md;
 import '../services/ai_service.dart';
 import '../providers/app_provider.dart';
 import '../services/localization_service.dart';
 import '../models/models.dart';
+
+class UnderlineSyntax extends md.InlineSyntax {
+  UnderlineSyntax() : super(r'<u>(.*?)</u>|\+\+(.*?)\+\+');
+
+  @override
+  bool onMatch(md.InlineParser parser, Match match) {
+    final text = match[1] ?? match[2] ?? '';
+    parser.addNode(md.Element.text('u', text));
+    return true;
+  }
+}
+
+class UnderlineBuilder extends MarkdownElementBuilder {
+  final Color color;
+  UnderlineBuilder(this.color);
+
+  @override
+  Widget? visitElementAfterWithContext(
+    BuildContext context,
+    md.Element element,
+    TextStyle? preferredStyle,
+    TextStyle? parentStyle,
+  ) {
+    return Text(
+      element.textContent,
+      style: (preferredStyle ?? parentStyle ?? const TextStyle()).copyWith(
+        decoration: TextDecoration.underline,
+        decorationColor: color,
+        color: color,
+      ),
+    );
+  }
+}
 
 class AIChatScreen extends StatefulWidget {
   const AIChatScreen({super.key});
@@ -332,14 +367,139 @@ class _AIChatScreenState extends State<AIChatScreen> {
                           : Colors.black.withOpacity(0.05)),
                 ),
               ),
-              child: Text(
-                text,
-                style: GoogleFonts.outfit(
-                  color: isUser
-                      ? Colors.white
-                      : Theme.of(context).textTheme.bodyLarge?.color,
-                  fontSize: 15,
-                  height: 1.4,
+              child: MarkdownBody(
+                data: text,
+                selectable: true,
+                extensionSet: md.ExtensionSet(
+                  [
+                    ...md.ExtensionSet.gitHubFlavored.blockSyntaxes,
+                  ],
+                  [
+                    UnderlineSyntax(),
+                    ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes,
+                  ],
+                ),
+                builders: {
+                  'u': UnderlineBuilder(
+                    isUser
+                        ? Colors.white
+                        : (Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black),
+                  ),
+                },
+                styleSheet: MarkdownStyleSheet(
+                  p: GoogleFonts.outfit(
+                    color: isUser
+                        ? Colors.white
+                        : Theme.of(context).textTheme.bodyLarge?.color,
+                    fontSize: 15,
+                    height: 1.4,
+                  ),
+                  strong: GoogleFonts.outfit(
+                    color: isUser
+                        ? Colors.white
+                        : Theme.of(context).textTheme.bodyLarge?.color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                  em: GoogleFonts.outfit(
+                    color: isUser
+                        ? Colors.white.withOpacity(0.9)
+                        : Theme.of(context).textTheme.bodyLarge?.color,
+                    fontStyle: FontStyle.italic,
+                    fontSize: 15,
+                  ),
+                  del: GoogleFonts.outfit(
+                    color: isUser
+                        ? Colors.white60
+                        : Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.6),
+                    decoration: TextDecoration.lineThrough,
+                    fontSize: 15,
+                  ),
+                  h1: GoogleFonts.outfit(
+                    color: isUser
+                        ? Colors.white
+                        : Theme.of(context).textTheme.bodyLarge?.color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                  h2: GoogleFonts.outfit(
+                    color: isUser
+                        ? Colors.white
+                        : Theme.of(context).textTheme.bodyLarge?.color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                  h3: GoogleFonts.outfit(
+                    color: isUser
+                        ? Colors.white
+                        : Theme.of(context).textTheme.bodyLarge?.color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                  code: GoogleFonts.firaCode(
+                    color: isUser
+                        ? Colors.white
+                        : (isDark ? Colors.tealAccent : Colors.teal.shade800),
+                    backgroundColor: isUser
+                        ? Colors.white.withOpacity(0.15)
+                        : (isDark ? Colors.white10 : Colors.black.withOpacity(0.06)),
+                    fontSize: 13,
+                  ),
+                  codeblockDecoration: BoxDecoration(
+                    color: isUser
+                        ? Colors.white.withOpacity(0.12)
+                        : (isDark ? const Color(0xFF1E1E2E) : Colors.grey.shade200),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isUser
+                          ? Colors.white24
+                          : (isDark ? Colors.white12 : Colors.black12),
+                    ),
+                  ),
+                  codeblockPadding: const EdgeInsets.all(10),
+                  blockquote: GoogleFonts.outfit(
+                    color: isUser
+                        ? Colors.white.withOpacity(0.85)
+                        : Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.85),
+                    fontStyle: FontStyle.italic,
+                    fontSize: 14,
+                  ),
+                  blockquoteDecoration: BoxDecoration(
+                    color: isUser
+                        ? Colors.white.withOpacity(0.08)
+                        : (isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03)),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border(
+                      left: BorderSide(
+                        color: isUser ? Colors.white70 : Theme.of(context).colorScheme.primary,
+                        width: 4,
+                      ),
+                    ),
+                  ),
+                  listBullet: GoogleFonts.outfit(
+                    color: isUser ? Colors.white : Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                  tableBody: GoogleFonts.outfit(
+                    color: isUser
+                        ? Colors.white
+                        : Theme.of(context).textTheme.bodyLarge?.color,
+                    fontSize: 13,
+                  ),
+                  tableHead: GoogleFonts.outfit(
+                    color: isUser
+                        ? Colors.white
+                        : Theme.of(context).textTheme.bodyLarge?.color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                  tableBorder: TableBorder.all(
+                    color: isUser
+                        ? Colors.white30
+                        : (isDark ? Colors.white24 : Colors.black26),
+                    width: 1,
+                  ),
                 ),
               ),
             ),
@@ -454,8 +614,11 @@ class _AIChatScreenState extends State<AIChatScreen> {
                         style: GoogleFonts.outfit(fontSize: 15),
                       ),
                       subtitle: Text(
-                        "\${chat.updatedAt.day}/\${chat.updatedAt.month}/\${chat.updatedAt.year}",
-                        style: GoogleFonts.outfit(fontSize: 12),
+                        _formatChatDate(chat.updatedAt),
+                        style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          color: Theme.of(context).disabledColor,
+                        ),
                       ),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       selected: _currentConversation?.id == chat.id,
@@ -574,49 +737,157 @@ class _AIChatScreenState extends State<AIChatScreen> {
     );
   }
 
+  String _formatChatDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final chatDay = DateTime(date.year, date.month, date.day);
+    final diffDays = today.difference(chatDay).inDays;
+
+    final timeStr =
+        "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
+
+    if (diffDays == 0) {
+      return "Hoy, $timeStr";
+    } else if (diffDays == 1) {
+      return "Ayer, $timeStr";
+    } else if (diffDays < 7) {
+      const weekdays = [
+        'Lunes',
+        'Martes',
+        'Miércoles',
+        'Jueves',
+        'Viernes',
+        'Sábado',
+        'Domingo',
+      ];
+      return "${weekdays[date.weekday - 1]}, $timeStr";
+    } else {
+      final day = date.day.toString().padLeft(2, '0');
+      final month = date.month.toString().padLeft(2, '0');
+      return "$day/$month/${date.year}, $timeStr";
+    }
+  }
+
   Widget _buildAssistantHeaderCard() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withOpacity(0.04)
-            : Theme.of(context).cardColor.withOpacity(0.95),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withOpacity(0.08)
-              : Colors.black.withOpacity(0.06),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.14),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.auto_awesome_rounded,
-              color: Theme.of(context).colorScheme.primary,
-              size: 20,
+    final showSuggestions = _messages.length <= 1;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          margin: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: isDark
+                ? Colors.white.withOpacity(0.04)
+                : Theme.of(context).cardColor.withOpacity(0.95),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withOpacity(0.08)
+                  : Colors.black.withOpacity(0.06),
             ),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'Asistente financiero activo',
-              style: GoogleFonts.outfit(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context).textTheme.bodyMedium?.color,
+          child: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.14),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.auto_awesome_rounded,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 18,
+                ),
               ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Asistente Financiero CashRápido',
+                      style: GoogleFonts.outfit(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                      ),
+                    ),
+                    Text(
+                      'Conectado a tus balances y movimientos en tiempo real',
+                      style: GoogleFonts.outfit(
+                        fontSize: 11,
+                        color: Theme.of(context).disabledColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Builder(
+                builder: (ctx) => IconButton(
+                  icon: const Icon(Icons.history_rounded, size: 20),
+                  tooltip: 'Historial de conversaciones',
+                  onPressed: () => Scaffold.of(ctx).openDrawer(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (showSuggestions)
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Row(
+              children: [
+                _buildSuggestionChip('📊 ¿Cómo van mis finanzas este mes?'),
+                const SizedBox(width: 8),
+                _buildSuggestionChip('💰 ¿Cuál es mi saldo total?'),
+                const SizedBox(width: 8),
+                _buildSuggestionChip('🔍 ¿En qué he gastado más?'),
+                const SizedBox(width: 8),
+                _buildSuggestionChip('💡 Dame un consejo de ahorro'),
+              ],
             ),
           ),
-        ],
+      ],
+    );
+  }
+
+  Widget _buildSuggestionChip(String prompt) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return InkWell(
+      onTap: () {
+        _controller.text = prompt;
+        _sendMessage();
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withOpacity(0.06)
+              : Theme.of(context).colorScheme.primary.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withOpacity(0.1)
+                : Theme.of(context).colorScheme.primary.withOpacity(0.2),
+          ),
+        ),
+        child: Text(
+          prompt,
+          style: GoogleFonts.outfit(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: isDark
+                ? Colors.white70
+                : Theme.of(context).colorScheme.primary,
+          ),
+        ),
       ),
     );
   }

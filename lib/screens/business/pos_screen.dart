@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/business_provider.dart';
+import '../../providers/app_provider.dart';
 import '../../models/product.dart';
 import '../../models/sale.dart';
 import '../../models/seller.dart';
@@ -701,6 +702,7 @@ class _PosScreenState extends State<PosScreen> {
       );
     });
 
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
     provider.addSale(
       items: items,
       paymentMethod: paymentMethod,
@@ -709,6 +711,7 @@ class _PosScreenState extends State<PosScreen> {
       status: status,
       sellerId: sellerId,
       sellerName: sellerName,
+      appProvider: appProvider,
     );
 
     ScaffoldMessenger.of(context).showSnackBar(

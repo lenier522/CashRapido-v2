@@ -3,4 +3,6 @@
     <string name="app_name">CashRápido</string>
     <string name="balance_widget_description">Muestra el balance de tu tarjeta principal</string>
     <string name="tips_widget_description">Consejos financieros aleatorios</string>
+    <string name="stats_widget_description">Gráfica de barras con ingresos y gastos del mes</string>
+    <string name="streak_widget_description">Tu racha de días seguidos y progreso semanal estilo Duolingo</string>
 </resources>
