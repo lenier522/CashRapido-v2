@@ -7,11 +7,7 @@ class BarcodeScannerScreen extends StatefulWidget {
   final bool continuous;
   final Function(String)? onScan;
 
-  const BarcodeScannerScreen({
-    super.key,
-    this.continuous = false,
-    this.onScan,
-  });
+  const BarcodeScannerScreen({super.key, this.continuous = false, this.onScan});
 
   @override
   State<BarcodeScannerScreen> createState() => _BarcodeScannerScreenState();
@@ -109,10 +105,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
       body: Stack(
         children: [
           // 1. Mobile Scanner View
-          MobileScanner(
-            controller: _controller,
-            onDetect: _onDetect,
-          ),
+          MobileScanner(controller: _controller, onDetect: _onDetect),
 
           // 2. Dark Overlay with Cutout Scan Window
           _buildScannerOverlay(context, scanWindowSize),
@@ -131,12 +124,19 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                       onPressed: () => Navigator.pop(context),
                     ),
                   ),
-                  Text(
-                    widget.continuous ? 'Modo Escáner Continuo' : 'Escanear Código',
-                    style: GoogleFonts.outfit(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
+                  Expanded(
+                    child: Text(
+                      widget.continuous
+                          ? 'Modo Escáner Continuo'
+                          : 'Escanear Código',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
                     ),
                   ),
                   CircleAvatar(
@@ -169,7 +169,10 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                 duration: const Duration(milliseconds: 300),
                 opacity: _notificationText != null ? 1.0 : 0.0,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 14,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.green.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(30),
@@ -185,7 +188,10 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.check_circle_outline, color: Colors.white),
+                      const Icon(
+                        Icons.check_circle_outline,
+                        color: Colors.white,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -212,7 +218,10 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
             right: 0,
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(20),

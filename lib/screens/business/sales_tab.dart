@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../providers/business_provider.dart';
 import '../../providers/app_provider.dart';
 import '../../models/sale.dart';
 import '../../services/localization_service.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_radius.dart';
+import '../../theme/app_spacing.dart';
+import '../../widgets/design/cash_bottom_sheet.dart';
+import '../../widgets/design/cash_button.dart';
+import '../../widgets/design/cash_chip.dart';
+import '../../widgets/design/cash_empty_state.dart';
+import '../../widgets/design/cash_floating_button.dart';
 import 'pos_screen.dart';
 import 'package:cashrapido/utils/number_format_utils.dart';
 import '../../utils/receipt_helper.dart';
@@ -21,6 +28,7 @@ class _SalesTabState extends State<SalesTab> {
   String _dateFilter = 'all'; // 'all', 'today', 'week', 'month', 'custom'
   DateTime? _customStart;
   DateTime? _customEnd;
+  bool _markingPaid = false;
 
   void _setDateFilter(String filter) {
     setState(() => _dateFilter = filter);
@@ -35,6 +43,7 @@ class _SalesTabState extends State<SalesTab> {
           ? DateTimeRange(start: _customStart!, end: _customEnd!)
           : null,
     ).then((range) {
+      if (!mounted) return;
       if (range != null) {
         setState(() {
           _dateFilter = 'custom';
@@ -51,20 +60,44 @@ class _SalesTabState extends State<SalesTab> {
 
     switch (_dateFilter) {
       case 'today':
-        return sales.where((s) => s.date.isAfter(todayStart.subtract(const Duration(seconds: 1)))).toList();
+        return sales
+            .where(
+              (s) => s.date.isAfter(
+                todayStart.subtract(const Duration(seconds: 1)),
+              ),
+            )
+            .toList();
       case 'week':
-        final weekStart = todayStart.subtract(Duration(days: todayStart.weekday - 1));
-        return sales.where((s) => s.date.isAfter(weekStart.subtract(const Duration(seconds: 1)))).toList();
+        final weekStart = todayStart.subtract(
+          Duration(days: todayStart.weekday - 1),
+        );
+        return sales
+            .where(
+              (s) => s.date.isAfter(
+                weekStart.subtract(const Duration(seconds: 1)),
+              ),
+            )
+            .toList();
       case 'month':
         final monthStart = DateTime(now.year, now.month, 1);
-        return sales.where((s) => s.date.isAfter(monthStart.subtract(const Duration(seconds: 1)))).toList();
+        return sales
+            .where(
+              (s) => s.date.isAfter(
+                monthStart.subtract(const Duration(seconds: 1)),
+              ),
+            )
+            .toList();
       case 'custom':
         if (_customStart != null && _customEnd != null) {
-          return sales.where(
-            (s) =>
-                s.date.isAfter(_customStart!.subtract(const Duration(seconds: 1))) &&
-                s.date.isBefore(_customEnd!.add(const Duration(days: 1))),
-          ).toList();
+          return sales
+              .where(
+                (s) =>
+                    s.date.isAfter(
+                      _customStart!.subtract(const Duration(seconds: 1)),
+                    ) &&
+                    s.date.isBefore(_customEnd!.add(const Duration(days: 1))),
+              )
+              .toList();
         }
         return sales;
       default:
@@ -80,7 +113,10 @@ class _SalesTabState extends State<SalesTab> {
         final sortedSales = List<Sale>.from(filteredSales)
           ..sort((a, b) => b.date.compareTo(a.date));
 
-        final income = filteredSales.fold<double>(0.0, (sum, s) => sum + s.total);
+        final income = filteredSales.fold<double>(
+          0.0,
+          (sum, s) => sum + s.total,
+        );
 
         return Column(
           children: [
@@ -92,82 +128,105 @@ class _SalesTabState extends State<SalesTab> {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // FILTROS Y RESUMEN
+  // ---------------------------------------------------------------------------
+
   Widget _buildFilterBar(BuildContext context, double income) {
     final filters = [
-      {'key': 'all', 'label': 'Todas'},
-      {'key': 'today', 'label': 'Hoy'},
-      {'key': 'week', 'label': 'Esta Semana'},
-      {'key': 'month', 'label': 'Este Mes'},
-      {'key': 'custom', 'label': 'Personalizado'},
+      {
+        'key': 'all',
+        'label': 'sales_filter_all',
+        'icon': Icons.storefront_outlined,
+      },
+      {
+        'key': 'today',
+        'label': 'sales_filter_today',
+        'icon': Icons.today_outlined,
+      },
+      {
+        'key': 'week',
+        'label': 'sales_filter_week',
+        'icon': Icons.date_range_outlined,
+      },
+      {
+        'key': 'month',
+        'label': 'sales_filter_month',
+        'icon': Icons.calendar_month_outlined,
+      },
+      {
+        'key': 'custom',
+        'label': 'sales_filter_custom',
+        'icon': Icons.tune_rounded,
+      },
     ];
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.md,
+        AppSpacing.lg,
+        AppSpacing.xs,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          SizedBox(
+            height: 36,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: filters.length,
+              separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
+              itemBuilder: (context, index) {
+                final f = filters[index];
+                final selected = _dateFilter == f['key'];
+                return CashChip(
+                  label: context.t(f['label'] as String),
+                  icon: f['icon'] as IconData,
+                  selected: selected,
+                  onTap: () {
+                    if (f['key'] == 'custom') {
+                      _showDateRangePicker(context);
+                    } else {
+                      _setDateFilter(f['key'] as String);
+                    }
+                  },
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
           Row(
             children: [
-              Expanded(
-                child: SizedBox(
-                  height: 32,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: filters.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (context, index) {
-                      final f = filters[index];
-                      final selected = _dateFilter == f['key'];
-                      return GestureDetector(
-                        onTap: () {
-                          if (f['key'] == 'custom') {
-                            _showDateRangePicker(context);
-                          } else {
-                            _setDateFilter(f['key'] as String);
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: selected
-                                ? Theme.of(context).primaryColor
-                                : Theme.of(context).cardColor,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: selected
-                                  ? Theme.of(context).primaryColor
-                                  : Colors.grey.withOpacity(0.2),
-                            ),
-                          ),
-                          child: Text(
-                            f['label'] as String,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: selected ? Colors.white : Colors.grey[700],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: AppColors.income.withValues(alpha: 0.12),
+                  borderRadius: AppRadius.radiusSm,
+                ),
+                child: const Icon(
+                  Icons.trending_up_rounded,
+                  size: 18,
+                  color: AppColors.income,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
+              const SizedBox(width: AppSpacing.sm),
               Text(
-                'Ingresos: ',
-                style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                context.t('sales_income_label'),
+                style: Theme.of(context).textTheme.bodySmall,
               ),
-              Text(
-                '\$${income.toFormattedString(2)}',
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: Colors.green,
+              const Spacer(),
+              Flexible(
+                child: Text(
+                  '\$${income.toFormattedString(2)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: AppColors.income,
+                  ),
                 ),
               ),
             ],
@@ -177,255 +236,466 @@ class _SalesTabState extends State<SalesTab> {
     );
   }
 
-  Widget _buildSalesList(BuildContext context, BusinessProvider provider, List<Sale> sortedSales) {
+  // ---------------------------------------------------------------------------
+  // LISTA DE VENTAS
+  // ---------------------------------------------------------------------------
+
+  Widget _buildSalesList(
+    BuildContext context,
+    BusinessProvider provider,
+    List<Sale> sortedSales,
+  ) {
+    if (provider.sales.isEmpty) {
+      return CashEmptyState(
+        icon: Icons.storefront_outlined,
+        title: context.t('sales_empty_title'),
+        message: context.t('sales_empty_all_desc'),
+      );
+    }
+
     if (sortedSales.isEmpty) {
-      return Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(vertical: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.point_of_sale_rounded,
-                  size: 60,
-                  color: Colors.green,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'No hay ventas',
-                style: GoogleFonts.outfit(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[700],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _dateFilter == 'all'
-                    ? 'Realiza tu primera venta'
-                    : 'No hay ventas en este período',
-                style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-              ),
-            ],
-          ),
-        ),
+      return CashEmptyState(
+        icon: Icons.event_busy_outlined,
+        title: context.t('sales_empty_title'),
+        message: context.t('sales_empty_filtered_desc'),
       );
     }
 
     return Stack(
       children: [
         ListView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.sm,
+            AppSpacing.lg,
+            88,
+          ),
           itemCount: sortedSales.length,
           itemBuilder: (context, index) {
             final sale = sortedSales[index];
-            return Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-                border: Border.all(color: Colors.grey.withOpacity(0.1)),
-              ),
-              child: ExpansionTile(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: sale.status == 'pending'
-                        ? Colors.orange.withOpacity(0.1)
-                        : Colors.green.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    sale.status == 'pending' ? Icons.access_time : Icons.check_circle,
-                    color: sale.status == 'pending' ? Colors.orange : Colors.green,
-                    size: 24,
-                  ),
-                ),
-                title: Text(
-                  '\$${sale.total.toFormattedString(2)}',
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                    color: sale.status == 'pending' ? Colors.orange[700] : Colors.green[700],
-                  ),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${DateFormat('dd/MM HH:mm').format(sale.date)} • ${sale.paymentMethod}',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    ),
-                    if (sale.clientName != null)
-                      Text(
-                        'Cliente: ${sale.clientName}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.bold),
-                      ),
-                    if (sale.sellerName != null && sale.sellerName!.isNotEmpty)
-                      Text(
-                        'Vendedor: ${sale.sellerName}',
-                        style: TextStyle(fontSize: 12, color: Colors.blue[600]),
-                      ),
-                  ],
-                ),
-                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                children: [
-                  ...sale.items.map((item) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.productName,
-                                style: const TextStyle(fontWeight: FontWeight.w500),
-                              ),
-                              Text(
-                                '${item.quantity} x \$${item.unitPrice.toFormattedString(2)}',
-                                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                              ),
-                            ],
-                          ),
-                          Text(
-                            '\$${item.subtotal.toFormattedString(2)}',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                  if (sale.discount > 0)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8, bottom: 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Descuento', style: TextStyle(color: Colors.red)),
-                          Text('-\$${sale.discount.toFormattedString(2)}', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                    ),
-                  const Divider(),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      TextButton.icon(
-                        onPressed: () {
-                          final activeBusiness = provider.activeBusiness;
-                          if (activeBusiness != null) {
-                            ReceiptHelper.shareReceipt(context, sale, activeBusiness);
-                          }
-                        },
-                        icon: const Icon(Icons.share, size: 18),
-                        label: const Text('Compartir'),
-                      ),
-                      if (sale.status == 'pending')
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            final appProvider = Provider.of<AppProvider>(context, listen: false);
-                            provider.markSaleAsPaid(sale.id, appProvider: appProvider);
-                          },
-                          icon: const Icon(Icons.check, size: 18),
-                          label: const Text('Marcar Pagado'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                          ),
-                        )
-                      else
-                        TextButton.icon(
-                          onPressed: () async {
-                            final confirm = await showDialog<bool>(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
-                                title: Row(
-                                  children: const [
-                                    Icon(Icons.warning_amber_rounded, color: Colors.red, size: 22),
-                                    SizedBox(width: 8),
-                                    Text('Eliminar Venta'),
-                                  ],
-                                ),
-                                content: const Text(
-                                  'Esta acción eliminará la venta permanentemente.\n\n'
-                                  '📦 Las unidades vendidas serán devueltas al inventario automáticamente.\n\n'
-                                  '¿Deseas continuar?',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(ctx, false),
-                                    child: const Text('Cancelar'),
-                                  ),
-                                  ElevatedButton(
-                                    onPressed: () => Navigator.pop(ctx, true),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.red,
-                                      foregroundColor: Colors.white,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    ),
-                                    child: const Text('Eliminar'),
-                                  ),
-                                ],
-                              ),
-                            );
-                            if (confirm == true) {
-                              final appProvider = Provider.of<AppProvider>(context, listen: false);
-                              await provider.deleteSale(sale.id, appProvider: appProvider);
-                            }
-                          },
-                          icon: const Icon(Icons.delete, size: 18, color: Colors.red),
-                          label: const Text('Eliminar', style: TextStyle(color: Colors.red)),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            );
+            return _buildSaleCard(context, provider, sale);
           },
         ),
         Positioned(
           bottom: 16,
           right: 16,
-          child: FloatingActionButton.extended(
+          child: CashFloatingButton(
             heroTag: 'pos_fab',
+            icon: Icons.point_of_sale,
+            label: context.t('pos_title'),
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const PosScreen()),
               );
             },
-            backgroundColor: Colors.green,
-            foregroundColor: Colors.white,
-            icon: const Icon(Icons.point_of_sale),
-            label: Text(context.t('pos_title')),
-            elevation: 4,
           ),
         ),
       ],
     );
   }
+
+  Widget _buildSaleCard(
+    BuildContext context,
+    BusinessProvider provider,
+    Sale sale,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isPending = sale.status == 'pending';
+    final statusColor = isPending ? AppColors.warning : AppColors.income;
+    final statusBg = isPending
+        ? AppColors.warning.withValues(alpha: 0.12)
+        : AppColors.income.withValues(alpha: 0.12);
+
+    final String title = '\$${sale.total.toFormattedString(2)}';
+
+    final List<String> detailParts = [
+      '${DateFormat('dd/MM HH:mm').format(sale.date)} • ${sale.paymentMethod}',
+      if (sale.clientName != null)
+        '${context.t('sale_client_label')}: ${sale.clientName}',
+      if (sale.sellerName != null && sale.sellerName!.isNotEmpty)
+        '${context.t('sale_seller_label')}: ${sale.sellerName}',
+    ];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        borderRadius: AppRadius.radiusLg,
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.borderLight,
+        ),
+      ),
+      child: Material(
+        color: AppColors.transparent,
+        child: InkWell(
+          borderRadius: AppRadius.radiusLg,
+          onTap: () => _showSaleDetail(context, provider, sale),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.md,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: statusBg,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isPending
+                        ? Icons.access_time_rounded
+                        : Icons.check_circle_rounded,
+                    color: statusColor,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          color: statusColor,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      ...detailParts
+                          .take(2)
+                          .map(
+                            (part) => Padding(
+                              padding: const EdgeInsets.only(bottom: 2),
+                              child: Text(
+                                part,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ),
+                          ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: isDark
+                      ? AppColors.textTertiaryDark
+                      : AppColors.textTertiary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // DETALLE DE VENTA
+  // ---------------------------------------------------------------------------
+
+  void _showSaleDetail(
+    BuildContext context,
+    BusinessProvider provider,
+    Sale sale,
+  ) {
+    final isPending = sale.status == 'pending';
+    final statusColor = isPending ? AppColors.warning : AppColors.income;
+    final subtotal = sale.total + sale.discount;
+    final currency = provider.activeBusiness?.currency ?? 'CUP';
+
+    CashBottomSheet.show(
+      context,
+      builder: (context) => CashBottomSheet(
+        title: context.t('sale_detail_title'),
+        subtitle:
+            '${DateFormat('dd/MM/yyyy HH:mm').format(sale.date)} • ${sale.paymentMethod}',
+        trailing: CashChip(
+          label: isPending
+              ? context.t('sale_status_pending')
+              : context.t('sale_status_paid'),
+          selected: true,
+          color: statusColor,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Datos identificativos
+            _infoRow(
+              context,
+              context.t('sale_receipt_label'),
+              sale.id.substring(0, 8).toUpperCase(),
+            ),
+            _infoRow(
+              context,
+              context.t('sale_payment_label'),
+              sale.paymentMethod,
+            ),
+            if (sale.clientName != null)
+              _infoRow(
+                context,
+                context.t('sale_client_label'),
+                sale.clientName!,
+              ),
+            if (sale.sellerName != null && sale.sellerName!.isNotEmpty)
+              _infoRow(
+                context,
+                context.t('sale_seller_label'),
+                sale.sellerName!,
+              ),
+            const SizedBox(height: AppSpacing.md),
+
+            // Artículos
+            ...sale.items.map((item) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.productName,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          Text(
+                            '${_formatQty(item.quantity)} x \$${item.unitPrice.toFormattedString(2)}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      '\$${item.subtotal.toFormattedString(2)}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: isPending ? AppColors.warning : AppColors.income,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+
+            const SizedBox(height: AppSpacing.sm),
+            Divider(color: Theme.of(context).dividerColor, height: 1),
+            const SizedBox(height: AppSpacing.sm),
+
+            // Resumen económico
+            _summaryRow(
+              context,
+              context.t('pos_subtotal'),
+              '\$${subtotal.toFormattedString(2)} $currency',
+            ),
+            if (sale.discount > 0)
+              _summaryRow(
+                context,
+                context.t('sale_discount_label'),
+                '-\$${sale.discount.toFormattedString(2)} $currency',
+                valueColor: AppColors.error,
+              ),
+            const SizedBox(height: AppSpacing.xs),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  child: Text(
+                    context.t('total'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Flexible(
+                  child: Text(
+                    '\$${sale.total.toFormattedString(2)} $currency',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            // Acciones
+            CashButton(
+              label: context.t('sale_share_label'),
+              icon: const Icon(Icons.share_outlined, size: 18),
+              type: CashButtonType.secondary,
+              onPressed: () {
+                final activeBusiness = provider.activeBusiness;
+                if (activeBusiness != null) {
+                  ReceiptHelper.shareReceipt(context, sale, activeBusiness);
+                }
+              },
+            ),
+            const SizedBox(height: AppSpacing.md),
+            if (sale.status == 'pending')
+              CashButton(
+                label: context.t('sale_mark_paid_label'),
+                icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+                onPressed: () async {
+                  if (_markingPaid) return;
+                  _markingPaid = true;
+                  try {
+                    final appProvider = Provider.of<AppProvider>(
+                      context,
+                      listen: false,
+                    );
+                    await provider.markSaleAsPaid(
+                      sale.id,
+                      appProvider: appProvider,
+                    );
+                    if (context.mounted) Navigator.pop(context);
+                  } finally {
+                    _markingPaid = false;
+                  }
+                },
+              )
+            else
+              CashButton(
+                label: context.t('sale_delete_label'),
+                icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                type: CashButtonType.danger,
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: AppRadius.radiusXl,
+                      ),
+                      title: Text(context.t('delete_sale_confirm_title')),
+                      content: Text(context.t('delete_sale_confirm_msg')),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: Text(context.t('cancel')),
+                        ),
+                        CashButton(
+                          label: context.t('sale_delete_label'),
+                          fullWidth: false,
+                          height: 44,
+                          type: CashButtonType.danger,
+                          onPressed: () => Navigator.pop(ctx, true),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm == true && context.mounted) {
+                    final appProvider = Provider.of<AppProvider>(
+                      context,
+                      listen: false,
+                    );
+                    await provider.deleteSale(
+                      sale.id,
+                      appProvider: appProvider,
+                    );
+                    if (context.mounted) Navigator.pop(context);
+                  }
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _infoRow(BuildContext context, String label, String value) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$label: ',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondary,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryRow(
+    BuildContext context,
+    String label,
+    String value, {
+    Color? valueColor,
+  }) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color effectiveColor =
+        valueColor ??
+        (isDark ? AppColors.textPrimaryDark : AppColors.textPrimary);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                color: effectiveColor,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatQty(double qty) =>
+      qty % 1 == 0 ? qty.toInt().toString() : qty.toStringAsFixed(2);
 }

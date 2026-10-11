@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../services/localization_service.dart';
-import '../../screens/licenses_screen.dart';
 
+import '../../services/localization_service.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_radius.dart';
+import '../../theme/app_spacing.dart';
+import '../../widgets/design/cash_button.dart';
+import '../../widgets/design/cash_card.dart';
+import '../licenses_screen.dart';
+
+/// Pantalla que se muestra cuando la licencia no permite acceder al módulo de
+/// préstamos. Conserva exactamente las condiciones del [LoansGatekeeper]; aquí
+/// sólo se explica la situación y se ofrece la vía de mejora existente.
 class LoansLockedScreen extends StatelessWidget {
   const LoansLockedScreen({super.key});
 
@@ -11,133 +19,154 @@ class LoansLockedScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
+    final Color primaryText = isDark
+        ? AppColors.textPrimaryDark
+        : AppColors.textPrimary;
+    final Color secondaryText = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: isDark ? Colors.white : Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(title: Text(context.t('loans_module_title'))),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(28),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.05),
-                      blurRadius: 20,
-                      spreadRadius: 5,
-                    )
-                  ]
-                ),
-                child: Icon(
-                  Icons.real_estate_agent_outlined,
-                  size: 68,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-              const SizedBox(height: 32),
-              Text(
-                context.t('loans_locked_title'),
-                style: GoogleFonts.outfit(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: theme.textTheme.bodyLarge?.color,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                context.t('loans_locked_desc'),
-                style: GoogleFonts.outfit(
-                  fontSize: 16,
-                  color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 40),
-              
-              // Feature list with elegant icons
-              _buildFeatureItem(context, Icons.people_outline_rounded,
-                context.t('loans_feature_debtors')),
-              _buildFeatureItem(context, Icons.percent_rounded,
-                context.t('loans_feature_interest_rates')),
-              _buildFeatureItem(context, Icons.notifications_active_outlined,
-                context.t('loans_feature_alerts')),
-              _buildFeatureItem(context, Icons.account_balance_wallet_outlined,
-                context.t('loans_feature_integration')),
-              
-              const SizedBox(height: 48),
-              
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.xl,
+              vertical: AppSpacing.xl,
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 96,
+                    height: 96,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(
+                        alpha: isDark ? 0.16 : 0.10,
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.real_estate_agent_outlined,
+                      size: 44,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xxl),
+                  Text(
+                    context.t('loans_locked_title'),
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: primaryText,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    context.t('loans_locked_desc'),
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: secondaryText,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xxl),
+                  CashCard(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.xs,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildFeature(
+                          context,
+                          Icons.people_outline_rounded,
+                          context.t('loans_feature_debtors'),
+                        ),
+                        Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: theme.dividerColor,
+                        ),
+                        _buildFeature(
+                          context,
+                          Icons.percent_rounded,
+                          context.t('loans_feature_interest_rates'),
+                        ),
+                        Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: theme.dividerColor,
+                        ),
+                        _buildFeature(
+                          context,
+                          Icons.notifications_active_outlined,
+                          context.t('loans_feature_alerts'),
+                        ),
+                        Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: theme.dividerColor,
+                        ),
+                        _buildFeature(
+                          context,
+                          Icons.account_balance_wallet_outlined,
+                          context.t('loans_feature_integration'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xxl),
+                  CashButton(
+                    label: context.t('upgrade_to_enterprise'),
+                    icon: const Icon(Icons.workspace_premium_rounded, size: 20),
+                    onPressed: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const LicensesScreen()),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    context.t('upgrade_to_enterprise').toUpperCase(),
-                    style: GoogleFonts.outfit(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
+                      MaterialPageRoute(
+                        builder: (_) => const LicensesScreen(),
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
-              const SizedBox(height: 20),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildFeatureItem(BuildContext context, IconData icon, String text) {
+  Widget _buildFeature(BuildContext context, IconData icon, String text) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(10),
+              color: AppColors.primary.withValues(alpha: isDark ? 0.14 : 0.10),
+              borderRadius: AppRadius.radiusMd,
             ),
-            child: Icon(icon, size: 20, color: theme.colorScheme.primary),
+            child: Icon(icon, size: 20, color: AppColors.primary),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.outfit(
-                fontSize: 15,
+              style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w500,
-                color: theme.textTheme.bodyLarge?.color?.withValues(alpha: 0.85),
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimary,
               ),
             ),
           ),

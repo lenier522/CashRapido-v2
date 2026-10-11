@@ -32,6 +32,7 @@ import 'services/localization_service.dart';
 import 'providers/business_provider.dart';
 import 'providers/loan_provider.dart';
 
+import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -91,10 +92,15 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AppProvider()..init()),
         ChangeNotifierProvider(create: (_) => BusinessProvider()..init()),
-        ChangeNotifierProvider(create: (context) {
-          final appProvider = Provider.of<AppProvider>(context, listen: false);
-          return LoanProvider()..init(appProvider: appProvider);
-        }),
+        ChangeNotifierProvider(
+          create: (context) {
+            final appProvider = Provider.of<AppProvider>(
+              context,
+              listen: false,
+            );
+            return LoanProvider()..init(appProvider: appProvider);
+          },
+        ),
       ],
       child: MyApp(seenOnboarding: seenOnboarding),
     ),
@@ -114,64 +120,28 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           title: 'CashRapido',
           debugShowCheckedModeBanner: false,
-          themeAnimationDuration: const Duration(milliseconds: 500),
+
+          themeAnimationDuration: const Duration(milliseconds: 400),
+
           themeAnimationCurve: Curves.easeInOut,
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-            useMaterial3: true,
-            textTheme: GoogleFonts.outfitTextTheme(),
-            cardColor: Colors.white,
-          ),
-          darkTheme: ThemeData(
-            brightness: Brightness.dark,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.deepPurple,
-              brightness: Brightness.dark,
-              surface: const Color(0xFF1E1E2C),
-              onSurface: Colors.white,
-              background: const Color(0xFF121212),
-              secondary: const Color(0xFF2D2D44),
-              primary: const Color(0xFFBB86FC), // Lighter purple for dark mode
-            ),
-            useMaterial3: true,
-            textTheme: GoogleFonts.outfitTextTheme(
-              ThemeData.dark().textTheme,
-            ).apply(bodyColor: Colors.white, displayColor: Colors.white),
-            scaffoldBackgroundColor: const Color(0xFF121212),
-            cardColor: const Color(0xFF1E1E2C),
-            canvasColor: const Color(0xFF1E1E2C),
-            appBarTheme: const AppBarTheme(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              iconTheme: IconThemeData(color: Colors.white),
-              titleTextStyle: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            dividerColor: Colors.white10,
-            dialogTheme: const DialogThemeData(
-              backgroundColor: Color(0xFF1E1E2C),
-            ),
-            bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-              backgroundColor: Color(0xFF1E1E2C),
-              selectedItemColor: Color(0xFFBB86FC),
-              unselectedItemColor: Colors.white54,
-              elevation: 10,
-              type: BottomNavigationBarType.fixed,
-            ),
-          ),
+
+          theme: AppTheme.light,
+
+          darkTheme: AppTheme.dark,
+
           themeMode: provider.themeMode,
-          // Localization
-          locale: provider.currentLocale, // Can be null (system default) or set
+
+          locale: provider.currentLocale,
+
           supportedLocales: const [Locale('es'), Locale('en'), Locale('fr')],
+
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
+
           home: AuthWrapper(seenOnboarding: seenOnboarding),
         );
       },

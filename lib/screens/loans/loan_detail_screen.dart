@@ -3,41 +3,44 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
+import '../../providers/app_provider.dart';
 import '../../providers/loan_provider.dart';
 import '../../models/loan.dart';
 import '../../models/loan_activity.dart';
-import 'package:cashrapido/utils/number_format_utils.dart';
 import '../../services/localization_service.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_radius.dart';
+import '../../theme/app_spacing.dart';
+import '../../widgets/design/cash_button.dart';
+import '../../widgets/design/cash_card.dart';
+import '../../widgets/design/cash_chip.dart';
+import '../../widgets/design/cash_icon_button.dart';
+import 'package:cashrapido/utils/number_format_utils.dart';
 import 'loan_form_screen.dart';
 import 'loan_payment_form_screen.dart';
 
+/// Detalle de un préstamo.
+///
+/// Presenta la información en una jerarquía clara: cabecera con el saldo
+/// pendiente y el estado real, acciones, condiciones, tabla de cuotas,
+/// historial de cobros y registro de eventos. Todos los importes y estados
+/// provienen de [LoanProvider] / del modelo [Loan]; aquí no se recalcula
+/// ninguna fórmula financiera ni se reinterpretan los datos.
 class LoanDetailScreen extends StatelessWidget {
   final Loan loan;
   const LoanDetailScreen({super.key, required this.loan});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          context.t('loan_detail_title'),
-          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-        ),
+        title: Text(context.t('loan_detail_title')),
         centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: isDark ? Colors.white : Colors.black,
-          ),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
@@ -51,7 +54,7 @@ class LoanDetailScreen extends StatelessWidget {
                 child: Row(
                   children: [
                     const Icon(Icons.picture_as_pdf_outlined, size: 18),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: AppSpacing.md),
                     Text(context.t('loan_export_pdf')),
                   ],
                 ),
@@ -63,12 +66,12 @@ class LoanDetailScreen extends StatelessWidget {
                     const Icon(
                       Icons.swap_horiz_rounded,
                       size: 18,
-                      color: Colors.blueAccent,
+                      color: AppColors.info,
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: AppSpacing.md),
                     Text(
                       context.t('loan_refinance'),
-                      style: const TextStyle(color: Colors.blueAccent),
+                      style: const TextStyle(color: AppColors.info),
                     ),
                   ],
                 ),
@@ -80,12 +83,12 @@ class LoanDetailScreen extends StatelessWidget {
                     const Icon(
                       Icons.cancel_outlined,
                       size: 18,
-                      color: Colors.redAccent,
+                      color: AppColors.error,
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: AppSpacing.md),
                     Text(
                       context.t('loan_mark_loss'),
-                      style: const TextStyle(color: Colors.redAccent),
+                      style: const TextStyle(color: AppColors.error),
                     ),
                   ],
                 ),
@@ -118,40 +121,48 @@ class LoanDetailScreen extends StatelessWidget {
               : 0.0;
           final progressPct = (progress * 100).toStringAsFixed(0);
 
+          final bool isDark =
+              Theme.of(context).brightness == Brightness.dark;
+
           Color statusColor;
           IconData statusIcon;
           String displayStatus;
 
           switch (currentLoan.status) {
             case 'paid':
-              statusColor = Colors.green;
+              statusColor = AppColors.income;
               statusIcon = Icons.check_circle_outline_rounded;
               displayStatus = context.t('loan_status_paid_short');
               break;
             case 'overdue':
-              statusColor = Colors.red;
+              statusColor = AppColors.error;
               statusIcon = Icons.error_outline_rounded;
               displayStatus = context.t('loan_status_overdue_short');
               break;
             case 'written_off':
-              statusColor = Colors.grey;
+              statusColor = isDark
+                  ? AppColors.textTertiaryDark
+                  : AppColors.textTertiary;
               statusIcon = Icons.cancel_outlined;
               displayStatus = context.t('loan_status_written_off');
               break;
             case 'refinanced':
-              statusColor = Colors.blueGrey;
+              statusColor = AppColors.info;
               statusIcon = Icons.swap_horiz_rounded;
               displayStatus = context.t('loan_status_refinanced');
               break;
             case 'active':
             default:
-              statusColor = theme.colorScheme.primary;
+              statusColor = AppColors.primary;
               statusIcon = Icons.trending_up_rounded;
               displayStatus = context.t('loan_status_active');
           }
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.screenHorizontal,
+              vertical: AppSpacing.screenVertical,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -166,32 +177,27 @@ class LoanDetailScreen extends StatelessWidget {
                   statusIcon,
                   displayStatus,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppSpacing.lg),
 
                 _buildQuickActions(context, currentLoan, loanProvider),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppSpacing.xxl),
 
                 _buildDetailsCard(context, currentLoan, loanProvider),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppSpacing.xxl),
 
                 // Installments Grid
                 if (currentLoan.installments.isNotEmpty) ...[
-                  _buildInstallmentsSection(context, currentLoan, isDark),
-                  const SizedBox(height: 20),
+                  _buildInstallmentsSection(context, currentLoan),
+                  const SizedBox(height: AppSpacing.xxl),
                 ],
 
                 // Payment History
                 _buildPaymentHistorySection(context, currentLoan, loanProvider),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppSpacing.xxl),
 
                 // Audit Log
-                _buildActivityLogSection(
-                  context,
-                  currentLoan,
-                  loanProvider,
-                  isDark,
-                ),
-                const SizedBox(height: 40),
+                _buildActivityLogSection(context, currentLoan, loanProvider),
+                const SizedBox(height: AppSpacing.xxxl),
               ],
             ),
           );
@@ -199,6 +205,42 @@ class LoanDetailScreen extends StatelessWidget {
       ),
     );
   }
+
+  // ──────────────────────────────────────────
+  //   HELPERS
+  // ──────────────────────────────────────────
+  String _currencySymbol(BuildContext context, String code) {
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+    for (final currency in appProvider.availableCurrencies) {
+      if (currency.code == code) return currency.symbol;
+    }
+    return code;
+  }
+
+  Color _primaryText(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
+  }
+
+  Color _secondaryText(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+  }
+
+  /// Devuelve el estado vigente del préstamo desde el provider.
+  ///
+  /// El [Loan] recibido por constructor es un snapshot que puede quedar
+  /// obsoleto tras registrar cobros o editar el préstamo. Las acciones del menú
+  /// (PDF, refinanciar, pérdida) deben operar sobre el estado actual para no
+  /// mostrar ni persistir importes antiguos.
+  Loan _currentLoan(LoanProvider provider) {
+    return provider.loans.firstWhere(
+      (l) => l.id == loan.id,
+      orElse: () => loan,
+    );
+  }
+
+  String _formatDate(DateTime d) => '${d.day}/${d.month}/${d.year}';
 
   // ──────────────────────────────────────────
   //   MENU ACTIONS
@@ -233,123 +275,103 @@ class LoanDetailScreen extends StatelessWidget {
   ) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final symbol = _currencySymbol(context, loan.currency);
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF141428) : Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
+    final Color primaryText = _primaryText(context);
+    final Color secondaryText = _secondaryText(context);
+
+    return CashCard(
+      border: loan.status == 'overdue'
+          ? Border.all(color: statusColor.withValues(alpha: 0.45))
+          : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Text(
                   loan.borrowerName,
-                  style: GoogleFonts.outfit(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(statusIcon, color: statusColor, size: 14),
-                    const SizedBox(width: 4),
-                    Text(
-                      displayStatus,
-                      style: GoogleFonts.outfit(
-                        color: statusColor,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
+              const SizedBox(width: AppSpacing.sm),
+              CashChip(
+                label: displayStatus,
+                icon: statusIcon,
+                selected: true,
+                color: statusColor,
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           Text(
             context.t('loan_outstanding_balance'),
-            style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey),
+            style: theme.textTheme.labelMedium?.copyWith(color: secondaryText),
           ),
-          const SizedBox(height: 4),
-          Text(
-            '\$ ${loan.remainingAmount.toFormattedString(2)} ${loan.currency}',
-            style: GoogleFonts.outfit(
-              fontSize: 30,
-              fontWeight: FontWeight.bold,
-              color: loan.status == 'overdue'
-                  ? Colors.red
-                  : theme.textTheme.bodyLarge?.color,
+          const SizedBox(height: AppSpacing.xxs),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '$symbol ${loan.remainingAmount.toFormattedString(2)} ${loan.currency}',
+              maxLines: 1,
+              style: theme.textTheme.displaySmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: loan.status == 'overdue' ? statusColor : primaryText,
+              ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '${context.t('loan_collected_label')}: \$${paidAmount.toFormattedString(1)}',
-                style: GoogleFonts.outfit(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.green,
+              Expanded(
+                child: _headerMetric(
+                  context,
+                  context.t('loan_collected_label'),
+                  '$symbol ${paidAmount.toFormattedString(1)}',
+                  AppColors.income,
                 ),
               ),
-              Text(
-                '${context.t('loan_total_label')}: \$${totalWithInterest.toFormattedString(1)}',
-                style: GoogleFonts.outfit(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey,
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: _headerMetric(
+                  context,
+                  context.t('loan_total_label'),
+                  '$symbol ${totalWithInterest.toFormattedString(1)}',
+                  secondaryText,
+                  alignEnd: true,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.md),
           Row(
             children: [
               Expanded(
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
                   child: LinearProgressIndicator(
                     value: progress,
-                    backgroundColor: isDark ? Colors.white10 : Colors.grey[200],
+                    backgroundColor: isDark
+                        ? AppColors.surfaceDark3
+                        : AppColors.surfaceVariantLight,
                     color: statusColor,
                     minHeight: 8,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Text(
                 '$progressPct%',
-                style: GoogleFonts.outfit(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
                   color: statusColor,
                 ),
               ),
@@ -357,20 +379,22 @@ class LoanDetailScreen extends StatelessWidget {
           ),
           // Late fee indicator
           if (loan.lateFeeType != 'none') ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: AppSpacing.md),
             Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.warning_amber_rounded,
-                  size: 14,
-                  color: Colors.orangeAccent,
+                  size: 15,
+                  color: AppColors.warning,
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  '${context.t('loan_late_fee')}: ${loan.lateFeeType == 'fixed' ? '\$${loan.lateFeeValue.toStringAsFixed(0)} ${context.t('loan_late_fee_flat')}' : '${loan.lateFeeValue.toStringAsFixed(0)}% ${context.t('loan_late_fee_daily')}'}',
-                  style: GoogleFonts.outfit(
-                    fontSize: 11,
-                    color: Colors.orangeAccent,
+                const SizedBox(width: AppSpacing.xs),
+                Expanded(
+                  child: Text(
+                    '${context.t('loan_late_fee')}: ${loan.lateFeeType == 'fixed' ? '$symbol${loan.lateFeeValue.toStringAsFixed(0)} ${context.t('loan_late_fee_flat')}' : '${loan.lateFeeValue.toStringAsFixed(0)}% ${context.t('loan_late_fee_daily')}'}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.warning,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -378,6 +402,41 @@ class LoanDetailScreen extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+
+  Widget _headerMetric(
+    BuildContext context,
+    String label,
+    String value,
+    Color valueColor, {
+    bool alignEnd = false,
+  }) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment:
+          alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: _secondaryText(context),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xxs),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: alignEnd ? Alignment.centerRight : Alignment.centerLeft,
+          child: Text(
+            value,
+            maxLines: 1,
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: valueColor,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -389,86 +448,42 @@ class LoanDetailScreen extends StatelessWidget {
     Loan loan,
     LoanProvider loanProvider,
   ) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final bool canCollect =
+        loan.remainingAmount > 0 &&
+        loan.status != 'written_off' &&
+        loan.status != 'refinanced';
 
     return Row(
       children: [
-        if (loan.remainingAmount > 0 &&
-            loan.status != 'written_off' &&
-            loan.status != 'refinanced') ...[
+        if (canCollect) ...[
           Expanded(
-            child: SizedBox(
-              height: 50,
-              child: ElevatedButton.icon(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => LoanPaymentFormScreen(loan: loan),
-                  ),
-                ),
-                icon: const Icon(
-                  Icons.price_check_rounded,
-                  color: Colors.white,
-                ),
-                label: Text(
-                  context.t('loan_collect'),
-                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
+            child: CashButton(
+              label: context.t('loan_collect'),
+              icon: const Icon(Icons.price_check_rounded, size: 20),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => LoanPaymentFormScreen(loan: loan),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: AppSpacing.md),
         ],
-        SizedBox(
-          height: 50,
-          width: 50,
-          child: OutlinedButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => LoanFormScreen(loan: loan)),
-            ),
-            style: OutlinedButton.styleFrom(
-              padding: EdgeInsets.zero,
-              side: BorderSide(
-                color: isDark ? Colors.white24 : Colors.grey[300]!,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            child: Icon(
-              Icons.edit_rounded,
-              color: isDark ? Colors.white : Colors.black87,
-            ),
+        CashIconButton(
+          icon: Icons.edit_rounded,
+          tooltip: context.t('edit'),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => LoanFormScreen(loan: loan)),
           ),
         ),
-        const SizedBox(width: 10),
-        SizedBox(
-          height: 50,
-          width: 50,
-          child: OutlinedButton(
-            onPressed: () => _confirmDeleteLoan(context, loanProvider),
-            style: OutlinedButton.styleFrom(
-              padding: EdgeInsets.zero,
-              side: const BorderSide(color: Colors.redAccent),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            child: const Icon(
-              Icons.delete_outline_rounded,
-              color: Colors.redAccent,
-            ),
-          ),
+        const SizedBox(width: AppSpacing.sm),
+        CashIconButton(
+          icon: Icons.delete_outline_rounded,
+          iconColor: AppColors.error,
+          tooltip: context.t('delete'),
+          onPressed: () => _confirmDeleteLoan(context, loanProvider),
         ),
       ],
     );
@@ -483,7 +498,7 @@ class LoanDetailScreen extends StatelessWidget {
     LoanProvider loanProvider,
   ) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final bool isDark = theme.brightness == Brightness.dark;
 
     String freqLabel;
     switch (loan.frequency) {
@@ -517,103 +532,99 @@ class LoanDetailScreen extends StatelessWidget {
         break;
     }
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF141428) : Colors.grey[50],
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    final symbol = _currencySymbol(context, loan.currency);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(
+          icon: Icons.feed_outlined,
+          title: context.t('loan_conditions'),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        CashCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                Icons.feed_outlined,
-                size: 20,
-                color: theme.colorScheme.primary,
+              _detailRow(
+                context,
+                context.t('loan_principal_loaned'),
+                '$symbol${loan.amount.toFormattedString(2)} ${loan.currency}',
               ),
-              const SizedBox(width: 8),
-              Text(
-                context.t('loan_conditions'),
-                style: GoogleFonts.outfit(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+              _detailRow(
+                context,
+                context.t('loan_interest_rate'),
+                loan.interestType == 'fixed'
+                    ? '$symbol${loan.interestRate.toStringAsFixed(0)}'
+                    : '${loan.interestRate.toStringAsFixed(0)}% ($interestLabel)',
+              ),
+              _detailRow(context, context.t('loan_frequency'), freqLabel),
+              _detailRow(
+                context,
+                context.t('loan_term_label'),
+                '${loan.durationValue} ${context.t('loan_installments_suffix')}',
+              ),
+              _detailRow(
+                context,
+                context.t('loan_start_date'),
+                _formatDate(loan.startDate),
+              ),
+              _detailRow(
+                context,
+                context.t('loan_due_date'),
+                _formatDate(loan.dueDate),
+                highlight: loan.status == 'overdue',
+              ),
+              if (loan.lateFeeType != 'none')
+                _detailRow(
+                  context,
+                  context.t('loan_late_fee_label'),
+                  loan.lateFeeType == 'fixed'
+                      ? '$symbol${loan.lateFeeValue.toStringAsFixed(0)} (${context.t('loan_late_fee_fixed')})'
+                      : '${loan.lateFeeValue.toStringAsFixed(0)}% (${context.t('loan_late_fee_daily_label')})',
+                ),
+              const Divider(height: AppSpacing.xxl),
+              Material(
+                type: MaterialType.transparency,
+                child: SwitchListTile(
+                  title: Text(
+                    context.t('loan_due_alerts'),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  value: loan.isNotificationsEnabled,
+                  contentPadding: EdgeInsets.zero,
+                  onChanged: (val) => loanProvider.editLoan(
+                    loan.copyWith(isNotificationsEnabled: val),
+                  ),
                 ),
               ),
+              if (loan.notes != null && loan.notes!.isNotEmpty) ...[
+                const Divider(height: AppSpacing.lg),
+                Text(
+                  context.t('loan_notes'),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: _secondaryText(context),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  loan.notes!,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: _primaryText(context),
+                    height: 1.4,
+                  ),
+                ),
+              ],
             ],
           ),
-          const SizedBox(height: 16),
-          _detailRow(
-            context,
-            context.t('loan_principal_loaned'),
-            '\$${loan.amount.toFormattedString(2)} ${loan.currency}',
-          ),
-          _detailRow(
-            context,
-            context.t('loan_interest_rate'),
-            loan.interestType == 'fixed'
-                ? '\$${loan.interestRate.toStringAsFixed(0)}'
-                : '${loan.interestRate.toStringAsFixed(0)}% ($interestLabel)',
-          ),
-          _detailRow(context, context.t('loan_frequency'), freqLabel),
-          _detailRow(
-            context,
-            context.t('loan_term_label'),
-            '${loan.durationValue} ${context.t('loan_installments_suffix')}',
-          ),
-          _detailRow(
-            context,
-            context.t('loan_start_date'),
-            '${loan.startDate.day}/${loan.startDate.month}/${loan.startDate.year}',
-          ),
-          _detailRow(
-            context,
-            context.t('loan_due_date'),
-            '${loan.dueDate.day}/${loan.dueDate.month}/${loan.dueDate.year}',
-            highlight: loan.status == 'overdue',
-          ),
-          if (loan.lateFeeType != 'none')
-            _detailRow(
-              context,
-              context.t('loan_late_fee_label'),
-              loan.lateFeeType == 'fixed'
-                  ? '\$${loan.lateFeeValue.toStringAsFixed(0)} (${context.t('loan_late_fee_fixed')})'
-                  : '${loan.lateFeeValue.toStringAsFixed(0)}% (${context.t('loan_late_fee_daily_label')})',
-            ),
-          const Divider(height: 24),
-          SwitchListTile(
-            title: Text(
-              context.t('loan_due_alerts'),
-              style: GoogleFonts.outfit(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            value: loan.isNotificationsEnabled,
-            contentPadding: EdgeInsets.zero,
-            onChanged: (val) => loanProvider.editLoan(
-              loan.copyWith(isNotificationsEnabled: val),
-            ),
-          ),
-          if (loan.notes != null && loan.notes!.isNotEmpty) ...[
-            const Divider(height: 16),
-            Text(
-              context.t('loan_notes'),
-              style: GoogleFonts.outfit(
-                fontSize: 12,
-                color: Colors.grey,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              loan.notes!,
-              style: GoogleFonts.outfit(fontSize: 14, height: 1.4),
-            ),
-          ],
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -623,23 +634,31 @@ class LoanDetailScreen extends StatelessWidget {
     String value, {
     bool highlight = false,
   }) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: GoogleFonts.outfit(color: Colors.grey, fontSize: 13),
+          Expanded(
+            child: Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: _secondaryText(context),
+              ),
+            ),
           ),
-          Text(
-            value,
-            style: GoogleFonts.outfit(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: highlight
-                  ? Colors.red
-                  : Theme.of(context).textTheme.bodyMedium?.color,
+          const SizedBox(width: AppSpacing.md),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: highlight
+                    ? AppColors.error
+                    : _primaryText(context),
+              ),
             ),
           ),
         ],
@@ -650,52 +669,27 @@ class LoanDetailScreen extends StatelessWidget {
   // ──────────────────────────────────────────
   //   INSTALLMENTS GRID
   // ──────────────────────────────────────────
-  Widget _buildInstallmentsSection(
-    BuildContext context,
-    Loan loan,
-    bool isDark,
-  ) {
+  Widget _buildInstallmentsSection(BuildContext context, Loan loan) {
     final theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+    final symbol = _currencySymbol(context, loan.currency);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(
-              Icons.table_rows_outlined,
-              size: 20,
-              color: theme.colorScheme.primary,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              context.t('loan_installments_schedule'),
-              style: GoogleFonts.outfit(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+        _SectionHeader(
+          icon: Icons.table_rows_outlined,
+          title: context.t('loan_installments_schedule'),
         ),
-        const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF141428) : Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDark
-                  ? Colors.white12
-                  : Colors.grey.withValues(alpha: 0.15),
-            ),
-          ),
+        const SizedBox(height: AppSpacing.md),
+        CashCard(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
           child: ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: loan.installments.length,
-            separatorBuilder: (_, index) => Divider(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.04)
-                  : Colors.grey[100],
+            separatorBuilder: (_, _) => Divider(
+              color: isDark ? AppColors.dividerDark : AppColors.dividerLight,
               height: 1,
             ),
             itemBuilder: (ctx, i) {
@@ -704,32 +698,34 @@ class LoanDetailScreen extends StatelessWidget {
               String instLabel;
               switch (inst.status) {
                 case 'paid':
-                  instColor = Colors.green;
+                  instColor = AppColors.income;
                   instLabel = context.t('loan_status_paid_short');
                   break;
                 case 'overdue':
-                  instColor = Colors.red;
+                  instColor = AppColors.error;
                   instLabel = context.t('loan_status_overdue_short');
                   break;
                 case 'partial':
-                  instColor = Colors.orange;
+                  instColor = AppColors.warning;
                   instLabel = context.t('loan_status_partial');
                   break;
                 default:
-                  instColor = Colors.grey;
+                  instColor = isDark
+                      ? AppColors.textTertiaryDark
+                      : AppColors.textTertiary;
                   instLabel = context.t('loan_status_pending');
                   break;
               }
               return Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
                 ),
                 child: Row(
                   children: [
                     Container(
-                      width: 28,
-                      height: 28,
+                      width: 30,
+                      height: 30,
                       decoration: BoxDecoration(
                         color: instColor.withValues(alpha: 0.15),
                         shape: BoxShape.circle,
@@ -737,59 +733,77 @@ class LoanDetailScreen extends StatelessWidget {
                       alignment: Alignment.center,
                       child: Text(
                         '${inst.number}',
-                        style: GoogleFonts.outfit(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
                           color: instColor,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.md),
                     Expanded(
-                      child: Text(
-                        '${inst.dueDate.day}/${inst.dueDate.month}/${inst.dueDate.year}',
-                        style: GoogleFonts.outfit(
-                          fontSize: 13,
-                          color: isDark ? Colors.white70 : Colors.black87,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: Text(
+                                  _formatDate(inst.dueDate),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: _primaryText(context),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Flexible(
+                                flex: 2,
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    '$symbol${inst.amount.toFormattedString(2)}',
+                                    maxLines: 1,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: _primaryText(context),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (inst.paidAmount > 0 && inst.status != 'paid') ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              '${context.t('loan_payment_label')}: $symbol${inst.paidAmount.toFormattedString(2)}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: AppColors.income,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          '\$${inst.amount.toStringAsFixed(2)}',
-                          style: GoogleFonts.outfit(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : Colors.black87,
-                          ),
-                        ),
-                        if (inst.paidAmount > 0 && inst.status != 'paid')
-                          Text(
-                            '${context.t('loan_payment_label')}: \$${inst.paidAmount.toStringAsFixed(2)}',
-                            style: GoogleFonts.outfit(
-                              fontSize: 10,
-                              color: Colors.green,
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: AppSpacing.sm),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
+                        horizontal: AppSpacing.sm,
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
                         color: instColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: AppRadius.radiusXs,
                       ),
                       child: Text(
                         instLabel,
-                        style: GoogleFonts.outfit(
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
                           color: instColor,
                         ),
                       ),
@@ -813,142 +827,139 @@ class LoanDetailScreen extends StatelessWidget {
     LoanProvider loanProvider,
   ) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final bool isDark = theme.brightness == Brightness.dark;
+    final symbol = _currencySymbol(context, loan.currency);
     final paymentsList = loanProvider.getPaymentsForLoan(loan.id);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(
-              Icons.history_edu_rounded,
-              size: 20,
-              color: theme.colorScheme.primary,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              context.t('loan_payment_history'),
-              style: GoogleFonts.outfit(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+        _SectionHeader(
+          icon: Icons.history_edu_rounded,
+          title: context.t('loan_payment_history'),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
         if (paymentsList.isEmpty)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF141428) : Colors.grey[50],
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.receipt_long_rounded,
-                  size: 36,
-                  color: Colors.grey[400],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  context.t('loan_pdf_no_payments'),
-                  style: GoogleFonts.outfit(color: Colors.grey, fontSize: 13),
-                ),
-              ],
+          CashCard(
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.receipt_long_rounded,
+                    size: 36,
+                    color: _secondaryText(context),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    context.t('loan_pdf_no_payments'),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: _secondaryText(context),
+                    ),
+                  ),
+                ],
+              ),
             ),
           )
         else
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: paymentsList.length,
-            itemBuilder: (context, index) {
-              final payment = paymentsList[index];
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF141428) : Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.02),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
+          CashCard(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.xs,
+            ),
+            child: Column(
+              children: [
+                for (int index = 0; index < paymentsList.length; index++) ...[
+                  if (index > 0)
+                    Divider(
+                      color: isDark
+                          ? AppColors.dividerDark
+                          : AppColors.dividerLight,
+                      height: 1,
                     ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withValues(alpha: 0.12),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.arrow_downward,
-                        color: Colors.green,
-                        size: 16,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '\$${payment.amount.toFormattedString(2)} ${loan.currency}',
-                            style: GoogleFonts.outfit(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: Colors.green,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '${payment.date.day}/${payment.date.month}/${payment.date.year} ${payment.date.hour.toString().padLeft(2, '0')}:${payment.date.minute.toString().padLeft(2, '0')}',
-                            style: GoogleFonts.outfit(
-                              fontSize: 11,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          if (payment.notes != null &&
-                              payment.notes!.isNotEmpty)
-                            Text(
-                              payment.notes!,
-                              style: GoogleFonts.outfit(
-                                fontSize: 11,
-                                color: Colors.grey[600],
-                                fontStyle: FontStyle.italic,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.delete_outline,
-                        color: Colors.redAccent,
-                        size: 18,
-                      ),
-                      onPressed: () => _confirmDeletePayment(
-                        context,
-                        loanProvider,
-                        payment.id,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
+                  _buildPaymentTile(context, paymentsList[index], loan, loanProvider, symbol),
+                ],
+              ],
+            ),
           ),
       ],
+    );
+  }
+
+  Widget _buildPaymentTile(
+    BuildContext context,
+    LoanPayment payment,
+    Loan loan,
+    LoanProvider loanProvider,
+    String symbol,
+  ) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: AppColors.income.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.arrow_downward_rounded,
+              color: AppColors.income,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '$symbol${payment.amount.toFormattedString(2)} ${loan.currency}',
+                    maxLines: 1,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.income,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${_formatDate(payment.date)} ${payment.date.hour.toString().padLeft(2, '0')}:${payment.date.minute.toString().padLeft(2, '0')}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: _secondaryText(context),
+                  ),
+                ),
+                if (payment.notes != null && payment.notes!.isNotEmpty)
+                  Text(
+                    payment.notes!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: _secondaryText(context),
+                      fontStyle: FontStyle.italic,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          IconButton(
+            icon: const Icon(
+              Icons.delete_outline_rounded,
+              color: AppColors.error,
+              size: 20,
+            ),
+            tooltip: context.t('delete'),
+            onPressed: () =>
+                _confirmDeletePayment(context, loanProvider, payment.id),
+          ),
+        ],
+      ),
     );
   }
 
@@ -959,7 +970,6 @@ class LoanDetailScreen extends StatelessWidget {
     BuildContext context,
     Loan loan,
     LoanProvider loanProvider,
-    bool isDark,
   ) {
     final theme = Theme.of(context);
     final activities = loanProvider.getActivitiesForLoan(loan.id);
@@ -967,45 +977,30 @@ class LoanDetailScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(
-              Icons.timeline_outlined,
-              size: 20,
-              color: theme.colorScheme.primary,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              context.t('loan_activity_log'),
-              style: GoogleFonts.outfit(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+        _SectionHeader(
+          icon: Icons.timeline_outlined,
+          title: context.t('loan_activity_log'),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
         if (activities.isEmpty)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF141428) : Colors.grey[50],
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.timeline_outlined,
-                  size: 36,
-                  color: Colors.grey[400],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  context.t('loan_no_events'),
-                  style: GoogleFonts.outfit(color: Colors.grey, fontSize: 13),
-                ),
-              ],
+          CashCard(
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.timeline_outlined,
+                    size: 36,
+                    color: _secondaryText(context),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    context.t('loan_no_events'),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: _secondaryText(context),
+                    ),
+                  ),
+                ],
+              ),
             ),
           )
         else
@@ -1019,7 +1014,6 @@ class LoanDetailScreen extends StatelessWidget {
                 context,
                 act,
                 i == activities.length - 1 || i == 14,
-                isDark,
               );
             },
           ),
@@ -1031,49 +1025,54 @@ class LoanDetailScreen extends StatelessWidget {
     BuildContext context,
     LoanActivity activity,
     bool isLast,
-    bool isDark,
   ) {
+    final theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+
     Color iconColor;
     IconData iconData;
     switch (activity.action) {
       case 'Cobro':
-        iconColor = Colors.green;
+        iconColor = AppColors.income;
         iconData = Icons.payment;
         break;
       case 'Mora':
-        iconColor = Colors.orange;
+        iconColor = AppColors.warning;
         iconData = Icons.warning_amber;
         break;
       case 'Vencido':
-        iconColor = Colors.red;
+        iconColor = AppColors.error;
         iconData = Icons.event_busy;
         break;
       case 'Refinanciado':
-        iconColor = Colors.blue;
+        iconColor = AppColors.info;
         iconData = Icons.swap_horiz;
         break;
       case 'Pérdida':
-        iconColor = Colors.grey;
+        iconColor = isDark
+            ? AppColors.textTertiaryDark
+            : AppColors.textTertiary;
         iconData = Icons.cancel_outlined;
         break;
       default:
-        iconColor = Colors.purple;
+        iconColor = AppColors.purple;
         iconData = Icons.add_circle_outline;
         break;
     }
 
     // Localize the action label
     String actionLabel = activity.action;
-    if (activity.action == 'Cobro')
+    if (activity.action == 'Cobro') {
       actionLabel = context.t('activity_cobro');
-    else if (activity.action == 'Mora')
+    } else if (activity.action == 'Mora') {
       actionLabel = context.t('activity_mora');
-    else if (activity.action == 'Vencido')
+    } else if (activity.action == 'Vencido') {
       actionLabel = context.t('activity_vencido');
-    else if (activity.action == 'Refinanciado')
+    } else if (activity.action == 'Refinanciado') {
       actionLabel = context.t('activity_refinanciado');
-    else if (activity.action == 'Pérdida')
+    } else if (activity.action == 'Pérdida') {
       actionLabel = context.t('activity_perdida');
+    }
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1093,43 +1092,45 @@ class LoanDetailScreen extends StatelessWidget {
               Container(
                 width: 2,
                 height: 40,
-                color: isDark ? Colors.white12 : Colors.grey[200],
+                color: isDark ? AppColors.dividerDark : AppColors.dividerLight,
               ),
           ],
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.md),
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.only(bottom: AppSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      actionLabel,
-                      style: GoogleFonts.outfit(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: iconColor,
+                    Expanded(
+                      child: Text(
+                        actionLabel,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: iconColor,
+                        ),
                       ),
                     ),
+                    const SizedBox(width: AppSpacing.sm),
                     Text(
-                      '${activity.timestamp.hour.toString().padLeft(2, '0')}:${activity.timestamp.minute.toString().padLeft(2, '0')} ${activity.timestamp.day}/${activity.timestamp.month}/${activity.timestamp.year}',
-                      style: GoogleFonts.outfit(
-                        fontSize: 10,
-                        color: Colors.grey,
+                      '${activity.timestamp.hour.toString().padLeft(2, '0')}:${activity.timestamp.minute.toString().padLeft(2, '0')} ${_formatDate(activity.timestamp)}',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: _secondaryText(context),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   activity.description,
-                  style: GoogleFonts.outfit(
-                    fontSize: 12,
-                    color: isDark ? Colors.white60 : Colors.black54,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondary,
                     height: 1.3,
                   ),
                 ),
@@ -1146,6 +1147,9 @@ class LoanDetailScreen extends StatelessWidget {
   // ──────────────────────────────────────────
   Future<void> _generateAndSharePDF(BuildContext context) async {
     final loanProvider = Provider.of<LoanProvider>(context, listen: false);
+    // Se usa el estado vigente del préstamo (no el snapshot del constructor),
+    // para que el recibo no muestre importes obsoletos tras cobros o ediciones.
+    final loan = _currentLoan(loanProvider);
     final payments = loanProvider.getPaymentsForLoan(loan.id);
     final total = loanProvider.calculateTotalWithInterest(
       loan.amount,
@@ -1154,6 +1158,13 @@ class LoanDetailScreen extends StatelessWidget {
       loan.durationValue,
     );
     final paid = total - loan.remainingAmount;
+
+    // Se resuelven antes de los `await` para no usar el BuildContext tras un
+    // hueco asíncrono.
+    final String safeName = loan.borrowerName.replaceAll(' ', '_');
+    final String shareText = context
+        .t('loan_pdf_share_text')
+        .replaceAll('{name}', loan.borrowerName);
 
     final pdf = pw.Document();
     pdf.addPage(
@@ -1243,9 +1254,7 @@ class LoanDetailScreen extends StatelessWidget {
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
                   pw.Text('${context.t('loan_pdf_due')}:'),
-                  pw.Text(
-                    '${loan.dueDate.day}/${loan.dueDate.month}/${loan.dueDate.year}',
-                  ),
+                  pw.Text(_formatDate(loan.dueDate)),
                 ],
               ),
               pw.SizedBox(height: 16),
@@ -1268,7 +1277,7 @@ class LoanDetailScreen extends StatelessWidget {
                     child: pw.Row(
                       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                       children: [
-                        pw.Text('${p.date.day}/${p.date.month}/${p.date.year}'),
+                        pw.Text(_formatDate(p.date)),
                         pw.Text(
                           '\$${p.amount.toStringAsFixed(2)} ${loan.currency}',
                           style: pw.TextStyle(
@@ -1284,7 +1293,7 @@ class LoanDetailScreen extends StatelessWidget {
               pw.Divider(),
               pw.SizedBox(height: 8),
               pw.Text(
-                '${context.t('loan_pdf_footer')} • ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                '${context.t('loan_pdf_footer')} • ${_formatDate(DateTime.now())}',
                 style: pw.TextStyle(fontSize: 9, color: PdfColors.grey),
               ),
             ],
@@ -1295,18 +1304,11 @@ class LoanDetailScreen extends StatelessWidget {
 
     final Uint8List bytes = await pdf.save();
     final dir = await getTemporaryDirectory();
-    final file = File(
-      '${dir.path}/prestamo_${loan.borrowerName.replaceAll(' ', '_')}.pdf',
-    );
+    final file = File('${dir.path}/prestamo_$safeName.pdf');
     await file.writeAsBytes(bytes);
 
     await SharePlus.instance.share(
-      ShareParams(
-        files: [XFile(file.path)],
-        text: context
-            .t('loan_pdf_share_text')
-            .replaceAll('{name}', loan.borrowerName),
-      ),
+      ShareParams(files: [XFile(file.path)], text: shareText),
     );
   }
 
@@ -1315,68 +1317,58 @@ class LoanDetailScreen extends StatelessWidget {
   // ──────────────────────────────────────────
   void _showRefinanceDialog(BuildContext context) {
     final loanProvider = Provider.of<LoanProvider>(context, listen: false);
-    final remainingDebt = loan.remainingAmount;
+    final current = _currentLoan(loanProvider);
+    final remainingDebt = current.remainingAmount;
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF141428),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          context.t('loan_refinance_title'),
-          style: GoogleFonts.outfit(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.radiusXl),
+        title: Text(context.t('loan_refinance_title')),
         content: Text(
           context
               .t('loan_refinance_desc')
               .replaceAll('{amount}', '\$${remainingDebt.toStringAsFixed(2)}')
-              .replaceAll('{currency}', loan.currency),
-          style: GoogleFonts.outfit(color: Colors.white70, fontSize: 13),
+              .replaceAll('{currency}', current.currency),
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
         actions: [
-          TextButton(
+          CashButton(
+            label: context.t('cancel'),
+            type: CashButtonType.secondary,
+            fullWidth: false,
             onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              context.t('cancel'),
-              style: const TextStyle(color: Colors.white54),
-            ),
           ),
-          ElevatedButton(
+          CashButton(
+            label: context.t('loan_refinance'),
+            fullWidth: false,
             onPressed: () async {
               Navigator.pop(ctx);
               await loanProvider.refinanceLoan(
-                oldLoanId: loan.id,
+                oldLoanId: current.id,
                 newAmount: remainingDebt,
-                newInterestRate: loan.interestRate,
-                newInterestType: loan.interestType,
-                newFrequency: loan.frequency,
-                newDurationValue: loan.durationValue,
+                newInterestRate: current.interestRate,
+                newInterestType: current.interestType,
+                newFrequency: current.frequency,
+                newDurationValue: current.durationValue,
                 newStartDate: DateTime.now(),
                 newDueDate: DateTime.now().add(
-                  Duration(days: loan.durationValue * 30),
+                  Duration(days: current.durationValue * 30),
                 ),
-                newCurrency: loan.currency,
-                lateFeeType: loan.lateFeeType,
-                lateFeeValue: loan.lateFeeValue,
+                newCurrency: current.currency,
+                lateFeeType: current.lateFeeType,
+                lateFeeValue: current.lateFeeValue,
               );
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(context.t('loan_refinance_success')),
-                    backgroundColor: Colors.blue,
+                    backgroundColor: AppColors.info,
                   ),
                 );
                 Navigator.pop(context);
               }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blueAccent,
-              foregroundColor: Colors.white,
-            ),
-            child: Text(context.t('loan_refinance')),
           ),
         ],
       ),
@@ -1385,55 +1377,44 @@ class LoanDetailScreen extends StatelessWidget {
 
   void _confirmMarkAsLost(BuildContext context) {
     final loanProvider = Provider.of<LoanProvider>(context, listen: false);
+    final current = _currentLoan(loanProvider);
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF141428),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          context.t('loan_mark_loss_title'),
-          style: GoogleFonts.outfit(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.radiusXl),
+        icon: const Icon(Icons.cancel_outlined, color: AppColors.error),
+        title: Text(context.t('loan_mark_loss_title')),
         content: Text(
           context
               .t('loan_mark_loss_desc')
-              .replaceAll('{name}', loan.borrowerName)
+              .replaceAll('{name}', current.borrowerName)
               .replaceAll(
                 '{amount}',
-                '\$${loan.remainingAmount.toStringAsFixed(2)}',
+                '\$${current.remainingAmount.toStringAsFixed(2)}',
               ),
-          style: GoogleFonts.outfit(color: Colors.white70, fontSize: 13),
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
         actions: [
-          TextButton(
+          CashButton(
+            label: context.t('cancel'),
+            type: CashButtonType.secondary,
+            fullWidth: false,
             onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              context.t('cancel'),
-              style: const TextStyle(color: Colors.white54),
-            ),
           ),
-          ElevatedButton(
+          CashButton(
+            label: context.t('loan_mark_loss'),
+            type: CashButtonType.danger,
+            fullWidth: false,
             onPressed: () async {
               Navigator.pop(ctx);
-              await loanProvider.markAsLost(loan.id);
+              await loanProvider.markAsLost(current.id);
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(context.t('loan_mark_loss_success')),
-                    backgroundColor: Colors.grey,
-                  ),
+                  SnackBar(content: Text(context.t('loan_mark_loss_success'))),
                 );
               }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
-            ),
-            child: Text(context.t('loan_mark_loss')),
           ),
         ],
       ),
@@ -1444,20 +1425,24 @@ class LoanDetailScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(
-          context.t('loan_delete_title'),
-          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-        ),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.radiusXl),
+        icon: const Icon(Icons.delete_outline, color: AppColors.error),
+        title: Text(context.t('loan_delete_title')),
         content: Text(
           context.t('loan_delete_desc'),
-          style: GoogleFonts.outfit(),
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
         actions: [
-          TextButton(
+          CashButton(
+            label: context.t('cancel'),
+            type: CashButtonType.secondary,
+            fullWidth: false,
             onPressed: () => Navigator.pop(ctx),
-            child: Text(context.t('cancel')),
           ),
-          ElevatedButton(
+          CashButton(
+            label: context.t('delete'),
+            type: CashButtonType.danger,
+            fullWidth: false,
             onPressed: () async {
               Navigator.pop(ctx);
               await loanProvider.deleteLoan(loan.id);
@@ -1468,11 +1453,6 @@ class LoanDetailScreen extends StatelessWidget {
                 Navigator.pop(context);
               }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
-            ),
-            child: Text(context.t('delete')),
           ),
         ],
       ),
@@ -1487,32 +1467,66 @@ class LoanDetailScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(
-          context.t('loan_delete_payment_title'),
-          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-        ),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.radiusXl),
+        icon: const Icon(Icons.delete_outline, color: AppColors.error),
+        title: Text(context.t('loan_delete_payment_title')),
         content: Text(
           context.t('loan_delete_payment_desc'),
-          style: GoogleFonts.outfit(),
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
         actions: [
-          TextButton(
+          CashButton(
+            label: context.t('cancel'),
+            type: CashButtonType.secondary,
+            fullWidth: false,
             onPressed: () => Navigator.pop(ctx),
-            child: Text(context.t('cancel')),
           ),
-          ElevatedButton(
+          CashButton(
+            label: context.t('delete'),
+            type: CashButtonType.danger,
+            fullWidth: false,
             onPressed: () async {
               Navigator.pop(ctx);
               await loanProvider.deletePayment(paymentId);
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
-            ),
-            child: Text(context.t('delete')),
           ),
         ],
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// WIDGETS AUXILIARES
+// ---------------------------------------------------------------------------
+
+class _SectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String title;
+
+  const _SectionHeader({required this.icon, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Text(
+            title,
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+        ),
+      ],
     );
   }
 }

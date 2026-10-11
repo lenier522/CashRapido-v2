@@ -1,16 +1,34 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../../providers/business_provider.dart';
-import '../../providers/app_provider.dart';
+import 'package:provider/provider.dart';
+
 import '../../models/closing.dart';
 import '../../models/models.dart';
+import '../../providers/app_provider.dart';
+import '../../providers/business_provider.dart';
 import '../../services/export_service.dart';
 import '../../services/localization_service.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_radius.dart';
+import '../../theme/app_spacing.dart';
+import '../../widgets/design/cash_amount_input.dart';
+import '../../widgets/design/cash_bottom_sheet.dart';
+import '../../widgets/design/cash_button.dart';
+import '../../widgets/design/cash_card.dart';
+import '../../widgets/design/cash_empty_state.dart';
+import '../../widgets/design/cash_floating_button.dart';
+import '../../widgets/design/cash_input.dart';
+import '../../widgets/design/cash_progress_bar.dart';
+import '../../widgets/design/cash_selector_field.dart';
 import 'package:cashrapido/utils/number_format_utils.dart';
 
+/// Pestaña de cierres del negocio.
+///
+/// Conserva el comportamiento original: listado histórico, detalle por cierre,
+/// exportación a PDF/Excel, transferencia de la ganancia neta y generación de
+/// nuevos cierres con el mismo cálculo y periodo.
 class ClosingsTab extends StatelessWidget {
   const ClosingsTab({super.key});
 
@@ -21,11 +39,16 @@ class ClosingsTab extends StatelessWidget {
         final closings = provider.closings.reversed.toList();
 
         return Scaffold(
-          backgroundColor: Colors.transparent,
+          backgroundColor: AppColors.transparent,
           body: closings.isEmpty
               ? _buildEmptyState(context)
               : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    96,
+                  ),
                   itemCount: closings.length,
                   itemBuilder: (context, index) {
                     return _ClosingCard(
@@ -34,13 +57,11 @@ class ClosingsTab extends StatelessWidget {
                     );
                   },
                 ),
-          floatingActionButton: FloatingActionButton.extended(
+          floatingActionButton: CashFloatingButton(
             heroTag: 'closing_fab',
+            icon: Icons.assessment_outlined,
+            label: context.t('closing_generate'),
             onPressed: () => _showGenerateClosingModal(context, provider),
-            backgroundColor: Theme.of(context).primaryColor,
-            foregroundColor: Colors.white,
-            icon: const Icon(Icons.assessment_outlined),
-            label: Text(context.t('closing_generate')),
           ),
         );
       },
@@ -48,42 +69,19 @@ class ClosingsTab extends StatelessWidget {
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.blueGrey.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.analytics_outlined, size: 64, color: Colors.blueGrey[300]),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            context.t('closing_empty_title'),
-            style: GoogleFonts.outfit(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            context.t('closing_empty_desc'),
-            style: TextStyle(color: Colors.grey[500]),
-          ),
-        ],
-      ),
+    return CashEmptyState(
+      icon: Icons.analytics_outlined,
+      title: context.t('closing_empty_title'),
+      message: context.t('closing_empty_desc'),
     );
   }
 
-  void _showGenerateClosingModal(BuildContext context, BusinessProvider provider) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+  void _showGenerateClosingModal(
+    BuildContext context,
+    BusinessProvider provider,
+  ) {
+    CashBottomSheet.show(
+      context,
       builder: (context) => _GenerateClosingSheet(provider: provider),
     );
   }
@@ -101,13 +99,13 @@ class _ClosingCard extends StatelessWidget {
   Color get _periodColor {
     switch (closing.period.toLowerCase()) {
       case 'diario':
-        return Colors.blue;
+        return AppColors.info;
       case 'semanal':
-        return Colors.orange;
+        return AppColors.warning;
       case 'mensual':
-        return Colors.purple;
+        return AppColors.purple;
       default:
-        return Colors.grey;
+        return AppColors.primary;
     }
   }
 
@@ -126,8 +124,15 @@ class _ClosingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     final color = _periodColor;
-    final profitColor = closing.profit >= 0 ? Colors.green : Colors.red;
+    final profitColor = closing.profit >= 0
+        ? AppColors.income
+        : AppColors.expense;
+    final Color secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
     final appProvider = Provider.of<AppProvider>(context);
 
     return Dismissible(
@@ -141,14 +146,19 @@ class _ClosingCard extends StatelessWidget {
             title: Text(context.t('closing_delete_title')),
             content: Text(context.t('closing_delete_confirm')),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(context.t('cancel'))),
-              ElevatedButton(
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(context.t('cancel')),
+              ),
+              CashButton(
+                label: context.t('delete'),
+                type: CashButtonType.danger,
+                fullWidth: false,
+                height: 44,
                 onPressed: () {
                   confirmed = true;
                   Navigator.pop(ctx);
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                child: Text(context.t('delete'), style: const TextStyle(color: Colors.white)),
               ),
             ],
           ),
@@ -158,40 +168,40 @@ class _ClosingCard extends StatelessWidget {
       onDismissed: (_) => provider.deleteClosing(closing.id),
       background: Container(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
+        padding: const EdgeInsets.only(right: AppSpacing.xl),
         decoration: BoxDecoration(
-          color: Colors.red,
-          borderRadius: BorderRadius.circular(16),
+          color: AppColors.expense,
+          borderRadius: AppRadius.radiusXl,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.delete, color: Colors.white),
-            const SizedBox(height: 4),
-            Text(context.t('borrower_delete'), style: const TextStyle(color: Colors.white, fontSize: 11)),
+            const Icon(Icons.delete_outline, color: AppColors.white),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              context.t('delete'),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: AppColors.white,
+              ),
+            ),
           ],
         ),
       ),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.07),
-              blurRadius: 14,
-              offset: const Offset(0, 5),
-            ),
-          ],
-          border: Border.all(color: color.withValues(alpha: 0.18)),
-        ),
+      child: CashCard(
+        margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+        padding: EdgeInsets.zero,
         child: Theme(
-          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          data: theme.copyWith(dividerColor: AppColors.transparent),
           child: ExpansionTile(
-            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            tilePadding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.xs,
+            ),
+            childrenPadding: EdgeInsets.zero,
+            iconColor: color,
+            collapsedIconColor: secondary,
             leading: Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(AppSpacing.sm),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
@@ -202,43 +212,55 @@ class _ClosingCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    closing.period.toUpperCase(),
-                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15),
+                    closing.period,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xxs,
+                  ),
                   decoration: BoxDecoration(
-                    color: profitColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
+                    color: profitColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
                   ),
                   child: Text(
-                    closing.profit >= 0 ? context.t('closing_profit') : context.t('closing_loss'),
-                    style: TextStyle(
-                      fontSize: 11,
+                    closing.profit >= 0
+                        ? context.t('closing_profit')
+                        : context.t('closing_loss'),
+                    style: theme.textTheme.labelSmall?.copyWith(
                       color: profitColor,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
               ],
             ),
-            subtitle: Text(
-              '${DateFormat('dd MMM yyyy – HH:mm').format(closing.startDate)}  →  ${DateFormat('dd MMM yyyy – HH:mm').format(closing.endDate)}',
-              style: TextStyle(color: Colors.grey[500], fontSize: 11),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.xxs),
+              child: Text(
+                '${DateFormat('dd MMM yyyy – HH:mm').format(closing.startDate)}  →  ${DateFormat('dd MMM yyyy – HH:mm').format(closing.endDate)}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(color: secondary),
+              ),
             ),
             children: [
               const Divider(height: 1),
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // ── Summary Row ──
+                    // ── Summary (income / expenses / gross profit) ──
                     _SummaryRow(closing: closing),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
 
                     // ── Extra stats row ──
                     Row(
@@ -248,58 +270,68 @@ class _ClosingCard extends StatelessWidget {
                             icon: Icons.shopping_bag_outlined,
                             label: context.t('closing_sales_label'),
                             value: '${closing.salesCount}',
-                            color: Colors.green,
+                            color: AppColors.income,
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: _MiniStatCard(
                             icon: Icons.receipt_long,
                             label: context.t('closing_expenses_count_label'),
                             value: '${closing.expensesCount}',
-                            color: Colors.red,
+                            color: AppColors.expense,
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: _MiniStatCard(
                             icon: Icons.trending_up,
                             label: context.t('closing_roi_label'),
                             value: '${closing.roi.toFormattedString(1)}%',
-                            color: Colors.blue,
+                            color: AppColors.info,
                           ),
                         ),
                       ],
                     ),
 
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.md),
                     _InfoRow(
                       icon: Icons.account_balance_wallet_outlined,
                       label: context.t('net_profit'),
-                      value: '${closing.netProfit < 0 ? '-\$' : '\$'}${closing.netProfit.abs().toFormattedString(2)}',
-                      color: closing.netProfit >= 0 ? Colors.teal : Colors.red,
+                      value:
+                          '${closing.netProfit < 0 ? '-\$' : '\$'}${closing.netProfit.abs().toFormattedString(2)}',
+                      color: closing.netProfit >= 0
+                          ? AppColors.income
+                          : AppColors.expense,
                     ),
 
                     if (closing.totalDiscounts > 0) ...[
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.sm),
                       _InfoRow(
                         icon: Icons.discount_outlined,
                         label: context.t('closing_discounts'),
-                        value: '\$${closing.totalDiscounts.toFormattedString(2)}',
-                        color: Colors.amber,
+                        value:
+                            '\$${closing.totalDiscounts.toFormattedString(2)}',
+                        color: AppColors.warning,
                       ),
                     ],
 
                     // ── Best Seller ──
                     if (closing.bestSellerName.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      _SectionTitle(icon: Icons.star, label: context.t('closing_best_seller'), color: Colors.amber),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.lg),
+                      _SectionTitle(
+                        icon: Icons.star,
+                        label: context.t('closing_best_seller'),
+                        color: AppColors.warning,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
                       _InfoRow(
                         icon: Icons.inventory_2_outlined,
                         label: closing.bestSellerName,
-                        value: context.t('closing_units').replaceAll('{qty}', '${closing.bestSellerQty}'),
-                        color: Colors.amber,
+                        value: context
+                            .t('closing_units')
+                            .replaceAll('{qty}', '${closing.bestSellerQty}'),
+                        color: AppColors.warning,
                       ),
                     ],
 
@@ -310,21 +342,25 @@ class _ClosingCard extends StatelessWidget {
                     _AddedProductsSection(jsonData: closing.addedProductsJson),
 
                     // ── Payment Methods ──
-                    _PaymentMethodsSection(jsonData: closing.paymentMethodsJson),
+                    _PaymentMethodsSection(
+                      jsonData: closing.paymentMethodsJson,
+                    ),
 
                     // ── Expense Categories ──
-                    _ExpenseCategoriesSection(jsonData: closing.expenseCategoriesJson),
+                    _ExpenseCategoriesSection(
+                      jsonData: closing.expenseCategoriesJson,
+                    ),
 
                     // ── Seller Stats ──
                     _SellerStatsSection(jsonData: closing.sellerStatsJson),
 
                     // ── Export Buttons ──
-                    const SizedBox(height: 20),
+                    const SizedBox(height: AppSpacing.xl),
                     _ClosingExportButtons(closing: closing, provider: provider),
 
                     // ── Transfer Profit (only when net profit > 0) ──
                     if (closing.netProfit > 0) ...[
-                      const SizedBox(height: 12),
+                      const SizedBox(height: AppSpacing.md),
                       _TransferProfitButton(
                         closing: closing,
                         provider: provider,
@@ -361,7 +397,8 @@ class _ClosingExportButtonsState extends State<_ClosingExportButtons> {
   final _exportService = ExportService();
 
   String get _businessName =>
-      widget.provider.activeBusiness?.name ?? context.t('closing_business_fallback');
+      widget.provider.activeBusiness?.name ??
+      context.t('closing_business_fallback');
 
   String get _mainCurrency => widget.provider.mainCurrency;
 
@@ -379,7 +416,7 @@ class _ClosingExportButtonsState extends State<_ClosingExportButtons> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('${context.t('closing_export_pdf_error')}: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.expense,
           ),
         );
       }
@@ -402,7 +439,7 @@ class _ClosingExportButtonsState extends State<_ClosingExportButtons> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('${context.t('closing_export_excel_error')}: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.expense,
           ),
         );
       }
@@ -414,12 +451,17 @@ class _ClosingExportButtonsState extends State<_ClosingExportButtons> {
   void _showSuccessBar(String label, String path) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(context.t('closing_export_ready').replaceAll('{label}', label).replaceAll('{path}', path)),
-        backgroundColor: Colors.green[700],
+        content: Text(
+          context
+              .t('closing_export_ready')
+              .replaceAll('{label}', label)
+              .replaceAll('{path}', path),
+        ),
+        backgroundColor: AppColors.income,
         duration: const Duration(seconds: 5),
         action: SnackBarAction(
           label: context.t('closing_share'),
-          textColor: Colors.white,
+          textColor: AppColors.white,
           onPressed: () => _exportService.shareFile(path),
         ),
       ),
@@ -428,62 +470,49 @@ class _ClosingExportButtonsState extends State<_ClosingExportButtons> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    return CashCard(
+      color: isDark ? AppColors.surfaceDark2 : AppColors.surfaceVariantLight,
+      boxShadow: const [],
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            context.t('closing_export_title'),
-            style: GoogleFonts.outfit(
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-              color: Colors.grey[700],
-            ),
+          _SectionTitle(
+            icon: Icons.ios_share,
+            label: context.t('closing_export_title'),
+            color: AppColors.primary,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.md),
           Row(
             children: [
               Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _exportingPdf ? null : _exportPdf,
-                  icon: _exportingPdf
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.picture_as_pdf, color: Colors.red),
-                  label: const Text('PDF'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    side: const BorderSide(color: Colors.red),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                child: CashButton(
+                  label: 'PDF',
+                  type: CashButtonType.outlined,
+                  height: 46,
+                  loading: _exportingPdf,
+                  icon: const Icon(
+                    Icons.picture_as_pdf_outlined,
+                    size: 18,
+                    color: AppColors.expense,
                   ),
+                  onPressed: _exportingPdf ? null : _exportPdf,
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _exportingXls ? null : _exportXls,
-                  icon: _exportingXls
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.table_chart, color: Colors.green),
-                  label: const Text('Excel'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.green,
-                    side: const BorderSide(color: Colors.green),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                child: CashButton(
+                  label: 'Excel',
+                  type: CashButtonType.outlined,
+                  height: 46,
+                  loading: _exportingXls,
+                  icon: const Icon(
+                    Icons.table_chart_outlined,
+                    size: 18,
+                    color: AppColors.income,
                   ),
+                  onPressed: _exportingXls ? null : _exportXls,
                 ),
               ),
             ],
@@ -503,32 +532,79 @@ class _SummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final profitColor = closing.profit >= 0
+        ? AppColors.income
+        : AppColors.expense;
+
+    return Column(
       children: [
-        Expanded(
-          child: _SummaryCard(
-            label: context.t('closing_income_label'),
-            value: closing.income,
-            color: Colors.green,
-            icon: Icons.arrow_upward,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _SummaryCard(
+                label: context.t('closing_income_label'),
+                value: closing.income,
+                color: AppColors.income,
+                icon: Icons.arrow_upward,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: _SummaryCard(
+                label: context.t('closing_expenses_label'),
+                value: closing.expenses,
+                color: AppColors.expense,
+                icon: Icons.arrow_downward,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _SummaryCard(
-            label: context.t('closing_expenses_label'),
-            value: closing.expenses,
-            color: Colors.red,
-            icon: Icons.arrow_downward,
+        const SizedBox(height: AppSpacing.sm),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
           ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _SummaryCard(
-            label: context.t('gross_profit'),
-            value: closing.profit,
-            color: closing.profit >= 0 ? Colors.blue : Colors.red,
-            icon: closing.profit >= 0 ? Icons.trending_up : Icons.trending_down,
+          decoration: BoxDecoration(
+            color: profitColor.withValues(alpha: 0.09),
+            borderRadius: AppRadius.radiusMd,
+            border: Border.all(color: profitColor.withValues(alpha: 0.2)),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                closing.profit >= 0 ? Icons.trending_up : Icons.trending_down,
+                color: profitColor,
+                size: 18,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  context.t('gross_profit'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    '${closing.profit < 0 ? '-\$' : '\$'}${closing.profit.abs().toFormattedString(2)}',
+                    maxLines: 1,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: profitColor,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -552,27 +628,41 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.md,
+      ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.15)),
+        color: color.withValues(alpha: 0.08),
+        borderRadius: AppRadius.radiusMd,
+        border: Border.all(color: color.withValues(alpha: 0.18)),
       ),
       child: Column(
         children: [
           Icon(icon, color: color, size: 16),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           FittedBox(
+            fit: BoxFit.scaleDown,
             child: Text(
               '${value < 0 ? '-\$' : '\$'}${value.abs().toFormattedString(2)}',
-              style: GoogleFonts.outfit(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
+              maxLines: 1,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
                 color: color,
               ),
             ),
           ),
-          Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+          const SizedBox(height: AppSpacing.xxs),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondary,
+            ),
+          ),
         ],
       ),
     );
@@ -598,25 +688,40 @@ class _MiniStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      padding: const EdgeInsets.symmetric(
+        vertical: AppSpacing.sm,
+        horizontal: AppSpacing.xs,
+      ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(10),
+        color: color.withValues(alpha: 0.07),
+        borderRadius: AppRadius.radiusSm,
       ),
       child: Column(
         children: [
           Icon(icon, color: color, size: 18),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           FittedBox(
             fit: BoxFit.scaleDown,
-            child: Text(value,
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                  fontSize: 14,
-                )),
+            child: Text(
+              value,
+              maxLines: 1,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
           ),
-          Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[500])),
+          const SizedBox(height: AppSpacing.xxs),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondary,
+            ),
+          ),
         ],
       ),
     );
@@ -630,20 +735,27 @@ class _SectionTitle extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
-  const _SectionTitle({required this.icon, required this.label, required this.color});
+  const _SectionTitle({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         Icon(icon, color: color, size: 16),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: GoogleFonts.outfit(
-            fontWeight: FontWeight.bold,
-            fontSize: 13,
-            color: color,
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
           ),
         ),
       ],
@@ -670,20 +782,30 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: Row(
         children: [
           Icon(icon, size: 16, color: color),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: Text(label, style: const TextStyle(fontSize: 13)),
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           ),
-          Text(
-            value,
-            style: GoogleFonts.outfit(
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-              color: color,
+          const SizedBox(width: AppSpacing.sm),
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
             ),
           ),
         ],
@@ -712,42 +834,28 @@ class _SoldProductsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 16),
-        _SectionTitle(icon: Icons.sell_outlined, label: context.t('closing_products_sold'), color: Colors.green),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.lg),
+        _SectionTitle(
+          icon: Icons.sell_outlined,
+          label: context.t('closing_products_sold'),
+          color: AppColors.income,
+        ),
+        const SizedBox(height: AppSpacing.sm),
         ...items.map((item) {
           if (item is! Map) return const SizedBox.shrink();
           final name = item['name'] as String? ?? '—';
           final qty = (item['qty'] as num?)?.toDouble() ?? 0.0;
-          final qtyStr = qty % 1 == 0 ? qty.toInt().toString() : qty.toStringAsFixed(2);
+          final qtyStr = qty % 1 == 0
+              ? qty.toInt().toString()
+              : qty.toStringAsFixed(2);
           final revenue = (item['revenue'] as num?)?.toDouble() ?? 0.0;
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 3),
-            child: Row(
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    name,
-                    style: const TextStyle(fontSize: 13),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Text(
-                  '$qtyStr uds  ·  \$${revenue.toFormattedString(2)}',
-                  style: GoogleFonts.outfit(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.green[700],
-                  ),
-                ),
-              ],
-            ),
+          return _ProgressRow(
+            label: name,
+            valueLabel:
+                '${context.t('closing_units').replaceAll('{qty}', qtyStr)}  ·  \$${revenue.toFormattedString(2)}',
+            value: 0,
+            color: AppColors.income,
+            showBar: false,
           );
         }),
       ],
@@ -775,42 +883,28 @@ class _AddedProductsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 16),
-        _SectionTitle(icon: Icons.add_box_outlined, label: context.t('closing_products_added'), color: Colors.teal),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.lg),
+        _SectionTitle(
+          icon: Icons.add_box_outlined,
+          label: context.t('closing_products_added'),
+          color: AppColors.secondary,
+        ),
+        const SizedBox(height: AppSpacing.sm),
         ...items.map((item) {
           if (item is! Map) return const SizedBox.shrink();
           final name = item['name'] as String? ?? '—';
           final qty = (item['qty'] as num?)?.toDouble() ?? 0.0;
-          final qtyStr = qty % 1 == 0 ? qty.toInt().toString() : qty.toStringAsFixed(2);
+          final qtyStr = qty % 1 == 0
+              ? qty.toInt().toString()
+              : qty.toStringAsFixed(2);
           final cost = (item['cost'] as num?)?.toDouble() ?? 0.0;
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 3),
-            child: Row(
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: const BoxDecoration(color: Colors.teal, shape: BoxShape.circle),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    name,
-                    style: const TextStyle(fontSize: 13),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Text(
-                  '$qtyStr uds  ·  \$${cost.toFormattedString(2)}/u',
-                  style: GoogleFonts.outfit(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.teal[700],
-                  ),
-                ),
-              ],
-            ),
+          return _ProgressRow(
+            label: name,
+            valueLabel:
+                '${context.t('closing_units').replaceAll('{qty}', qtyStr)}  ·  \$${cost.toFormattedString(2)}/u',
+            value: 0,
+            color: AppColors.secondary,
+            showBar: false,
           );
         }),
       ],
@@ -845,46 +939,26 @@ class _PaymentMethodsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 16),
-        _SectionTitle(icon: Icons.payment, label: context.t('closing_payment_methods'), color: Colors.blue),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.lg),
+        _SectionTitle(
+          icon: Icons.payment,
+          label: context.t('closing_payment_methods'),
+          color: AppColors.info,
+        ),
+        const SizedBox(height: AppSpacing.sm),
         ...data.entries.map((entry) {
           final method = entry.key;
           final amount = (entry.value is num)
               ? (entry.value as num).toDouble()
               : (double.tryParse(entry.value.toString()) ?? 0.0);
-          final pct = total > 0 ? (amount / total * 100).toStringAsFixed(0) : '0';
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(method, style: const TextStyle(fontSize: 12)),
-                    const Spacer(),
-                    Text(
-                      '\$${amount.toFormattedString(2)} ($pct%)',
-                      style: GoogleFonts.outfit(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: total > 0 ? amount / total : 0,
-                    backgroundColor: Colors.blue.withValues(alpha: 0.1),
-                    valueColor: const AlwaysStoppedAnimation(Colors.blue),
-                    minHeight: 5,
-                  ),
-                ),
-              ],
-            ),
+          final pct = total > 0
+              ? (amount / total * 100).toStringAsFixed(0)
+              : '0';
+          return _ProgressRow(
+            label: method,
+            valueLabel: '\$${amount.toFormattedString(2)} ($pct%)',
+            value: total > 0 ? amount / total : 0,
+            color: AppColors.info,
           );
         }),
       ],
@@ -916,54 +990,41 @@ class _ExpenseCategoriesSection extends StatelessWidget {
       return s + (double.tryParse(v.toString()) ?? 0.0);
     });
 
-    const colors = [Colors.red, Colors.orange, Colors.pink, Colors.purple, Colors.brown, Colors.grey, Colors.deepOrange];
+    const colors = [
+      AppColors.expense,
+      AppColors.orange,
+      AppColors.purple,
+      AppColors.info,
+      AppColors.warning,
+      AppColors.secondary,
+    ];
     int colorIdx = 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 16),
-        _SectionTitle(icon: Icons.pie_chart_outline, label: context.t('closing_expense_categories'), color: Colors.red),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.lg),
+        _SectionTitle(
+          icon: Icons.pie_chart_outline,
+          label: context.t('closing_expense_categories'),
+          color: AppColors.expense,
+        ),
+        const SizedBox(height: AppSpacing.sm),
         ...data.entries.map((entry) {
           final category = entry.key;
           final amount = (entry.value is num)
               ? (entry.value as num).toDouble()
               : (double.tryParse(entry.value.toString()) ?? 0.0);
-          final pct = total > 0 ? (amount / total * 100).toStringAsFixed(0) : '0';
+          final pct = total > 0
+              ? (amount / total * 100).toStringAsFixed(0)
+              : '0';
           final color = colors[colorIdx % colors.length];
           colorIdx++;
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(category, style: const TextStyle(fontSize: 12)),
-                    const Spacer(),
-                    Text(
-                      '\$${amount.toFormattedString(2)} ($pct%)',
-                      style: GoogleFonts.outfit(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: color,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: total > 0 ? amount / total : 0,
-                    backgroundColor: color.withValues(alpha: 0.1),
-                    valueColor: AlwaysStoppedAnimation(color),
-                    minHeight: 5,
-                  ),
-                ),
-              ],
-            ),
+          return _ProgressRow(
+            label: category,
+            valueLabel: '\$${amount.toFormattedString(2)} ($pct%)',
+            value: total > 0 ? amount / total : 0,
+            color: color,
           );
         }),
       ],
@@ -990,28 +1051,25 @@ class _SellerStatsSection extends StatelessWidget {
 
     if (data.isEmpty) return const SizedBox.shrink();
 
-    final total = data.values.fold<double>(
-      0.0,
-      (s, v) {
-        if (v is Map) {
-          return s + ((v['total'] as num?)?.toDouble() ?? 0.0);
-        } else if (v is num) {
-          return s + v.toDouble();
-        }
-        return s;
-      },
-    );
+    final total = data.values.fold<double>(0.0, (s, v) {
+      if (v is Map) {
+        return s + ((v['total'] as num?)?.toDouble() ?? 0.0);
+      } else if (v is num) {
+        return s + v.toDouble();
+      }
+      return s;
+    });
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
         _SectionTitle(
           icon: Icons.people_outline,
           label: context.t('closing_by_seller'),
-          color: Colors.indigo,
+          color: AppColors.purple,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         ...data.entries.map((entry) {
           final name = entry.key;
           double amount = 0.0;
@@ -1024,37 +1082,86 @@ class _SellerStatsSection extends StatelessWidget {
             amount = (entry.value as num).toDouble();
             count = 1;
           }
-          final pct = total > 0 ? (amount / total * 100).toStringAsFixed(0) : '0';
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: const BoxDecoration(color: Colors.indigo, shape: BoxShape.circle),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    name,
-                    style: const TextStyle(fontSize: 13),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Text(
-                  '$count ventas  ·  \$${amount.toFormattedString(2)} ($pct%)',
-                  style: GoogleFonts.outfit(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.indigo[700],
-                  ),
-                ),
-              ],
-            ),
+          final pct = total > 0
+              ? (amount / total * 100).toStringAsFixed(0)
+              : '0';
+          return _ProgressRow(
+            label: name,
+            valueLabel: '$count  ·  \$${amount.toFormattedString(2)} ($pct%)',
+            value: total > 0 ? amount / total : 0,
+            color: AppColors.purple,
           );
         }),
       ],
+    );
+  }
+}
+
+/// Fila con barra de proporción opcional. Se reutiliza para los desgloses que
+/// representan partes de un total y para listas simples (productos vendidos).
+class _ProgressRow extends StatelessWidget {
+  final String label;
+  final String valueLabel;
+  final double value;
+  final Color color;
+  final bool showBar;
+
+  const _ProgressRow({
+    required this.label,
+    required this.valueLabel,
+    required this.value,
+    required this.color,
+    this.showBar = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!showBar) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+        child: Row(
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Flexible(
+              child: Text(
+                valueLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: CashProgressBar(
+        value: value,
+        color: color,
+        label: label,
+        valueLabel: valueLabel,
+        valueColor: color,
+      ),
     );
   }
 }
@@ -1110,141 +1217,80 @@ class _GenerateClosingSheetState extends State<_GenerateClosingSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+    return CashBottomSheet(
+      title: context.t('closing_generate'),
+      trailing: IconButton(
+        icon: const Icon(Icons.close),
+        onPressed: () => Navigator.pop(context),
       ),
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  context.t('closing_generate'),
-                  style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Period Selector
+          _SegmentedPeriod(
+            selected: _selectedPeriod,
+            options: [
+              _SegmentOption('daily', context.t('freq_daily')),
+              _SegmentOption('weekly', context.t('freq_weekly')),
+              _SegmentOption('monthly', context.t('freq_monthly')),
+            ],
+            onChanged: (value) {
+              setState(() => _selectedPeriod = value);
+              _calculateStats();
+            },
+          ),
+          const SizedBox(height: AppSpacing.xl),
 
-            // Period Selector
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.grey.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
+          // Preview
+          if (_previewStats != null)
+            CashCard(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.surfaceDark2
+                  : AppColors.surfaceVariantLight,
+              boxShadow: const [],
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
                 children: [
-                  _buildToggleOption(context.t('freq_daily'), 'daily'),
-                  _buildToggleOption(context.t('freq_weekly'), 'weekly'),
-                  _buildToggleOption(context.t('freq_monthly'), 'monthly'),
+                  Text(
+                    context.t('closing_preview'),
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildPreviewStat(
+                        context.t('closing_income_label'),
+                        _previewStats!['income'] ?? 0.0,
+                        AppColors.income,
+                      ),
+                      _buildPreviewStat(
+                        context.t('closing_expenses_label'),
+                        _previewStats!['expenses'] ?? 0.0,
+                        AppColors.expense,
+                      ),
+                      _buildPreviewStat(
+                        context.t('net_profit'),
+                        _previewStats!['profit'] ?? 0.0,
+                        AppColors.info,
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
 
-            // Preview
-            if (_previewStats != null)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Theme.of(context).primaryColor.withValues(alpha: 0.2),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      context.t('closing_preview'),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).primaryColor,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildPreviewStat(context.t('closing_income_label'), _previewStats!['income'] ?? 0.0, Colors.green),
-                        _buildPreviewStat(context.t('closing_expenses_label'), _previewStats!['expenses'] ?? 0.0, Colors.red),
-                        _buildPreviewStat('Neto', _previewStats!['profit'] ?? 0.0, Colors.blue),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _isSaving ? null : _saveClosing,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: Theme.of(context).primaryColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: _isSaving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : Text(context.t('closing_confirm_save')),
-            ),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildToggleOption(String label, String value) {
-    final isSelected = _selectedPeriod == value;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() => _selectedPeriod = value);
-          _calculateStats();
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected ? Theme.of(context).cardColor : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: isSelected
-                ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]
-                : [],
+          const SizedBox(height: AppSpacing.xl),
+          CashButton(
+            label: context.t('closing_confirm_save'),
+            loading: _isSaving,
+            onPressed: _isSaving ? null : _saveClosing,
           ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected ? Theme.of(context).primaryColor : Colors.grey,
-            ),
-          ),
-        ),
+        ],
       ),
     );
   }
@@ -1252,10 +1298,23 @@ class _GenerateClosingSheetState extends State<_GenerateClosingSheet> {
   Widget _buildPreviewStat(String label, double value, Color color) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.textSecondaryDark
+                : AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xxs),
         Text(
           '${value < 0 ? '-\$' : '\$'}${value.abs().toFormattedString(2)}',
-          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18, color: color),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
         ),
       ],
     );
@@ -1301,7 +1360,7 @@ class _GenerateClosingSheetState extends State<_GenerateClosingSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(context.t('closing_generated_ok')),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.income,
         ),
       );
     } catch (e) {
@@ -1310,10 +1369,79 @@ class _GenerateClosingSheetState extends State<_GenerateClosingSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('${context.t('closing_generated_error')}: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.expense,
         ),
       );
     }
+  }
+}
+
+// ──────────────────────────────────────────────
+// Segmented period selector
+// ──────────────────────────────────────────────
+class _SegmentOption {
+  final String value;
+  final String label;
+  const _SegmentOption(this.value, this.label);
+}
+
+class _SegmentedPeriod extends StatelessWidget {
+  final String selected;
+  final List<_SegmentOption> options;
+  final ValueChanged<String> onChanged;
+
+  const _SegmentedPeriod({
+    required this.selected,
+    required this.options,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.xs),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark2 : AppColors.surfaceVariantLight,
+        borderRadius: AppRadius.radiusLg,
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.borderLight,
+        ),
+      ),
+      child: Row(
+        children: options.map((option) {
+          final bool isSelected = selected == option.value;
+          return Expanded(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => onChanged(option.value),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.primary : AppColors.transparent,
+                  borderRadius: AppRadius.radiusMd,
+                ),
+                child: Text(
+                  option.label,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: isSelected
+                        ? AppColors.white
+                        : (isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondary),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
   }
 }
 
@@ -1334,25 +1462,34 @@ class _TransferProfitButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final remaining = closing.netProfit - closing.transferredAmount;
-    final fullyTransferred = closing.transferredAmount >= closing.netProfit - 0.005;
+    final fullyTransferred =
+        closing.transferredAmount >= closing.netProfit - 0.005;
 
     // Already fully transferred -> static badge
     if (fullyTransferred) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
         decoration: BoxDecoration(
-          color: Colors.green.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.green.withValues(alpha: 0.35)),
+          color: AppColors.income.withValues(alpha: 0.12),
+          borderRadius: AppRadius.radiusMd,
+          border: Border.all(color: AppColors.income.withValues(alpha: 0.35)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.check_circle, size: 18, color: Colors.green),
-            const SizedBox(width: 8),
-            Text(
-              context.t('transfer_profit_fully_transferred'),
-              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 13),
+            const Icon(Icons.check_circle, size: 18, color: AppColors.income),
+            const SizedBox(width: AppSpacing.sm),
+            Flexible(
+              child: Text(
+                context.t('transfer_profit_fully_transferred'),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.income,
+                ),
+              ),
             ),
           ],
         ),
@@ -1361,66 +1498,101 @@ class _TransferProfitButton extends StatelessWidget {
 
     final bool hasAccounts = appProvider.cards.isNotEmpty;
 
-    return ElevatedButton(
-      onPressed: () {
-        if (!hasAccounts) return;
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (ctx) => _TransferProfitSheet(
-            closing: closing,
-            provider: provider,
-            appProvider: appProvider,
+    return Material(
+      color: AppColors.transparent,
+      child: InkWell(
+        onTap: () {
+          if (!hasAccounts) return;
+          CashBottomSheet.show(
+            context,
+            builder: (ctx) => _TransferProfitSheet(
+              closing: closing,
+              provider: provider,
+              appProvider: appProvider,
+            ),
+          );
+        },
+        borderRadius: AppRadius.radiusMd,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
           ),
-        );
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        elevation: 0,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.account_balance_wallet, size: 18, color: Colors.white),
-                const SizedBox(width: 10),
-                Flexible(
-                  child: Text(
-                    context.t('transfer_profit_button'),
-                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15),
+          decoration: BoxDecoration(
+            color: hasAccounts
+                ? AppColors.primary
+                : (Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.surfaceDark3
+                      : AppColors.surfaceVariantLight),
+            borderRadius: AppRadius.radiusMd,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.account_balance_wallet,
+                    size: 18,
+                    color: hasAccounts
+                        ? AppColors.white
+                        : AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      context.t('transfer_profit_button'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: hasAccounts
+                            ? AppColors.white
+                            : AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                hasAccounts
+                    ? context
+                          .t('transfer_profit_available')
+                          .replaceAll(
+                            '{amount}',
+                            '\$${remaining.toFormattedString(2)}',
+                          )
+                    : context.t('transfer_profit_no_accounts'),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: hasAccounts
+                      ? AppColors.white.withValues(alpha: 0.85)
+                      : AppColors.textSecondary,
+                ),
+              ),
+              // Show partial-transfer progress line when relevant
+              if (closing.transferredAmount > 0) ...[
+                const SizedBox(height: AppSpacing.xxs),
+                Text(
+                  context
+                      .t('transfer_profit_partial')
+                      .replaceAll(
+                        '{transferred}',
+                        '\$${closing.transferredAmount.toFormattedString(2)}',
+                      )
+                      .replaceAll(
+                        '{total}',
+                        '\$${closing.netProfit.toFormattedString(2)}',
+                      ),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: hasAccounts
+                        ? AppColors.white.withValues(alpha: 0.85)
+                        : AppColors.textSecondary,
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              hasAccounts
-                  ? context.t('transfer_profit_available').replaceAll('{amount}', '\$${remaining.toFormattedString(2)}')
-                  : context.t('transfer_profit_no_accounts'),
-              style: TextStyle(
-                fontSize: 12,
-                color: hasAccounts ? Colors.white.withValues(alpha: 0.85) : Colors.white,
-              ),
-            ),
-            // Show partial-transfer progress line when relevant
-            if (closing.transferredAmount > 0) ...[
-              const SizedBox(height: 2),
-              Text(
-                context
-                    .t('transfer_profit_partial')
-                    .replaceAll('{transferred}', '\$${closing.transferredAmount.toFormattedString(2)}')
-                    .replaceAll('{total}', '\$${closing.netProfit.toFormattedString(2)}'),
-                style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.85)),
-              ),
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -1467,8 +1639,9 @@ class _TransferProfitSheetState extends State<_TransferProfitSheet> {
     super.initState();
     final cards = widget.appProvider.cards;
     if (cards.isNotEmpty) _targetCardId = cards.first.id;
-    _amountController.text =
-        _remaining % 1 == 0 ? _remaining.toInt().toString() : _remaining.toString();
+    _amountController.text = _remaining % 1 == 0
+        ? _remaining.toInt().toString()
+        : _remaining.toString();
   }
 
   @override
@@ -1481,11 +1654,62 @@ class _TransferProfitSheetState extends State<_TransferProfitSheet> {
   bool _needsRate(BuildContext context) {
     final card = _targetCard;
     if (card == null) return false;
-    final businessCurrency = widget.provider.activeBusiness?.currency ?? widget.appProvider.mainCurrency;
+    final businessCurrency =
+        widget.provider.activeBusiness?.currency ??
+        widget.appProvider.mainCurrency;
     return card.currency != businessCurrency;
   }
 
-  Future<void> _confirm(BuildContext context) async {
+  String _cardLabel(AccountCard c) {
+    final String origin = c.isCash ? c.name : (c.bankName ?? 'Tarjeta');
+    final String number;
+    if (c.isCash) {
+      number = 'CASH';
+    } else {
+      number = c.cardNumber.length >= 4
+          ? c.cardNumber.substring(c.cardNumber.length - 4)
+          : c.cardNumber;
+    }
+    return '$origin (...$number) - ${c.currency}';
+  }
+
+  Future<void> _pickAccount(BuildContext context) async {
+    final selected = await CashBottomSheet.show<AccountCard>(
+      context,
+      builder: (ctx) => CashBottomSheet(
+        title: context.t('transfer_profit_select_account'),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final c in widget.appProvider.cards)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(
+                  c.isCash
+                      ? Icons.payments_outlined
+                      : Icons.credit_card_outlined,
+                  color: AppColors.primary,
+                ),
+                title: Text(
+                  _cardLabel(c),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: c.id == _targetCardId
+                    ? const Icon(Icons.check, color: AppColors.primary)
+                    : null,
+                onTap: () => Navigator.pop(ctx, c),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (selected != null && mounted) {
+      setState(() => _targetCardId = selected.id);
+    }
+  }
+
+  Future<void> _confirm() async {
     if (_saving) return;
     final amount = double.tryParse(_amountController.text) ?? 0.0;
     final remaining = _remaining;
@@ -1494,15 +1718,18 @@ class _TransferProfitSheetState extends State<_TransferProfitSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(context.t('transfer_profit_error')),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.expense,
         ),
       );
       return;
     }
 
     final provider = widget.provider;
-    final businessName = provider.activeBusiness?.name ?? context.t('closing_business_fallback');
-    final title = context.t('transfer_profit_title_tx').replaceAll('{name}', businessName);
+    final businessName =
+        provider.activeBusiness?.name ?? context.t('closing_business_fallback');
+    final title = context
+        .t('transfer_profit_title_tx')
+        .replaceAll('{name}', businessName);
 
     setState(() => _saving = true);
     final error = await provider.transferProfitToAccount(
@@ -1519,7 +1746,7 @@ class _TransferProfitSheetState extends State<_TransferProfitSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(context.t('transfer_profit_success')),
-          backgroundColor: Colors.green[700],
+          backgroundColor: AppColors.income,
         ),
       );
       Navigator.pop(context);
@@ -1528,7 +1755,7 @@ class _TransferProfitSheetState extends State<_TransferProfitSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(context.t('transfer_profit_error')),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.expense,
         ),
       );
     }
@@ -1536,143 +1763,105 @@ class _TransferProfitSheetState extends State<_TransferProfitSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final businessName = widget.provider.activeBusiness?.name ?? context.t('closing_business_fallback');
-    final businessCurrency = widget.provider.activeBusiness?.currency ?? widget.appProvider.mainCurrency;
+    final businessName =
+        widget.provider.activeBusiness?.name ??
+        context.t('closing_business_fallback');
+    final businessCurrency =
+        widget.provider.activeBusiness?.currency ??
+        widget.appProvider.mainCurrency;
+    final AccountCard? card = _targetCard;
+    final bool needsRate = _needsRate(context);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              context.t('transfer_profit_button'),
-              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              context.t('transfer_profit_title_tx').replaceAll('{name}', businessName),
-              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 16),
+    return CashBottomSheet(
+      title: context.t('transfer_profit_button'),
+      subtitle: context
+          .t('transfer_profit_title_tx')
+          .replaceAll('{name}', businessName),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // ── Profit summary ──
+          _InfoRow(
+            icon: Icons.trending_up,
+            label: context.t('net_profit'),
+            value:
+                '\$${widget.closing.netProfit.toFormattedString(2)} ($businessCurrency)',
+            color: AppColors.income,
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          _InfoRow(
+            icon: Icons.savings_outlined,
+            label: context.t('transfer_profit_available'),
+            value: '\$${_remaining.toFormattedString(2)}',
+            color: AppColors.primary,
+          ),
 
-            // ── Profit summary ──
-            _InfoRow(
-              icon: Icons.trending_up,
-              label: context.t('net_profit'),
-              value: '\$${widget.closing.netProfit.toFormattedString(2)} ($businessCurrency)',
-              color: Colors.green,
-            ),
-            const SizedBox(height: 6),
-            _InfoRow(
-              icon: Icons.savings_outlined,
-              label: context.t('transfer_profit_available'),
-              value: '\$${_remaining.toFormattedString(2)}',
-              color: Theme.of(context).colorScheme.primary,
-            ),
+          const SizedBox(height: AppSpacing.lg),
 
-            const SizedBox(height: 16),
+          // ── Destination account ──
+          CashSelectorField(
+            label: context.t('transfer_profit_select_account'),
+            value: card == null ? null : _cardLabel(card),
+            placeholder: context.t('transfer_profit_select_account'),
+            icon: Icons.wallet_outlined,
+            onTap: () => _pickAccount(context),
+          ),
 
-            // ── Destination account ──
-            _SectionTitle(icon: Icons.wallet_outlined, label: context.t('transfer_profit_select_account'), color: Theme.of(context).colorScheme.primary),
-            const SizedBox(height: 8),
-            DropdownButton<String>(
-              isExpanded: true,
-              hint: Text(context.t('transfer_profit_select_account')),
-              value: _targetCardId,
-              items: widget.appProvider.cards
-                  .map(
-                    (c) => DropdownMenuItem(
-                      value: c.id,
-                      child: Text(
-                        '${c.isCash ? c.name : (c.bankName ?? 'Tarjeta')} (...${c.isCash ? 'CASH' : (c.cardNumber.length >= 4 ? c.cardNumber.substring(c.cardNumber.length - 4) : c.cardNumber)}) - ${c.currency}',
-                      ),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (val) => setState(() => _targetCardId = val),
-            ),
+          const SizedBox(height: AppSpacing.lg),
 
-            const SizedBox(height: 16),
+          // ── Amount ──
+          CashAmountInput(
+            controller: _amountController,
+            label: context.t('transfer_profit_amount'),
+            symbol: '\$',
+            code: businessCurrency,
+            isExpense: false,
+            fontSize: 32,
+            compact: true,
+          ),
 
-            // ── Amount ──
-            TextField(
-              controller: _amountController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                hintText: context.t('transfer_profit_amount'),
-                prefixText: '\$ ',
-                border: const OutlineInputBorder(),
-              ),
-            ),
-
-            // ── Exchange rate when currencies differ ──
-            if (_needsRate(context)) ...[
-              const SizedBox(height: 10),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.info_outline, size: 16, color: Colors.amber),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      context.t('transfer_profit_exchange_rate'),
-                      style: const TextStyle(fontSize: 12, color: Colors.amber),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              TextField(
-                controller: _rateController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  hintText: context.t('transfer_profit_exchange_rate'),
-                  border: const OutlineInputBorder(),
+          // ── Exchange rate when currencies differ ──
+          if (needsRate) ...[
+            const SizedBox(height: AppSpacing.lg),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.info_outline,
+                  size: 16,
+                  color: AppColors.warning,
                 ),
-              ),
-            ],
-
-            const SizedBox(height: 20),
-
-            // ── Confirm ──
-            ElevatedButton(
-              onPressed: () => _confirm(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                elevation: 0,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (_saving) ...[
-                    const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  Text(
-                    context.t('transfer_profit_confirm'),
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                const SizedBox(width: AppSpacing.sm),
+                Flexible(
+                  child: Text(
+                    context.t('transfer_profit_exchange_rate'),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: AppColors.warning),
                   ),
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            CashInput(
+              controller: _rateController,
+              label: context.t('transfer_profit_exchange_rate'),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
               ),
             ),
           ],
-        ),
+
+          const SizedBox(height: AppSpacing.xl),
+
+          // ── Confirm ──
+          CashButton(
+            label: context.t('transfer_profit_confirm'),
+            loading: _saving,
+            onPressed: () => _confirm(),
+          ),
+        ],
       ),
     );
   }

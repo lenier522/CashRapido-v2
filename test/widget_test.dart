@@ -1,12 +1,27 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cashrapido/main.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:cashrapido/screens/onboarding_screen.dart';
+import 'package:cashrapido/services/localization_service.dart';
 
 void main() {
   testWidgets('Onboarding loads correctly', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    // Force seenOnboarding to false to show the OnboardingScreen
-    await tester.pumpWidget(const MyApp(seenOnboarding: false));
+    // Build the OnboardingScreen directly with localizations
+    await tester.pumpWidget(
+      MaterialApp(
+        home: const OnboardingScreen(),
+        locale: const Locale('es'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [Locale('es'), Locale('en'), Locale('fr')],
+      ),
+    );
+
+    await tester.pump(const Duration(milliseconds: 500));
 
     // Verify that the OnboardingScreen is present
     expect(find.byType(OnboardingScreen), findsOneWidget);

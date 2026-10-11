@@ -244,8 +244,8 @@ class AppProvider with ChangeNotifier {
           id: 'test_cuba',
           name: 'Prueba (Test)',
           iconAsset: 'assets/icons/test.png',
-          isEnabled: false,
-          isVisible: false,
+          isEnabled: true,
+          isVisible: true,
           isTest: true,
         ),
         PaymentMethod(
@@ -586,6 +586,14 @@ class AppProvider with ChangeNotifier {
 
   List<InternalTransaction> get transactions => _transactions;
   List<Category> get categories => _categories;
+
+  /// Categorías visibles para un flujo concreto según su clasificación.
+  ///
+  /// [isExpense] `true` filtra a `expense + both`; `false` a `income + both`.
+  /// Las categorías antiguas (sin `type`) se comportan como `both`.
+  List<Category> categoriesFor(bool isExpense) => _categories
+      .where((c) => CategoryTypes.allows(c.type, isExpense: isExpense))
+      .toList();
   List<AccountCard> get cards => _cards;
 
   final Uuid _uuid = const Uuid();
@@ -1310,6 +1318,7 @@ class AppProvider with ChangeNotifier {
     required int iconCode,
     required int colorValue,
     double? monthlyBudget,
+    String type = CategoryTypes.both,
   }) async {
     final category = Category(
       id: _uuid.v4(),
@@ -1318,9 +1327,56 @@ class AppProvider with ChangeNotifier {
       colorValue: colorValue,
       isCustom: true,
       monthlyBudget: monthlyBudget,
+      type: CategoryTypes.normalize(type),
     );
-    await _categoryBox.add(category);
-    _categories.add(category);
+    // Las categorías nuevas se muestran al principio de la lista.
+    _categories.insert(0, category);
+    await _persistCategoryBoxOrder();
+    notifyListeners();
+  }
+
+  /// Reconstruye la caja de categorías en el orden actual de [_categories].
+  ///
+  /// Los objetos `Category` conservan su `id`, así que los movimientos que las
+  /// referencian por `categoryId` siguen apuntando a la misma categoría; solo
+  /// cambia el orden de presentación (nuevas primero).
+  Future<void> _persistCategoryBoxOrder() async {
+    await _categoryBox.clear();
+    for (final Category cat in _categories) {
+      await _categoryBox.add(cat);
+    }
+  }
+
+  /// Actualiza una categoría existente conservando su id, su condición de
+  /// personalizada y todos los movimientos que la referencian.
+  Future<void> editCategory({
+    required String categoryId,
+    required String name,
+    required int iconCode,
+    required int colorValue,
+    double? monthlyBudget,
+    String type = CategoryTypes.both,
+  }) async {
+    final index = _categories.indexWhere((c) => c.id == categoryId);
+    if (index == -1) return;
+    final old = _categories[index];
+    final updated = Category(
+      id: old.id,
+      name: name,
+      iconCode: iconCode,
+      colorValue: colorValue,
+      isCustom: old.isCustom,
+      monthlyBudget: monthlyBudget,
+      type: CategoryTypes.normalize(type),
+    );
+    final key = _categoryBox.keys.firstWhere(
+      (k) => _categoryBox.get(k)?.id == categoryId,
+      orElse: () => null,
+    );
+    if (key != null) {
+      await _categoryBox.put(key, updated);
+    }
+    _categories[index] = updated;
     notifyListeners();
   }
 
@@ -1335,6 +1391,7 @@ class AppProvider with ChangeNotifier {
         colorValue: old.colorValue,
         isCustom: old.isCustom,
         monthlyBudget: budget,
+        type: old.type,
       );
       final key = _categoryBox.keys.firstWhere(
         (k) => _categoryBox.get(k)?.id == categoryId,
@@ -1498,79 +1555,46 @@ class AppProvider with ChangeNotifier {
     // 1. Clean up existing duplicates first
     await _cleanupDuplicateCategories();
 
+    // 2. Retirar categorías por defecto que ya no forman parte del set
+    //    inicial (solo las que ningún movimiento/recurrente referencia).
+    await _removeRetiredDefaultCategories();
+
     final defaults = [
       Category(
         id: 'cat_food',
         name: 'Comida',
         iconCode: 0xe532,
         colorValue: 0xFFFFA726,
+        type: CategoryTypes.expense,
       ), // restaurant
-      Category(
-        id: 'cat_transport',
-        name: 'Transporte',
-        iconCode: 0xe1d5,
-        colorValue: 0xFF42A5F5,
-      ), // directions_car
       Category(
         id: 'cat_home',
         name: 'Hogar',
         iconCode: 0xe318,
         colorValue: 0xFFAB47BC,
+        type: CategoryTypes.expense,
       ), // home
       Category(
-        id: 'cat_health',
-        name: 'Salud',
-        iconCode: 0xe396,
-        colorValue: 0xFFEF5350,
-      ), // favorite
-      Category(
-        id: 'cat_entertainment',
-        name: 'Entretenimiento',
-        iconCode: 0xe3a1,
-        colorValue: 0xFFEC407A,
-      ), // movie
+        id: 'cat_transfermovil',
+        name: 'Transfermóvil',
+        iconCode: 0xe5f0, // smartphone (Material Icons)
+        colorValue: 0xFF2196F3, // Blue
+        type: CategoryTypes.both,
+      ),
       // Income Categories
       Category(
         id: 'cat_salary',
         name: 'Salario',
         iconCode: 0xe0b2, // attach_money or similar work icon
         colorValue: 0xFF4CAF50, // Green
+        type: CategoryTypes.income,
       ),
       Category(
         id: 'cat_business',
         name: 'Negocio',
         iconCode: 0xe11c, // business_center or similar
         colorValue: 0xFF2196F3, // Blue
-      ),
-      Category(
-        id: 'cat_gifts',
-        name: 'Regalos',
-        iconCode: 0xe13e, // card_giftcard
-        colorValue: 0xFF9C27B0, // Purple
-      ),
-      Category(
-        id: 'cat_rent',
-        name: 'Alquiler',
-        iconCode: 0xe31d, // home
-        colorValue: 0xFFFF9800, // Orange
-      ),
-      Category(
-        id: 'cat_investment',
-        name: 'Inversiones',
-        iconCode: 0xe59f, // show_chart
-        colorValue: 0xFF009688, // Teal
-      ),
-      Category(
-        id: 'cat_other_income',
-        name: 'Otros Ingresos',
-        iconCode: 0xe482, // attach_money usually
-        colorValue: 0xFF607D8B, // BlueGrey
-      ),
-      Category(
-        id: 'cat_transfermovil',
-        name: 'Transfermóvil',
-        iconCode: 0xe5f0, // smartphone (Material Icons)
-        colorValue: 0xFF2196F3, // Blue
+        type: CategoryTypes.income,
       ),
     ];
 
@@ -1591,6 +1615,40 @@ class AppProvider with ChangeNotifier {
         // The cleanup logic below handles merging by name, so we should be good.
       }
     }
+  }
+
+  /// Categorías por defecto retiradas del set inicial.
+  ///
+  /// El set inicial pasa a ser "3 gastos + 3 ingresos" (Hogar, Comida y
+  /// Transfermóvil como `both` cuentan para ambos; Salario y Negocio para
+  /// ingresos). Las retiradas se borran de instalaciones previas SOLO si
+  /// ningún movimiento ni un recurrente las referencia, para no romper datos.
+  static const List<String> _retiredDefaultCategoryIds = [
+    'cat_transport',
+    'cat_health',
+    'cat_entertainment',
+    'cat_rent',
+    'cat_gifts',
+    'cat_investment',
+    'cat_other_income',
+  ];
+
+  Future<void> _removeRetiredDefaultCategories() async {
+    for (final String id in _retiredDefaultCategoryIds) {
+      final Object? catKey = _categoryBox.keys.firstWhere(
+        (k) => _categoryBox.get(k)?.id == id,
+        orElse: () => null,
+      );
+      if (catKey == null) continue;
+
+      final bool referenced =
+          _transactionBox.values.any((t) => t.categoryId == id) ||
+          _recurringBox.values.any((r) => r.categoryId == id);
+      if (referenced) continue;
+
+      await _categoryBox.delete(catKey);
+    }
+    _categories = _categoryBox.values.toList().cast<Category>();
   }
 
   Future<void> _cleanupDuplicateCategories() async {

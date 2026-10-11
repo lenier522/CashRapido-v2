@@ -1,361 +1,295 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+
+import '../models/models.dart';
 import '../providers/app_provider.dart';
 import '../services/localization_service.dart';
+import '../theme/app_spacing.dart';
+import '../utils/category_color_options.dart';
+import '../utils/category_icon_registry.dart';
 import '../utils/icon_constants.dart';
+import '../widgets/design/cash_bottom_sheet.dart';
+import '../widgets/design/cash_button.dart';
+import '../widgets/design/cash_category_color_picker.dart';
+import '../widgets/design/cash_category_icon_picker.dart';
+import '../widgets/design/cash_category_preview.dart';
+import '../widgets/design/cash_category_type_selector.dart';
+import '../widgets/design/cash_input.dart';
+import '../widgets/design/cash_selector_field.dart';
 
+/// Alta y edición de categorías.
+///
+/// Pantalla única para crear y editar: previsualización en tiempo real, tipo
+/// (gasto / ingreso / ambos), nombre, selector de iconos con búsqueda y
+/// grupos, selector de 64 colores y presupuesto mensual opcional para gastos y
+/// ambas.
+///
+/// Conserva íntegras las reglas de validación, los valores por defecto y las
+/// llamadas al provider. En modo edición se mantiene el mismo id y los
+/// movimientos que referencian la categoría siguen intactos.
 class AddCategoryScreen extends StatefulWidget {
-  const AddCategoryScreen({super.key});
+  /// Si se pasa, la pantalla funciona en modo edición sobre esa categoría.
+  final Category? category;
+
+  const AddCategoryScreen({super.key, this.category});
 
   @override
   State<AddCategoryScreen> createState() => _AddCategoryScreenState();
 }
 
 class _AddCategoryScreenState extends State<AddCategoryScreen> {
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _budgetController = TextEditingController();
-  int _selectedIconCode = 0xe532; // Default restaurant
-  int _selectedColorValue = 0xFFFFA726; // Default Orange
+  late final TextEditingController _nameController;
+  late final TextEditingController _budgetController;
 
-  // Curated list of colors
-  final List<Color> _colors = [
-    const Color(0xFFEF5350), // Red
-    const Color(0xFFEC407A), // Pink
-    const Color(0xFFAB47BC), // Purple
-    const Color(0xFF7E57C2), // Deep Purple
-    const Color(0xFF5C6BC0), // Indigo
-    const Color(0xFF42A5F5), // Blue
-    const Color(0xFF29B6F6), // Light Blue
-    const Color(0xFF26C6DA), // Cyan
-    const Color(0xFF26A69A), // Teal
-    const Color(0xFF66BB6A), // Green
-    const Color(0xFF9CCC65), // Light Green
-    const Color(0xFFD4E157), // Lime
-    const Color(0xFFFFEE58), // Yellow
-    const Color(0xFFFFCA28), // Amber
-    const Color(0xFFFFA726), // Orange
-    const Color(0xFFFF7043), // Deep Orange
-    const Color(0xFF8D6E63), // Brown
-    const Color(0xFFBDBDBD), // Grey
-    const Color(0xFF78909C), // Blue Grey
-    const Color(0xFF000000), // Black
-  ];
+  late int _selectedIconCode;
+  late int _selectedColorValue;
+  late String _type;
 
-  // Curated list of icons (Material Icons code points)
-  final List<int> _iconCodes = [
-    0xe532, // restaurant
-    0xe25a, // fastfood
-    0xe3a0, // local_pizza
-    0xe38c, // local_bar
-    0xe38d, // local_cafe
-    0xe1d7, // directions_car
-    0xe1d5, // directions_bus
-    0xe394, // local_gas_station
-    0xe180, // commute
-    0xe318, // home
-    0xe40d, // movie
-    0xe5e8, // sports_esports
-    0xe39a, // local_mall
-    0xe59c, // shopping_cart
-    0xe59a, // shopping_bag
-    0xe25b, // favorite
-    0xe396, // local_hospital
-    0xe28d, // fitness_center
-    0xe15d, // checkroom
-    0xe14d, // chair
-    0xe37b, // lightbulb
-    0xe559, // school
-    0xe399, // local_library
-    0xe4a3, // phone
-    0xe11c, // business_center
-    0xe3ae, // lock
-    0xe31d, // home_work
-    0xe116, // build
-    0xe4a1, // pets
-    0xe297, // flight
-  ];
+  String? _nameError;
+  bool _isSaving = false;
 
-  void _saveCategory() {
-    if (_nameController.text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(context.t('enter_name_error'))));
-      return;
-    }
+  bool get _isEditing => widget.category != null;
 
-    final budgetText = _budgetController.text.replaceAll(RegExp(r'[^0-9.,]'), '').replaceAll(',', '.');
-    final budget = double.tryParse(budgetText);
-
-    Provider.of<AppProvider>(context, listen: false).addCategory(
-      name: _nameController.text,
-      iconCode: _selectedIconCode,
-      colorValue: _selectedColorValue,
-      monthlyBudget: budget != null && budget > 0 ? budget : null,
+  @override
+  void initState() {
+    super.initState();
+    final Category? category = widget.category;
+    _nameController = TextEditingController(text: category?.name ?? '');
+    _budgetController = TextEditingController(
+      text: _budgetText(category?.monthlyBudget),
     );
-
-    Navigator.pop(context);
+    _selectedIconCode = category?.iconCode ?? 0xe532; // Default restaurant
+    _selectedColorValue = category?.colorValue ?? 0xFFFFA726; // Default Orange
+    _type = CategoryTypes.normalize(category?.type);
   }
 
   @override
+  void dispose() {
+    _nameController.dispose();
+    _budgetController.dispose();
+    super.dispose();
+  }
+
+  String _budgetText(double? value) {
+    if (value == null) return '';
+    return value % 1 == 0 ? value.toInt().toString() : value.toString();
+  }
+
+  // ---------------------------------------------------------------------------
+  // LÓGICA DE NEGOCIO (reglas idénticas a la pantalla anterior)
+  // ---------------------------------------------------------------------------
+
+  Future<void> _saveCategory() async {
+    if (_isSaving) return;
+
+    if (_nameController.text.isEmpty) {
+      setState(() => _nameError = context.t('enter_name_error'));
+      return;
+    }
+
+    final budgetText = _budgetController.text
+        .replaceAll(RegExp(r'[^0-9.,]'), '')
+        .replaceAll(',', '.');
+    final budget = double.tryParse(budgetText);
+
+    setState(() {
+      _nameError = null;
+      _isSaving = true;
+    });
+
+    final AppProvider provider = Provider.of<AppProvider>(
+      context,
+      listen: false,
+    );
+
+    if (_isEditing) {
+      final Category category = widget.category!;
+      // Las categorías de solo ingreso no llevan presupuesto: se conserva el
+      // que ya tuvieran para no perder datos al convertir el tipo.
+      final double? effectiveBudget = _type == CategoryTypes.income
+          ? category.monthlyBudget
+          : (budget != null && budget > 0 ? budget : null);
+      await provider.editCategory(
+        categoryId: category.id,
+        name: _nameController.text,
+        iconCode: _selectedIconCode,
+        colorValue: _selectedColorValue,
+        monthlyBudget: effectiveBudget,
+        type: _type,
+      );
+    } else {
+      await provider.addCategory(
+        name: _nameController.text,
+        iconCode: _selectedIconCode,
+        colorValue: _selectedColorValue,
+        monthlyBudget: budget != null && budget > 0 ? budget : null,
+        type: _type,
+      );
+    }
+
+    if (!mounted) return;
+    Navigator.pop(context);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Selector de icono
+  // ---------------------------------------------------------------------------
+
+  String? _selectedIconName() {
+    for (final CategoryIconOption option in CategoryIconRegistry.icons) {
+      if (option.codePoint == _selectedIconCode) return option.name;
+    }
+    return null;
+  }
+
+  Future<void> _pickIcon() async {
+    final int? picked = await CashBottomSheet.show<int>(
+      context,
+      builder: (sheetContext) => CashBottomSheet(
+        title: sheetContext.t('cat_icon_select'),
+        // Sin scroll externo: la cuadrícula del picker crece dentro de la hoja.
+        scrollable: false,
+        maxHeightFactor: 0.92,
+        child: CashCategoryIconPicker(
+          initialCodePoint: _selectedIconCode,
+          onSelected: (code) => Navigator.pop(sheetContext, code),
+        ),
+      ),
+    );
+    if (picked != null && mounted) {
+      setState(() => _selectedIconCode = picked);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // UI
+  // ---------------------------------------------------------------------------
+
+  @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool isEditing = _isEditing;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
-          context.t('new_category'),
-          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+          context.t(isEditing ? 'cat_edit_title' : 'cat_create_title'),
+          style: Theme.of(context).textTheme.titleLarge,
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.close,
-            color: Theme.of(context).textTheme.bodyLarge?.color,
-          ),
-          onPressed: () => Navigator.pop(context),
+        iconTheme: IconThemeData(
+          color: Theme.of(context).colorScheme.onSurface,
         ),
       ),
       body: SafeArea(
+        top: false,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screenHorizontal,
+            AppSpacing.sm,
+            AppSpacing.screenHorizontal,
+            AppSpacing.xxxl,
+          ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Preview
-              Center(
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Color(_selectedColorValue),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        IconConstants.getCategoryIcon(_selectedIconCode),
-                        size: 40,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      _nameController.text.isEmpty
-                          ? context.t('category_name_placeholder')
-                          : _nameController.text,
-                      style: GoogleFonts.outfit(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).textTheme.bodyLarge?.color,
-                      ),
-                    ),
-                  ],
-                ),
+              CashCategoryPreview(
+                name: _nameController.text,
+                icon: IconConstants.getCategoryIcon(_selectedIconCode),
+                color: Color(_selectedColorValue),
+                type: _type,
               ),
-              const SizedBox(height: 40),
-
-              // Name Input
-              Text(
-                context.t('cat_name_label'),
-                style: GoogleFonts.outfit(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+              const SizedBox(height: AppSpacing.xl),
+              _buildSectionLabel(context.t('cat_type_label')),
+              const SizedBox(height: AppSpacing.md),
+              CashCategoryTypeSelector(
+                selected: _type,
+                onChanged: (type) => setState(() => _type = type),
               ),
-              const SizedBox(height: 12),
-              TextField(
+              const SizedBox(height: AppSpacing.xl),
+              CashInput(
                 controller: _nameController,
-                onChanged: (val) => setState(() {}),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
-                  ),
-                  hintText: context.t('cat_name_hint'),
-                  hintStyle: TextStyle(color: Theme.of(context).hintColor),
-                ),
-                style: TextStyle(
-                  color: Theme.of(context).textTheme.bodyLarge?.color,
-                ),
+                label: context.t('cat_name_label'),
+                hint: context.t('cat_name_hint'),
+                prefix: const Icon(Icons.label_outline),
+                textCapitalization: TextCapitalization.sentences,
+                errorText: _nameError,
+                onChanged: (_) {
+                  setState(() {
+                    if (_nameError != null) _nameError = null;
+                  });
+                },
               ),
-              const SizedBox(height: 20),
-
-              // Budget Input
-              Text(
-                context.t('monthly_budget'),
-                style: GoogleFonts.outfit(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+              const SizedBox(height: AppSpacing.md),
+              _buildIconSelectorField(),
+              const SizedBox(height: AppSpacing.xl),
+              _buildSectionLabel(context.t('cat_color_label')),
+              const SizedBox(height: AppSpacing.md),
+              CashCategoryColorPicker(
+                selected: Color(_selectedColorValue),
+                onChanged: (color) =>
+                    setState(() => _selectedColorValue = color.toARGB32()),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _budgetController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
-                  ),
-                  hintText: context.t('monthly_budget_hint'),
-                  hintStyle: TextStyle(color: Theme.of(context).hintColor),
-                  prefixIcon: const Icon(Icons.attach_money),
-                ),
-                style: TextStyle(
-                  color: Theme.of(context).textTheme.bodyLarge?.color,
-                ),
-              ),
-              const SizedBox(height: 30),
-
-              // Icons Grid
-              Text(
-                context.t('cat_icon_label'),
-                style: GoogleFonts.outfit(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                height: 200,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 5,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                  ),
-                  itemCount: _iconCodes.length,
-                  itemBuilder: (context, index) {
-                    final code = _iconCodes[index];
-                    final isSelected = _selectedIconCode == code;
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedIconCode = code),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? Theme.of(context).colorScheme.primary
-                              : (isDark ? Colors.grey[800] : Colors.grey[100]),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          IconConstants.getCategoryIcon(code),
-                          color: isSelected
-                              ? Colors.white
-                              : Theme.of(context).disabledColor,
-                          size: 20,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 30),
-
-              // Colors Grid
-              Text(
-                context.t('cat_color_label'),
-                style: GoogleFonts.outfit(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                height: 150,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 5,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                  ),
-                  itemCount: _colors.length,
-                  itemBuilder: (context, index) {
-                    final color = _colors[index];
-                    final isSelected = _selectedColorValue == color.toARGB32();
-                    return GestureDetector(
-                      onTap: () => setState(
-                        () => _selectedColorValue = color.toARGB32(),
-                      ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                          border: isSelected
-                              ? Border.all(
-                                  color:
-                                      Theme.of(
-                                        context,
-                                      ).textTheme.bodyLarge?.color ??
-                                      Colors.black,
-                                  width: 3,
-                                )
-                              : null,
-                        ),
-                        child: isSelected
-                            ? const Icon(
-                                Icons.check,
-                                color: Colors.white,
-                                size: 16,
-                              )
-                            : null,
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 40),
-
-              // Save Button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _saveCategory,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: Text(
-                    context.t('save_category'),
-                    style: GoogleFonts.outfit(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+              if (_type != CategoryTypes.income) ...[
+                const SizedBox(height: AppSpacing.xl),
+                CashInput(
+                  controller: _budgetController,
+                  label: context.t('monthly_budget'),
+                  hint: context.t('monthly_budget_hint'),
+                  prefix: const Icon(Icons.attach_money),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
                   ),
                 ),
+              ],
+              const SizedBox(height: AppSpacing.xxxl),
+              CashButton(
+                label: context.t('save_category'),
+                icon: const Icon(Icons.check, size: 20),
+                loading: _isSaving,
+                onPressed: _isSaving ? null : _saveCategory,
               ),
-              const SizedBox(height: 20),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSectionLabel(String text) {
+    return Text(
+      text,
+      style: Theme.of(
+        context,
+      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+    );
+  }
+
+  Widget _buildIconSelectorField() {
+    final Color color = Color(_selectedColorValue);
+    final Color foreground = CategoryColorOptions.contrastForeground(color);
+
+    return CashSelectorField(
+      label: context.t('cat_icon_label'),
+      value: _selectedIconName(),
+      placeholder: context.t('cat_icon_label'),
+      leading: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(
+          IconConstants.getCategoryIcon(_selectedIconCode),
+          size: 20,
+          color: foreground,
+        ),
+      ),
+      onTap: _pickIcon,
     );
   }
 }

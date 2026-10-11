@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/localization_service.dart';
 import 'default_license_screen.dart';
 import '../services/notification_service.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
+import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_radius.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -15,21 +17,38 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends State<OnboardingScreen>
+    with TickerProviderStateMixin {
   final PageController _pageController = PageController();
   int _currentIndex = 0;
+  late final AnimationController _lottieController;
 
   @override
   void initState() {
     super.initState();
-    // Request notification permissions when Onboarding starts (except on Windows)
+    _lottieController = AnimationController(vsync: this);
     if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
       NotificationService().requestPermissions();
     }
   }
 
   @override
+  void dispose() {
+    _pageController.dispose();
+    _lottieController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color bgColor = isDark
+        ? AppColors.backgroundDark
+        : AppColors.backgroundLight;
+    final Color surfaceColor = isDark
+        ? AppColors.surfaceDark
+        : AppColors.surfaceLight;
+
     final List<OnboardingData> pages = [
       OnboardingData(
         title: context.t('onboarding_title_1'),
@@ -49,89 +68,132 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: bgColor,
       body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: pages.length,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentIndex = index;
-                  });
-                },
-                itemBuilder: (context, index) {
-                  return _buildPage(pages[index]);
-                },
-              ),
-            ),
-            _buildBottomControls(pages.length),
-          ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final bool isCompact = constraints.maxHeight < 600;
+            return Column(
+              children: [
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: pages.length,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentIndex = index;
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      return _buildPage(pages[index], constraints, isCompact);
+                    },
+                  ),
+                ),
+                _buildBottomControls(pages.length, surfaceColor),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildPage(OnboardingData data) {
+  Widget _buildPage(
+    OnboardingData data,
+    BoxConstraints constraints,
+    bool isCompact,
+  ) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color textPrimary = isDark
+        ? AppColors.textPrimaryDark
+        : AppColors.textPrimary;
+    final Color textSecondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    // Calculate responsive sizes
+    final double horizontalPadding = constraints.maxWidth * 0.08;
+    final int animationFlex = isCompact ? 2 : 3;
+    final int textFlex = isCompact ? 1 : 2;
+    final double topSpacing = isCompact ? AppSpacing.lg : AppSpacing.xl * 2;
+
     return Padding(
-      padding: const EdgeInsets.all(20.0),
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          SizedBox(height: topSpacing),
           // Lottie Animation Area
           Expanded(
-            flex: 3,
-            child: Lottie.asset(
-              data.animation,
-              errorBuilder: (context, error, stackTrace) {
-                return const Center(
-                  child: Icon(
+            flex: animationFlex,
+            child: Center(
+              child: Lottie.asset(
+                data.animation,
+                controller: _lottieController
+                  ..duration = const Duration(seconds: 2)
+                  ..repeat(),
+                errorBuilder: (context, error, stackTrace) {
+                  return Icon(
                     Icons.movie_creation_outlined,
-                    size: 100,
-                    color: Colors.grey,
-                  ),
-                );
-              },
+                    size: constraints.maxWidth * 0.3,
+                    color: textSecondary.withValues(alpha: 0.5),
+                  );
+                },
+              ),
             ),
           ),
-          const SizedBox(height: 40),
+          SizedBox(height: isCompact ? AppSpacing.md : AppSpacing.xl),
           // Text Content
           Expanded(
-            flex: 2,
+            flex: textFlex,
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  data.title,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.outfit(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                Flexible(
+                  child: Text(
+                    data.title,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: textPrimary,
+                      height: 1.2,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 20),
-                Text(
-                  data.description,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.outfit(
-                    fontSize: 16,
-                    color: Colors.grey[600],
-                    height: 1.5,
+                SizedBox(height: isCompact ? AppSpacing.sm : AppSpacing.md),
+                Flexible(
+                  child: Text(
+                    data.description,
+                    textAlign: TextAlign.center,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: textSecondary,
+                      height: 1.4,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
+          SizedBox(height: isCompact ? AppSpacing.sm : AppSpacing.md),
         ],
       ),
     );
   }
 
-  Widget _buildBottomControls(int pageCount) {
+  Widget _buildBottomControls(int pageCount, Color surfaceColor) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xl,
+        AppSpacing.md,
+        AppSpacing.xl,
+        AppSpacing.xl,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -141,40 +203,49 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               pageCount,
               (index) => AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
-                margin: const EdgeInsets.only(right: 8),
+                margin: const EdgeInsets.only(right: AppSpacing.sm),
                 height: 8,
                 width: _currentIndex == index ? 24 : 8,
                 decoration: BoxDecoration(
                   color: _currentIndex == index
-                      ? Colors.deepPurple
-                      : Colors.deepPurple.shade100,
+                      ? AppColors.primary
+                      : (isDark
+                            ? AppColors.primaryDark.withValues(alpha: 0.3)
+                            : AppColors.primaryLight),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
             ),
           ),
-          // Next/Done Button
-          ElevatedButton(
-            onPressed: () {
-              if (_currentIndex == pageCount - 1) {
-                _completeOnboarding();
-              } else {
-                _pageController.nextPage(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepPurple,
+          // Next/Done Button - Fixed size circular button to avoid infinite width
+          SizedBox(
+            width: 56,
+            height: 56,
+            child: Material(
+              color: AppColors.primary,
               shape: const CircleBorder(),
-              padding: const EdgeInsets.all(20),
-            ),
-            child: Icon(
-              _currentIndex == pageCount - 1
-                  ? Icons.check
-                  : Icons.arrow_forward,
-              color: Colors.white,
+              child: InkWell(
+                onTap: () {
+                  if (_currentIndex == pageCount - 1) {
+                    _completeOnboarding();
+                  } else {
+                    _pageController.nextPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  }
+                },
+                borderRadius: BorderRadius.circular(AppRadius.full),
+                child: Center(
+                  child: Icon(
+                    _currentIndex == pageCount - 1
+                        ? Icons.check_rounded
+                        : Icons.arrow_forward_rounded,
+                    color: AppColors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -187,8 +258,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     await prefs.setBool('seenOnboarding', true);
 
     if (!mounted) return;
-    if (!mounted) return;
-    // Navigate to Default License Screen
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const DefaultLicenseScreen()),
     );

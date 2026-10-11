@@ -300,7 +300,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                     ],
                   ),
                 ),
-                ?trailing,
+                if (trailing != null) trailing,
               ],
             ),
           ),

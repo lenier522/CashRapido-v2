@@ -1,12 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../providers/business_provider.dart';
-import '../../models/business.dart';
-import '../../utils/business_icon_helper.dart';
-import '../../services/localization_service.dart';
-import '../../providers/app_provider.dart';
 
+import '../../models/business.dart';
+import '../../models/models.dart';
+import '../../providers/app_provider.dart';
+import '../../providers/business_provider.dart';
+import '../../services/localization_service.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_radius.dart';
+import '../../theme/app_shadows.dart';
+import '../../theme/app_spacing.dart';
+import '../../utils/business_icon_helper.dart';
+import '../../utils/category_color_options.dart';
+import '../../widgets/design/cash_bottom_sheet.dart';
+import '../../widgets/design/cash_button.dart';
+import '../../widgets/design/cash_card.dart';
+import '../../widgets/design/cash_chip.dart';
+import '../../widgets/design/cash_icon_button.dart';
+import '../../widgets/design/cash_input.dart';
+import '../../widgets/design/cash_selector_field.dart';
+
+/// Alta / edición de un negocio.
+///
+/// Al CREAR y al EDITAR se piden todos los datos del negocio: nombre, tipo,
+/// cuenta vinculada (origen de fondos / destino de ingresos), capital inicial,
+/// moneda, icono y color. La cuenta vinculada se elige mediante un selector
+/// (bottom sheet) con la misma piel que el resto del Design System.
 class BusinessFormScreen extends StatefulWidget {
   final Business? business; // null = create, non-null = edit
 
@@ -25,8 +44,13 @@ class _BusinessFormScreenState extends State<BusinessFormScreen> {
   late String _selectedIcon;
   late Color _selectedColor;
   late String _selectedCurrency;
+  bool _isSaving = false;
 
-  final List<String> _businessTypes = [
+  bool get _isEdit => widget.business != null;
+
+  static const String _kNoLinkedAccount = '';
+
+  static const List<String> _businessTypes = [
     'Retail',
     'Restaurante',
     'Servicios',
@@ -36,15 +60,28 @@ class _BusinessFormScreenState extends State<BusinessFormScreen> {
     'Otro',
   ];
 
-  final List<Color> _colors = [
-    Colors.deepPurple,
-    Colors.blue,
-    Colors.green,
-    Colors.orange,
-    Colors.red,
-    Colors.teal,
-    Colors.pink,
-    Colors.indigo,
+  static const List<String> _currencies = ['CUP', 'USD', 'EUR', 'MLC'];
+
+  static const List<Color> _businessColors = <Color>[
+    AppColors.primary,
+    AppColors.primaryDark,
+    AppColors.primaryDeep,
+    AppColors.secondary,
+    Color(0xFF42A5F5),
+    Color(0xFF2196F3),
+    Color(0xFF1565C0),
+    Color(0xFF26A69A),
+    Color(0xFF009688),
+    Color(0xFFFF9800),
+    Color(0xFFF57C00),
+    Color(0xFFEF5350),
+    Color(0xFFE53935),
+    Color(0xFFEC407A),
+    Color(0xFFD81B60),
+    Color(0xFF7E57C2),
+    Color(0xFF5E35B1),
+    Color(0xFF455A64),
+    Color(0xFF263238),
   ];
 
   @override
@@ -69,21 +106,22 @@ class _BusinessFormScreenState extends State<BusinessFormScreen> {
         final codePoint = int.parse(code);
         _selectedIcon =
             BusinessIconHelper.getKeyFromCodePoint(codePoint) ??
-            BusinessIconHelper.legacyIcons.keys.first;
+            BusinessIconHelper.catalog.first.key;
       } else {
-        if (BusinessIconHelper.legacyIcons.containsKey(code)) {
+        if (BusinessIconHelper.legacyIconsMap.containsKey(code) ||
+            BusinessIconHelper.catalog.any((o) => o.key == code)) {
           _selectedIcon = code;
         } else {
-          _selectedIcon = BusinessIconHelper.legacyIcons.keys.first;
+          _selectedIcon = BusinessIconHelper.catalog.first.key;
         }
       }
     } else {
-      _selectedIcon = BusinessIconHelper.legacyIcons.keys.first;
+      _selectedIcon = BusinessIconHelper.catalog.first.key;
     }
 
     _selectedColor = widget.business != null
         ? Color(widget.business!.colorValue)
-        : _colors.first;
+        : AppColors.primary;
   }
 
   @override
@@ -93,22 +131,146 @@ class _BusinessFormScreenState extends State<BusinessFormScreen> {
     super.dispose();
   }
 
+  // ---------------------------------------------------------------------------
+  // PICKERS
+  // ---------------------------------------------------------------------------
+
+  Future<void> _pickLinkedAccount(AppProvider appProvider) async {
+    final selected = await CashBottomSheet.show<String>(
+      context,
+      builder: (sheetContext) => CashBottomSheet(
+        title: sheetContext.t('linked_account'),
+        child: Column(
+          children: [
+            _SheetOption(
+              leading: const _AccountLeading(icon: Icons.link_off_rounded),
+              title: sheetContext.t('no_linked_account'),
+              selected: _selectedCardId == null,
+              accent: AppColors.primary,
+              onTap: () => Navigator.pop(sheetContext, _kNoLinkedAccount),
+            ),
+            for (final card in appProvider.cards)
+              _SheetOption(
+                leading: _AccountLeading(
+                  color: Color(card.colorValue),
+                  icon: card.isCash
+                      ? Icons.account_balance_wallet_rounded
+                      : Icons.credit_card_rounded,
+                ),
+                title: card.isCash
+                    ? card.name
+                    : (card.bankName ?? sheetContext.t('card_default_name')),
+                subtitle: _accountSubtitle(card),
+                selected: _selectedCardId == card.id,
+                accent: AppColors.primary,
+                onTap: () => Navigator.pop(sheetContext, card.id),
+              ),
+          ],
+        ),
+      ),
+    );
+
+    if (selected == null || !mounted) return;
+    setState(() {
+      if (selected == _kNoLinkedAccount) {
+        _selectedCardId = null;
+        return;
+      }
+      _selectedCardId = selected;
+      // Auto-rellenar capital y moneda a partir de la cuenta elegida.
+      final selectedCard = appProvider.cards.firstWhere(
+        (c) => c.id == selected,
+        orElse: () => appProvider.cards.first,
+      );
+      if (selectedCard.id == selected) {
+        _capitalController.text = selectedCard.balance.toStringAsFixed(2);
+        _selectedCurrency = selectedCard.currency;
+      }
+    });
+  }
+
+  Future<void> _pickCurrency() async {
+    final options = <String>{..._currencies, _selectedCurrency}.toList();
+    final selected = await CashBottomSheet.show<String>(
+      context,
+      builder: (sheetContext) => CashBottomSheet(
+        title: sheetContext.t('currency_label'),
+        child: Column(
+          children: [
+            for (final currency in options)
+              _SheetOption(
+                leading: const _AccountLeading(icon: Icons.attach_money),
+                title: currency,
+                selected: _selectedCurrency == currency,
+                accent: AppColors.primary,
+                onTap: () => Navigator.pop(sheetContext, currency),
+              ),
+          ],
+        ),
+      ),
+    );
+
+    if (selected == null || !mounted) return;
+    setState(() => _selectedCurrency = selected);
+  }
+
+  String _accountSubtitle(AccountCard card) {
+    if (card.isCash) {
+      return '${card.name} · ${card.currency}';
+    }
+    final last4 = card.cardNumber.length >= 4
+        ? card.cardNumber.substring(card.cardNumber.length - 4)
+        : card.cardNumber;
+    return '•• $last4 · ${card.currency}';
+  }
+
+  String _linkedAccountLabel(AppProvider appProvider) {
+    final id = _selectedCardId;
+    if (id == null) return '';
+    for (final card in appProvider.cards) {
+      if (card.id == id) {
+        final bank = card.isCash
+            ? card.name
+            : (card.bankName ?? context.t('card_default_name'));
+        final last4 = card.isCash || card.cardNumber.length < 4
+            ? ''
+            : ' · •• ${card.cardNumber.substring(card.cardNumber.length - 4)}';
+        return '$bank$last4 · ${card.currency}';
+      }
+    }
+    return '';
+  }
+
+  // ---------------------------------------------------------------------------
+  // BUILD
+  // ---------------------------------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
-    final isEdit = widget.business != null;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          context.t(isEdit ? 'business_edit_btn' : 'business_setup'),
-          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+          context.t(_isEdit ? 'business_edit_title' : 'business_setup'),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
         ),
         centerTitle: true,
-        actions: isEdit
+        actions: _isEdit
             ? [
-                IconButton(
-                  onPressed: () => _showDeleteDialog(context),
-                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.sm),
+                  child: CashIconButton(
+                    icon: Icons.delete_outline,
+                    size: 40,
+                    iconSize: 20,
+                    iconColor: AppColors.error,
+                    tooltip: context.t('delete'),
+                    onPressed: _showDeleteDialog,
+                  ),
                 ),
               ]
             : null,
@@ -116,385 +278,314 @@ class _BusinessFormScreenState extends State<BusinessFormScreen> {
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           children: [
-            // Name Input
-            TextFormField(
+            // ---- Nombre del negocio ----
+            CashInput(
               controller: _nameController,
-              decoration: InputDecoration(
-                labelText: context.t('label_name'),
-                alignLabelWithHint: true,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(
-                    color: Theme.of(context).primaryColor,
-                    width: 2,
-                  ),
-                ),
-                prefixIcon: const Icon(Icons.store_rounded),
-                filled: true,
-                fillColor: Theme.of(context).cardColor,
-              ),
+              label: context.t('label_name'),
+              hint: context.t('business_name_label'),
+              prefix: const Icon(Icons.store_rounded),
+              textCapitalization: TextCapitalization.words,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return context.t(
-                    'enter_name_error',
-                  ); // Reusing existing or need generic
+                  return context.t('enter_name_error');
                 }
                 return null;
               },
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
 
-            // Type Dropdown
-            DropdownButtonFormField<String>(
-              initialValue: _selectedType,
-              decoration: InputDecoration(
-                labelText: context.t('label_type'),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
-                ),
-                prefixIcon: const Icon(Icons.category_outlined),
-                filled: true,
-                fillColor: Theme.of(context).cardColor,
+            // ---- Cuenta vinculada (origen de fondos / destino de ingresos) ----
+            const _SectionHeader(
+              icon: Icons.account_balance_wallet_outlined,
+              titleKey: 'linked_account',
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              context.t('linked_account_desc'),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondary,
               ),
-              items: _businessTypes.map((type) {
-                return DropdownMenuItem(value: type, child: Text(type));
+            ),
+            const SizedBox(height: AppSpacing.md),
+            CashSelectorField(
+              label: context.t('linked_account'),
+              value: _linkedAccountLabel(appProvider),
+              placeholder: context.t('select_linked_account'),
+              icon: Icons.account_balance_wallet_outlined,
+              onTap: () => _pickLinkedAccount(appProvider),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            // ---- Identidad: tipo ----
+            const _SectionHeader(
+              icon: Icons.storefront_rounded,
+              titleKey: 'form_identity_section',
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(context.t('label_type'), style: _pickerLabelStyle(context)),
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
+              children: _businessTypes.map((type) {
+                return CashChip(
+                  label: type,
+                  selected: _selectedType == type,
+                  onTap: () => setState(() => _selectedType = type),
+                );
               }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() => _selectedType = value);
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            // ---- Finanzas: capital inicial + moneda ----
+            const _SectionHeader(
+              icon: Icons.savings_outlined,
+              titleKey: 'business_funding_section',
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              context.t('initial_capital_desc'),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final bool wide = constraints.maxWidth >= 340;
+                final Widget capital = CashInput(
+                  controller: _capitalController,
+                  label: context.t('initial_capital'),
+                  hint: context.t('initial_capital_hint'),
+                  prefix: const Icon(Icons.savings_outlined),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                );
+
+                final Widget currency = CashSelectorField(
+                  label: context.t('currency_label'),
+                  value: _selectedCurrency,
+                  icon: Icons.attach_money,
+                  dense: true,
+                  onTap: _pickCurrency,
+                );
+
+                if (wide) {
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: capital),
+                      const SizedBox(width: AppSpacing.md),
+                      SizedBox(width: 126, child: currency),
+                    ],
+                  );
                 }
+                return Column(
+                  children: [
+                    capital,
+                    const SizedBox(height: AppSpacing.md),
+                    currency,
+                  ],
+                );
               },
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
 
-            // Capital Inicial & Cuenta Vinculada Section
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: _selectedColor.withOpacity(0.3),
-                  width: 1.5,
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.savings_outlined, color: _selectedColor, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        context.t('initial_capital'),
-                        style: GoogleFonts.outfit(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    context.t('initial_capital_desc'),
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _capitalController,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          decoration: InputDecoration(
-                            labelText: context.t('initial_capital'),
-                            hintText: context.t('initial_capital_hint'),
-                            prefixText: '\$ ',
-                            prefixIcon: const Icon(Icons.monetization_on_outlined),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            filled: true,
-                            fillColor: Theme.of(context).scaffoldBackgroundColor,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      PopupMenuButton<String>(
-                        initialValue: _selectedCurrency,
-                        tooltip: 'Seleccionar moneda',
-                        onSelected: (curr) {
-                          setState(() => _selectedCurrency = curr);
-                        },
-                        itemBuilder: (context) {
-                          final List<String> currs = ['CUP', 'USD', 'EUR', 'MLC'];
-                          if (!currs.contains(_selectedCurrency)) {
-                            currs.add(_selectedCurrency);
-                          }
-                          return currs.map((c) => PopupMenuItem(
-                            value: c,
-                            child: Row(
-                              children: [
-                                Text(
-                                  c,
-                                  style: GoogleFonts.outfit(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                if (c == _selectedCurrency) ...[
-                                  const Spacer(),
-                                  Icon(Icons.check, color: _selectedColor, size: 18),
-                                ],
-                              ],
-                            ),
-                          )).toList();
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: _selectedColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: _selectedColor.withOpacity(0.4)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                _selectedCurrency,
-                                style: GoogleFonts.outfit(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: _selectedColor,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Icon(Icons.arrow_drop_down, color: _selectedColor, size: 20),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Consumer<AppProvider>(
-                    builder: (context, appProv, _) {
-                      final cards = appProv.cards;
-                      final validCardId = cards.any((c) => c.id == _selectedCardId)
-                          ? _selectedCardId
-                          : null;
-
-                      return DropdownButtonFormField<String?>(
-                        value: validCardId,
-                        isExpanded: true,
-                        decoration: InputDecoration(
-                          labelText: context.t('linked_account'),
-                          prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Theme.of(context).scaffoldBackgroundColor,
-                        ),
-                        items: [
-                          DropdownMenuItem<String?>(
-                            value: null,
-                            child: Text(
-                              context.t('no_linked_account'),
-                              style: const TextStyle(color: Colors.grey),
-                            ),
-                          ),
-                          ...cards.map((c) {
-                            final last4 = c.isCash
-                                ? 'EFECTIVO'
-                                : (c.cardNumber.length >= 4
-                                    ? c.cardNumber.substring(c.cardNumber.length - 4)
-                                    : c.cardNumber);
-                            final label = '${c.isCash ? c.name : (c.bankName ?? 'Tarjeta')} (...$last4) - ${c.currency}';
-                            return DropdownMenuItem<String?>(
-                              value: c.id,
-                              child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-                            );
-                          }),
-                        ],
-                        onChanged: (val) {
-                          setState(() {
-                            _selectedCardId = val;
-                            if (val != null) {
-                              // Auto-fill balance and currency from selected card
-                              final selectedCard = cards.firstWhere(
-                                (c) => c.id == val,
-                              );
-                              _capitalController.text =
-                                  selectedCard.balance.toStringAsFixed(2);
-                              _selectedCurrency = selectedCard.currency;
-                            }
-                          });
-                        },
-                      );
-                    },
-                  ),
-                ],
-              ),
+            // ---- Apariencia: icono + color ----
+            const _SectionHeader(
+              icon: Icons.palette_outlined,
+              titleKey: 'business_appearance_section',
             ),
-            const SizedBox(height: 32),
-
-            // Icon Picker Section
-            Text(
-              context.t('label_icon'),
-              style: GoogleFonts.outfit(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
+            Text(context.t('label_icon'), style: _pickerLabelStyle(context)),
+            const SizedBox(height: AppSpacing.sm),
             Wrap(
-              spacing: 16,
-              runSpacing: 16,
-              children: BusinessIconHelper.legacyIcons.entries.map((entry) {
-                final isSelected = _selectedIcon == entry.key;
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedIcon = entry.key),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? _selectedColor.withOpacity(0.1)
-                          : Theme.of(context).cardColor,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isSelected
-                            ? _selectedColor
-                            : Colors.grey.shade200,
-                        width: 2,
-                      ),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: _selectedColor.withOpacity(0.2),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ]
-                          : [],
-                    ),
-                    child: Icon(
-                      BusinessIconHelper.legacyIconsMap[entry.key] ?? Icons.store,
-                      color: isSelected ? _selectedColor : Colors.grey[400],
-                      size: 28,
-                    ),
-                  ),
-                );
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: BusinessIconHelper.catalog.map((option) {
+                final isSelected = _selectedIcon == option.key;
+                return _buildIconOption(context, option, isSelected);
               }).toList(),
             ),
-            const SizedBox(height: 32),
-
-            // Color Picker Section
-            Text(
-              context.t('label_color'),
-              style: GoogleFonts.outfit(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.xl),
+            Text(context.t('label_color'), style: _pickerLabelStyle(context)),
+            const SizedBox(height: AppSpacing.sm),
             Wrap(
-              spacing: 16,
-              runSpacing: 16,
-              children: _colors.map((color) {
-                final isSelected = _selectedColor == color;
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedColor = color),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white,
-                        width: isSelected ? 3 : 0,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: color.withOpacity(0.4),
-                          blurRadius: isSelected ? 12 : 6,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: isSelected
-                        ? const Icon(Icons.check, color: Colors.white, size: 20)
-                        : null,
-                  ),
-                );
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: _businessColors.map((color) {
+                final isSelected =
+                    _selectedColor.toARGB32() == color.toARGB32();
+                return _buildColorOption(context, color, isSelected);
               }).toList(),
             ),
-            const SizedBox(height: 48),
+            const SizedBox(height: AppSpacing.xl),
 
-            // Submit Button
-            ElevatedButton(
+            // ---- Guardar ----
+            CashButton(
+              label: context.t(
+                _isEdit ? 'business_edit_btn' : 'business_create_btn',
+              ),
+              icon: const Icon(Icons.check_rounded, size: 20),
+              loading: _isSaving,
               onPressed: _saveBusiness,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _selectedColor,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                elevation: 8,
-                shadowColor: _selectedColor.withOpacity(0.4),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              child: Text(
-                context.t(isEdit ? 'business_edit_btn' : 'business_create_btn'),
-                style: GoogleFonts.outfit(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
             ),
+            if (_isEdit) ...[
+              const SizedBox(height: AppSpacing.sm),
+              CashButton(
+                label: context.t('delete'),
+                icon: const Icon(Icons.delete_outline, size: 20),
+                type: CashButtonType.danger,
+                onPressed: _showDeleteDialog,
+              ),
+            ],
+            const SizedBox(height: AppSpacing.lg),
           ],
         ),
       ),
     );
   }
 
+  TextStyle? _pickerLabelStyle(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    return Theme.of(context).textTheme.labelSmall?.copyWith(
+      color: isDark
+          ? AppColors.textSecondaryDark
+          : AppColors.textSecondary,
+      fontWeight: FontWeight.w500,
+    );
+  }
+
+  Widget _buildIconOption(
+    BuildContext context,
+    BusinessIconOption option,
+    bool isSelected,
+  ) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color border = isDark ? AppColors.borderDark : AppColors.borderLight;
+    final Color secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    return InkWell(
+      borderRadius: AppRadius.radiusMd,
+      onTap: () => setState(() => _selectedIcon = option.key),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: isDark ? 0.24 : 0.12)
+              : isDark
+              ? AppColors.surfaceDark2
+              : AppColors.surfaceVariantLight,
+          borderRadius: AppRadius.radiusMd,
+          border: Border.all(
+            color: isSelected ? AppColors.primary : border,
+            width: isSelected ? 1.6 : 1,
+          ),
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Icon(
+              option.icon,
+              size: 26,
+              color: isSelected ? AppColors.primary : secondary,
+            ),
+            if (isSelected)
+              Positioned(
+                right: 5,
+                top: 5,
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.primary,
+                  ),
+                  child: const Icon(
+                    Icons.check,
+                    size: 10,
+                    color: AppColors.white,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildColorOption(
+    BuildContext context,
+    Color color,
+    bool isSelected,
+  ) {
+    final Color checkColor = CategoryColorOptions.contrastForeground(color);
+
+    return InkWell(
+      customBorder: const CircleBorder(),
+      onTap: () => setState(() => _selectedColor = color),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: AppColors.white,
+            width: isSelected ? 3 : 1,
+          ),
+        ),
+        child: isSelected
+            ? Icon(Icons.check, size: 18, color: checkColor)
+            : null,
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // ACCIONES
+  // ---------------------------------------------------------------------------
+
   Future<void> _saveBusiness() async {
+    if (_isSaving) return;
     if (!_formKey.currentState!.validate()) return;
 
+    setState(() => _isSaving = true);
+
     final provider = Provider.of<BusinessProvider>(context, listen: false);
-
-    // Get the codePoint for the selected icon
-    final iconCodePoint = BusinessIconHelper.legacyIcons[_selectedIcon]!;
-
-    final double initialCapital = double.tryParse(
-      _capitalController.text.trim().replaceAll(',', '.'),
-    ) ?? 0.0;
-
     final appProvider = Provider.of<AppProvider>(context, listen: false);
+
+    final String name = _nameController.text.trim();
+    final int? iconCodePoint =
+        BusinessIconHelper.codePointOf(_selectedIcon) ??
+        BusinessIconHelper.codePointOf(BusinessIconHelper.catalog.first.key);
+    final String iconCode = (iconCodePoint ?? 0).toString();
+    final double initialCapital =
+        double.tryParse(
+          _capitalController.text.trim().replaceAll(',', '.'),
+        ) ??
+        0.0;
+    final int colorValue = _selectedColor.toARGB32();
 
     if (widget.business == null) {
       // Create
       await provider.createBusiness(
-        name: _nameController.text.trim(),
+        name: name,
         type: _selectedType,
-        iconCode: iconCodePoint.toString(),
-        colorValue: _selectedColor.value,
+        iconCode: iconCode,
+        colorValue: colorValue,
         initialCapital: initialCapital,
         linkedCardId: _selectedCardId,
         currency: _selectedCurrency,
@@ -508,7 +599,7 @@ class _BusinessFormScreenState extends State<BusinessFormScreen> {
         if (diff > 0) {
           await appProvider.addTransaction(
             amount: -diff,
-            title: "Aumento Capital: ${_nameController.text.trim()}",
+            title: "Aumento Capital: $name",
             categoryId: 'cat_business',
             currency: _selectedCurrency,
             cardId: _selectedCardId,
@@ -517,7 +608,7 @@ class _BusinessFormScreenState extends State<BusinessFormScreen> {
         } else {
           await appProvider.addTransaction(
             amount: diff.abs(),
-            title: "Ajuste Capital: ${_nameController.text.trim()}",
+            title: "Ajuste Capital: $name",
             categoryId: 'cat_business',
             currency: _selectedCurrency,
             cardId: _selectedCardId,
@@ -526,10 +617,10 @@ class _BusinessFormScreenState extends State<BusinessFormScreen> {
         }
       }
       final updated = widget.business!.copyWith(
-        name: _nameController.text.trim(),
+        name: name,
         type: _selectedType,
-        iconCode: iconCodePoint.toString(),
-        colorValue: _selectedColor.value,
+        iconCode: iconCode,
+        colorValue: colorValue,
         initialCapital: initialCapital,
         linkedCardId: _selectedCardId,
         currency: _selectedCurrency,
@@ -542,32 +633,25 @@ class _BusinessFormScreenState extends State<BusinessFormScreen> {
     }
   }
 
-  Future<void> _showDeleteDialog(BuildContext context) async {
+  Future<void> _showDeleteDialog() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.t('delete')), // Use generic delete key
-        content: Text(
-          context.t(
-            'delete_transaction_confirm',
-          ), // Reusing similar message or need new key?
-          // Using 'delete_transaction_confirm' is risky if it says "transaction".
-          // Plan added delete_business keys? No. I should act prudent and use hardcoded for safety or add key.
-          // I will stick to hardcoded for now to avoid complexity or reuse generic if possible.
-          // localization_service has 'delete_transaction_confirm' -> "Are you sure you want to delete this transaction?"
-          // I should probably add a generic 'confirm_delete' or specifically for business.
-          // For now I will use English/Spanish strings directly here since I missed adding 'delete_business_confirm' in plan.
-          // Wait, I can't leave it untranslated. I'll use a generic string construction.
-        ),
+      builder: (dialogContext) => AlertDialog(
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.radiusXl),
+        icon: const Icon(Icons.delete_outline, color: AppColors.error),
+        title: Text(context.t('business_delete_title')),
+        content: Text(context.t('business_delete_confirm')),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(context.t('cancel')),
+          CashButton(
+            label: context.t('cancel'),
+            fullWidth: false,
+            onPressed: () => Navigator.pop(dialogContext, false),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(context.t('delete')),
+          CashButton(
+            label: context.t('delete'),
+            type: CashButtonType.danger,
+            fullWidth: false,
+            onPressed: () => Navigator.pop(dialogContext, true),
           ),
         ],
       ),
@@ -580,5 +664,140 @@ class _BusinessFormScreenState extends State<BusinessFormScreen> {
         Navigator.pop(context);
       }
     }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// WIDGETS AUXILIARES
+// ---------------------------------------------------------------------------
+
+class _SectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String titleKey;
+
+  const _SectionHeader({required this.icon, required this.titleKey});
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Text(
+            context.t(titleKey),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AccountLeading extends StatelessWidget {
+  final Color? color;
+  final IconData icon;
+
+  const _AccountLeading({this.color, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color accent =
+        color ?? (isDark ? AppColors.textSecondaryDark : AppColors.textSecondary);
+
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.14),
+        borderRadius: AppRadius.radiusMd,
+      ),
+      child: Icon(icon, size: 20, color: accent),
+    );
+  }
+}
+
+class _SheetOption extends StatelessWidget {
+  final Widget leading;
+  final String title;
+  final String? subtitle;
+  final bool selected;
+  final Color accent;
+  final VoidCallback onTap;
+
+  const _SheetOption({
+    required this.leading,
+    required this.title,
+    required this.selected,
+    required this.accent,
+    required this.onTap,
+    this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: CashCard(
+        onTap: onTap,
+        padding: const EdgeInsets.all(AppSpacing.md),
+        border: selected
+            ? Border.all(color: accent.withValues(alpha: 0.8), width: 1.4)
+            : null,
+        boxShadow: AppShadows.soft,
+        child: Row(
+          children: [
+            leading,
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (subtitle != null && subtitle!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: secondary,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            if (selected)
+              Icon(Icons.check_circle_rounded, color: accent, size: 20)
+            else
+              Icon(Icons.chevron_right, size: 20, color: secondary),
+          ],
+        ),
+      ),
+    );
   }
 }

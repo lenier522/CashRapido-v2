@@ -2,6 +2,34 @@ import 'package:hive/hive.dart';
 
 part 'models.g.dart';
 
+/// Valores permitidos para `Category.type`.
+///
+/// Es la única fuente de verdad de la clasificación: se guarda en Hive como
+/// `String` para que los datos sean legibles y compatibles con cualquier
+/// versión anterior. Cualquier valor desconocido se normaliza a [both], que
+/// es además el valor de respaldo para las categorías antiguas creadas antes
+/// de existir este campo.
+class CategoryTypes {
+  static const String expense = 'expense';
+  static const String income = 'income';
+  static const String both = 'both';
+
+  static const List<String> values = <String>[expense, income, both];
+
+  /// Convierte cualquier valor almacenado en uno de los tres soportados.
+  static String normalize(String? value) =>
+      values.contains(value) ? value! : both;
+
+  /// `true` si la categoría de [type] puede usarse en el flujo indicado.
+  ///
+  /// [isExpense] `true` para gastos, `false` para ingresos.
+  static bool allows(String? type, {required bool isExpense}) {
+    final String normalized = normalize(type);
+    if (normalized == both) return true;
+    return isExpense ? normalized == expense : normalized == income;
+  }
+}
+
 @HiveType(typeId: 0)
 class Category extends HiveObject {
   @HiveField(0)
@@ -22,6 +50,15 @@ class Category extends HiveObject {
   @HiveField(5)
   final double? monthlyBudget;
 
+  /// Clasificación: `expense`, `income` o `both`.
+  ///
+  /// Índice Hive nuevo (6): no toca los campos 0-5 que ya contienen datos de
+  /// usuarios reales. Las categorías guardadas sin este campo se leen como
+  /// [CategoryTypes.both], de modo que siguen apareciendo en gastos e ingresos
+  /// igual que antes.
+  @HiveField(6, defaultValue: CategoryTypes.both)
+  final String type;
+
   Category({
     required this.id,
     required this.name,
@@ -29,6 +66,7 @@ class Category extends HiveObject {
     required this.colorValue,
     this.isCustom = false,
     this.monthlyBudget,
+    this.type = CategoryTypes.both,
   });
 }
 

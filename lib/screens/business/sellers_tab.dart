@@ -1,21 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../providers/business_provider.dart';
+
 import '../../models/seller.dart';
+import '../../providers/business_provider.dart';
 import '../../services/localization_service.dart';
-import 'seller_form_screen.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_radius.dart';
+import '../../theme/app_spacing.dart';
+import '../../widgets/design/cash_card.dart';
+import '../../widgets/design/cash_chip.dart';
+import '../../widgets/design/cash_empty_state.dart';
+import '../../widgets/design/cash_floating_button.dart';
 import 'seller_assign_products_screen.dart';
 import 'seller_detail_screen.dart';
+import 'seller_form_screen.dart';
 
+/// Administración de los vendedores del negocio.
+///
+/// Conserva todas las acciones existentes (detalle, asignar inventario, editar
+/// y eliminar) y usa únicamente los datos reales del modelo [Seller].
 class SellersTab extends StatelessWidget {
   const SellersTab({super.key});
-
-  Color _colorFromName(String name) {
-    final hash = name.hashCode;
-    final hue = hash % 360;
-    return HSVColor.fromAHSV(1, hue.toDouble(), 0.5, 0.8).toColor();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,68 +28,49 @@ class SellersTab extends StatelessWidget {
       builder: (context, provider, _) {
         final sellers = provider.sellers;
 
+        if (sellers.isEmpty) {
+          return Stack(
+            children: [
+              _buildEmptyState(context),
+              Positioned(
+                right: AppSpacing.lg,
+                bottom: AppSpacing.lg,
+                child: CashFloatingButton(
+                  heroTag: 'add_seller',
+                  icon: Icons.person_add_alt_1_rounded,
+                  label: context.t('seller_new'),
+                  onPressed: () => _openCreate(context),
+                ),
+              ),
+            ],
+          );
+        }
+
         return Stack(
           children: [
-            sellers.isEmpty
-                ? Center(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(vertical: 24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.badge_outlined,
-                              size: 60,
-                              color: Colors.blue,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            context.t('no_sellers'),
-                            style: GoogleFonts.outfit(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            context.t('no_sellers_desc'),
-                            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-                    itemCount: sellers.length,
-                    itemBuilder: (context, index) {
-                      final seller = sellers[index];
-                      final color = _colorFromName(seller.fullName);
-                      return _SellerCard(seller: seller, color: color);
-                    },
-                  ),
+            ListView.builder(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.md,
+                AppSpacing.lg,
+                144,
+              ),
+              itemCount: sellers.length + 1,
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return _buildHeader(context, sellers.length);
+                }
+                return _SellerCard(seller: sellers[index - 1]);
+              },
+            ),
             Positioned(
-              bottom: 16,
-              right: 16,
-              child: FloatingActionButton(
+              right: AppSpacing.lg,
+              bottom: AppSpacing.lg,
+              child: CashFloatingButton(
                 heroTag: 'add_seller',
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const SellerFormScreen(),
-                    ),
-                  );
-                },
-                child: const Icon(Icons.add),
+                icon: Icons.person_add_alt_1_rounded,
+                label: context.t('seller_new'),
+                onPressed: () => _openCreate(context),
               ),
             ),
           ],
@@ -92,191 +78,345 @@ class SellersTab extends StatelessWidget {
       },
     );
   }
+
+  Widget _buildHeader(BuildContext context, int total) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              context.t('tab_sellers'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.xs,
+            ),
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.surfaceDark2
+                  : AppColors.primaryLight,
+              borderRadius: BorderRadius.circular(AppRadius.full),
+            ),
+            child: Text(
+              total == 1 ? '1 vendedor' : '$total vendedores',
+              maxLines: 1,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: AppColors.primaryDark,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return CashEmptyState(
+      icon: Icons.badge_outlined,
+      title: context.t('no_sellers'),
+      message: context.t('no_sellers_desc'),
+      buttonLabel: context.t('seller_new'),
+      onButtonPressed: () => _openCreate(context),
+    );
+  }
+
+  void _openCreate(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const SellerFormScreen()),
+    );
+  }
 }
+
+// ---------------------------------------------------------------------------
+// TARJETA DE VENDEDOR
+// ---------------------------------------------------------------------------
 
 class _SellerCard extends StatelessWidget {
   final Seller seller;
-  final Color color;
 
-  const _SellerCard({required this.seller, required this.color});
+  const _SellerCard({required this.seller});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(color: Colors.grey.withOpacity(0.1)),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: CircleAvatar(
-          backgroundColor: color,
-          child: Text(
-            _initials(seller.name, seller.lastName),
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color color = _avatarColor(seller.fullName);
+    final Color secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+    final String initials = _initials(seller.name, seller.lastName);
+
+    return CashCard(
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.compactPadding),
+      onTap: () => _openDetail(context),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: isDark ? 0.26 : 0.15),
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              initials,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
-        ),
-        title: Text(
-          seller.fullName,
-          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            if (seller.role.isNotEmpty)
-              Row(
-                children: [
-                  Icon(Icons.work, size: 14, color: Colors.grey[600]),
-                  const SizedBox(width: 4),
-                  Text(seller.role, style: TextStyle(fontSize: 13, color: Colors.grey[600])),
-                ],
-              ),
-            const SizedBox(height: 2),
-            Row(
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.phone, size: 14, color: Colors.grey[500]),
-                const SizedBox(width: 4),
-                Text(seller.phone, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-                if (seller.commissionRate > 0) ...[
-                  const SizedBox(width: 12),
-                  Icon(Icons.percent, size: 14, color: Colors.green[600]),
-                  const SizedBox(width: 4),
-                  Text('${seller.commissionRate}%',
-                      style: TextStyle(fontSize: 12, color: Colors.green[600])),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        seller.fullName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    _StatusChip(isActive: seller.isActive),
+                  ],
+                ),
+                if (seller.role.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.xxs),
+                  Row(
+                    children: [
+                      Icon(Icons.work_outline_rounded, size: 13, color: secondary),
+                      const SizedBox(width: AppSpacing.xs),
+                      Expanded(
+                        child: Text(
+                          seller.role,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(color: secondary),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
+                const SizedBox(height: AppSpacing.xxs),
+                Row(
+                  children: [
+                    Icon(Icons.phone_outlined, size: 13, color: secondary),
+                    const SizedBox(width: AppSpacing.xs),
+                    Expanded(
+                      child: Text(
+                        seller.phone.isEmpty ? '—' : seller.phone,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: secondary),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: seller.isActive
-                    ? Colors.green.withOpacity(0.1)
-                    : Colors.grey.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                seller.isActive ? context.t('seller_active') : context.t('seller_inactive'),
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: seller.isActive ? Colors.green : Colors.grey,
-                ),
-              ),
-            ),
-            const SizedBox(width: 4),
-              PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'report') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => SellerDetailScreen(seller: seller),
-                      ),
-                    );
-                  } else if (value == 'inventory') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => SellerAssignProductsScreen(seller: seller),
-                      ),
-                    );
-                  } else if (value == 'edit') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => SellerFormScreen(seller: seller),
-                      ),
-                    );
-                  } else if (value == 'delete') {
-                    _confirmDelete(context);
-                  }
-                },
-                itemBuilder: (_) => [
-                  PopupMenuItem(
-                    value: 'report',
-                    child: ListTile(
-                      leading: Icon(Icons.assessment_outlined, size: 20),
-                      title: Text(context.t('seller_view_report')),
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'inventory',
-                    child: ListTile(
-                      leading: Icon(Icons.inventory_2_outlined, size: 20),
-                      title: Text(context.t('seller_assign_products')),
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                  const PopupMenuItem(value: 'edit', child: Text('Editar')),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Text('Eliminar', style: TextStyle(color: Colors.red)),
-                  ),
-                ],
-              ),
-          ],
-        ),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => SellerDetailScreen(seller: seller),
-            ),
-          );
-        },
+          ),
+          _buildMenu(context),
+        ],
       ),
     );
+  }
+
+  Widget _buildMenu(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    return PopupMenuButton<String>(
+      tooltip: '',
+      icon: Icon(Icons.more_vert_rounded, size: 20, color: secondary),
+      constraints: const BoxConstraints(minWidth: 200),
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusLg),
+      onSelected: (value) {
+        switch (value) {
+          case 'report':
+            _openDetail(context);
+          case 'inventory':
+            _openInventory(context);
+          case 'edit':
+            _openEdit(context);
+          case 'delete':
+            _confirmDelete(context);
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'report',
+          child: Row(
+            children: [
+              Icon(Icons.assessment_outlined, size: 20, color: secondary),
+              const SizedBox(width: AppSpacing.md),
+              Text(context.t('seller_view_report')),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'inventory',
+          child: Row(
+            children: [
+              const Icon(
+                Icons.inventory_2_outlined,
+                size: 20,
+                color: AppColors.info,
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Flexible(child: Text(context.t('seller_assign_products'))),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(Icons.edit_outlined, size: 20, color: secondary),
+              const SizedBox(width: AppSpacing.md),
+              Text(context.t('edit')),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: [
+              const Icon(Icons.delete_outline, size: 20, color: AppColors.error),
+              const SizedBox(width: AppSpacing.md),
+              Text(
+                context.t('delete'),
+                style: const TextStyle(color: AppColors.error),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _openDetail(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => SellerDetailScreen(seller: seller)),
+    );
+  }
+
+  void _openInventory(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SellerAssignProductsScreen(seller: seller),
+      ),
+    );
+  }
+
+  void _openEdit(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => SellerFormScreen(seller: seller)),
+    );
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusXl),
+        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        title: Row(
+          children: [
+            const Icon(Icons.delete_outline, color: AppColors.error, size: 22),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                context.t('seller_delete'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          context.t('seller_delete_confirm').replaceAll('{name}', seller.fullName),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(context.t('cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            child: Text(context.t('delete')),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      Provider.of<BusinessProvider>(context, listen: false).deleteSeller(seller.id);
+    }
   }
 
   String _initials(String name, String lastName) {
     final first = name.isNotEmpty ? name[0].toUpperCase() : '';
     final second = lastName.isNotEmpty ? lastName[0].toUpperCase() : '';
-    return '$first$second';
+    final result = '$first$second';
+    return result.isEmpty ? '?' : result;
   }
 
-  void _confirmDelete(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(context.t('seller_delete')),
-        content: Text(context.t('seller_delete_confirm').replaceAll('{name}', seller.fullName)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () {
-              Provider.of<BusinessProvider>(context, listen: false)
-                  .deleteSeller(seller.id);
-              Navigator.pop(ctx);
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Eliminar'),
-          ),
-        ],
-      ),
+  /// Color estable derivado del nombre (no aleatorio entre reconstrucciones).
+  Color _avatarColor(String name) {
+    if (name.isEmpty) return AppColors.primary;
+    int hash = 0;
+    for (final unit in name.codeUnits) {
+      hash = (hash * 31 + unit) & 0x7fffffff;
+    }
+    final hue = (hash % 360).toDouble();
+    return HSVColor.fromAHSV(1, hue, 0.45, 0.62).toColor();
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  final bool isActive;
+
+  const _StatusChip({required this.isActive});
+
+  @override
+  Widget build(BuildContext context) {
+    return CashChip(
+      label: context.t(isActive ? 'seller_active' : 'seller_inactive'),
+      icon: isActive
+          ? Icons.check_circle_rounded
+          : Icons.pause_circle_outline_rounded,
+      selected: true,
+      color: isActive ? AppColors.income : AppColors.textSecondary,
     );
   }
 }

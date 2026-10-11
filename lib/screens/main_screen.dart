@@ -1,15 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'home_screen.dart';
-import 'wallet_screen.dart';
-import 'stats_screen.dart';
-import 'settings_screen.dart';
-import 'business/business_gatekeeper.dart';
-import '../widgets/add_transaction_modal.dart'; // Re-needed for Add Transaction FAB
+
+import '../providers/app_provider.dart';
+import '../services/localization_service.dart';
 import '../services/tour_service.dart';
 import '../services/feedback_service.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
+import '../theme/app_shadows.dart';
+import '../widgets/design/cash_button.dart';
+import 'ai_chat_screen.dart';
+import 'home_screen.dart';
+import 'more_hub_screen.dart';
+import 'stats_screen.dart';
+import 'wallet_screen.dart';
+
+/// Pestañas del [MainScreen].
+///
+/// El orden sigue a la navegación conceptual de la app:
+/// Inicio, Finanzas, Análisis y Más. La acción principal ("+") no es una
+/// pestaña, ocupa el slot central de la barra.
+enum MainTab { home, wallet, stats, more }
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -19,28 +32,19 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
-  int _currentIndex = 0;
+  MainTab _currentTab = MainTab.home;
 
-  // Tour GlobalKeys
-  final GlobalKey _fabKey =
-      GlobalKey(); // Refers to Business FAB now? Or Add FAB? Let's point to Business as it is primary nav.
+  /// Destinos del tour: la acción principal y la barra de navegación.
+  final GlobalKey _primaryActionKey = GlobalKey();
   final GlobalKey _navBarKey = GlobalKey();
 
-  // Screen Order: 0: Home, 1: Wallet, 2: Stats, 3: Settings. 4: Business.
-  final List<Widget> _screens = const [
+  /// Se conserva el IndexedStack para no reconstruir las pestañas y mantener
+  /// el estado de scroll y selección de cada una.
+  static const List<Widget> _screens = <Widget>[
     HomeScreen(),
     WalletScreen(),
     StatsScreen(),
-    SettingsScreen(),
-    BusinessGatekeeper(), // Index 4
-  ];
-
-  // Icons for 4 tabs
-  final List<IconData> _iconList = [
-    Icons.grid_view,
-    Icons.credit_card,
-    Icons.pie_chart_outline,
-    Icons.settings_outlined,
+    MoreHubScreen(),
   ];
 
   @override
@@ -74,109 +78,252 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
       if (mounted) {
         FeatureTour(
           context: context,
-          fabKey: _fabKey,
+          fabKey: _primaryActionKey,
           navBarKey: _navBarKey,
-          onNavigate: (index) {
-            if (mounted) {
-              setState(() {
-                _currentIndex = index;
-              });
-            }
-          },
+          onNavigate: (index) => _selectTourDestination(index),
         ).show();
         await prefs.setBool('seenFeatureTour', true);
       }
     }
   }
 
+  /// El tour navega por índice de pestaña (0 Inicio, 1 Finanzas,
+  /// 2 Análisis, 3 Más).
+  void _selectTourDestination(int index) {
+    if (!mounted || index < 0 || index >= MainTab.values.length) {
+      return;
+    }
+    setState(() => _currentTab = MainTab.values[index]);
+  }
+
+  void _selectTab(MainTab tab) {
+    if (tab == _currentTab) {
+      return;
+    }
+    setState(() => _currentTab = tab);
+  }
+
+  void _openAiChat() {
+    final provider = Provider.of<AppProvider>(context, listen: false);
+    if (!provider.aiChatEnabled) {
+      _showFeatureLocked();
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AIChatScreen()),
+    );
+  }
+
+  void _showFeatureLocked() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.radiusXl),
+        icon: const Icon(Icons.lock_outline, color: AppColors.warning),
+        title: Text(context.t('feature_locked_title')),
+        content: Text(context.t('feature_locked_desc')),
+        actions: [
+          CashButton(
+            label: context.t('close'),
+            fullWidth: false,
+            height: 44,
+            onPressed: () => Navigator.pop(ctx),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // If currentIndex is 4 (Business), navbar index is -1 (none selected)
-    final int barIndex = _currentIndex == 4 ? -1 : _currentIndex;
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+
+    // Con el teclado abierto la barra se mantiene en su sitio y la acción
+    // principal se oculta para no quedar detrás del teclado.
+    final bool isKeyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Theme.of(context).brightness == Brightness.dark
-            ? Brightness.light
-            : Brightness.dark,
-        systemNavigationBarColor: Theme.of(context).scaffoldBackgroundColor,
-        systemNavigationBarIconBrightness:
-            Theme.of(context).brightness == Brightness.dark
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+        systemNavigationBarColor: theme.scaffoldBackgroundColor,
+        systemNavigationBarIconBrightness: isDark
             ? Brightness.light
             : Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        backgroundColor: theme.scaffoldBackgroundColor,
 
-        // Stack to allow Add Transaction FAB to overlay standard body
-        body: Stack(
-          children: [
-            IndexedStack(index: _currentIndex, children: _screens),
+        // Cada pantalla interna ya aplica su propio inset de teclado, así que
+        // la barra no debe saltar hacia arriba.
+        resizeToAvoidBottomInset: false,
 
-            // "Add Transaction" Button - Positioned in Bottom Right ("Where it was")
-            // Only show if NOT in Business Mode (Business has its own internal actions)
-            if (_currentIndex != 4)
-              Positioned(
-                bottom:
-                    30, // Adjust to avoid collision if needed, but endFloat is usually ~16-30
-                right: 16,
-                child: FloatingActionButton(
-                  heroTag: "fab_add_transaction", // Unique Tag!
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) => const AddTransactionModal(),
-                    );
-                  },
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  shape: const CircleBorder(),
-                  child: const Icon(Icons.add, color: Colors.white),
-                ),
-              ),
-          ],
+        body: IndexedStack(index: _currentTab.index, children: _screens),
+
+        bottomNavigationBar: _MainNavigationBar(
+          navBarKey: _navBarKey,
+          primaryActionKey: _primaryActionKey,
+          currentTab: _currentTab,
+          showPrimaryAction: !isKeyboardVisible,
+          onTabSelected: _selectTab,
+          onPrimaryAction: _openAiChat,
         ),
+      ),
+    );
+  }
+}
 
-        // Central FAB - "Business" ("Negocio en el medio con floating bottom")
-        floatingActionButton: FloatingActionButton(
-          key: _fabKey,
-          heroTag: "fab_business_center", // Unique Tag!
-          onPressed: () {
-            setState(() {
-              _currentIndex = 4; // open Business
-            });
-          },
-          backgroundColor: _currentIndex == 4
-              ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).cardColor,
-          shape: const CircleBorder(),
-          // Use elevation to define "Floating" feel
-          elevation: 8,
-          child: Icon(
-            Icons.business_center,
-            color: _currentIndex == 4
-                ? Colors.white
-                : Theme.of(context).colorScheme.primary,
+/// Barra de navegación principal con acción central destacada.
+///
+/// Usa `NavigationBar` de Material 3 (por lo que hereda el
+/// `navigationBarTheme` de `AppTheme`) y reserva el destino central para la
+/// acción principal, que se dibuja elevada sobre la barra.
+class _MainNavigationBar extends StatelessWidget {
+  const _MainNavigationBar({
+    required this.navBarKey,
+    required this.primaryActionKey,
+    required this.currentTab,
+    required this.showPrimaryAction,
+    required this.onTabSelected,
+    required this.onPrimaryAction,
+  });
+
+  /// Alto del botón central que sobresale por encima de la barra.
+  static const double _actionOverhang = 20;
+
+  /// Diámetro del círculo interior del botón central.
+  static const double _actionDiameter = 52;
+
+  /// Grosor del anillo que separa el botón de la barra.
+  static const double _actionRing = 4;
+
+  /// Mapa destino de la barra -> pestaña. El slot central queda reservado.
+  static const List<MainTab?> _tabByDestination = <MainTab?>[
+    MainTab.home,
+    MainTab.wallet,
+    null,
+    MainTab.stats,
+    MainTab.more,
+  ];
+
+  final GlobalKey navBarKey;
+  final GlobalKey primaryActionKey;
+  final MainTab currentTab;
+  final bool showPrimaryAction;
+  final ValueChanged<MainTab> onTabSelected;
+  final VoidCallback onPrimaryAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      key: navBarKey,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: _actionOverhang),
+          child: NavigationBar(
+            selectedIndex: _tabByDestination.indexOf(currentTab),
+            onDestinationSelected: _handleDestinationSelected,
+            destinations: _buildDestinations(context),
           ),
         ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        if (showPrimaryAction)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: _PrimaryActionButton(
+                key: primaryActionKey,
+                onPressed: onPrimaryAction,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 
-        bottomNavigationBar: AnimatedBottomNavigationBar(
-          icons: _iconList,
-          activeIndex: barIndex,
-          gapLocation: GapLocation.center,
-          notchSmoothness: NotchSmoothness.softEdge,
-          leftCornerRadius: 32,
-          rightCornerRadius: 32,
-          onTap: (index) => setState(() {
-            _currentIndex = index;
-          }),
-          backgroundColor: Theme.of(context).cardColor,
-          activeColor: Theme.of(context).colorScheme.primary,
-          inactiveColor: Colors.grey,
-          iconSize: 28,
+  void _handleDestinationSelected(int index) {
+    final MainTab? tab = _tabByDestination[index];
+    if (tab != null) {
+      onTabSelected(tab);
+    }
+  }
+
+  List<Widget> _buildDestinations(BuildContext context) {
+    return [
+      NavigationDestination(
+        icon: const Icon(Icons.home_outlined),
+        selectedIcon: const Icon(Icons.home_rounded),
+        label: context.t('nav_home'),
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.account_balance_wallet_outlined),
+        selectedIcon: const Icon(Icons.account_balance_wallet_rounded),
+        label: context.t('nav_wallet'),
+      ),
+      // Slot reservado: lo ocupa la acción principal (IA).
+      const NavigationDestination(
+        icon: SizedBox.shrink(),
+        label: '',
+        enabled: false,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.insights_outlined),
+        selectedIcon: const Icon(Icons.insights_rounded),
+        label: context.t('statistics'),
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.grid_view_outlined),
+        selectedIcon: const Icon(Icons.grid_view_rounded),
+        label: context.t('action_more'),
+      ),
+    ];
+  }
+}
+
+/// Acción principal de la app: abrir la IA (Chat).
+///
+/// Botón circular con la marca CashRapido, separado de la barra por un anillo
+/// del color de la superficie para que se lea en modo claro y oscuro.
+class _PrimaryActionButton extends StatelessWidget {
+  const _PrimaryActionButton({super.key, required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: theme.colorScheme.surface,
+        boxShadow: AppShadows.primaryButton,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(_MainNavigationBar._actionRing),
+        child: Tooltip(
+          message: context.t('tooltip_ai'),
+          child: Material(
+            color: theme.colorScheme.primary,
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onPressed,
+              child: SizedBox(
+                height: _MainNavigationBar._actionDiameter,
+                width: _MainNavigationBar._actionDiameter,
+                child: const Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 28,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

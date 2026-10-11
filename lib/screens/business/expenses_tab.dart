@@ -1,13 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../../providers/business_provider.dart';
-import '../../models/business_expense.dart';
-import 'expense_form_screen.dart';
-import 'package:cashrapido/utils/number_format_utils.dart';
-import '../../providers/app_provider.dart';
 
+import '../../models/business_expense.dart';
+import '../../providers/app_provider.dart';
+import '../../providers/business_provider.dart';
+import '../../services/localization_service.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_radius.dart';
+import '../../theme/app_shadows.dart';
+import '../../theme/app_spacing.dart';
+import '../../utils/number_format_utils.dart';
+import '../../widgets/design/cash_card.dart';
+import '../../widgets/design/cash_chip.dart';
+import '../../widgets/design/cash_empty_state.dart';
+import '../../widgets/design/cash_floating_button.dart';
+import 'expense_form_screen.dart';
+
+/// Centro de control de gastos del negocio.
+///
+/// Conserva intactas la lógica de filtrado, el cálculo del total, el
+/// ordenamiento y las acciones de crear/editar/eliminar. Sólo cambia la
+/// presentación para que el listado sea compacto y navegable desde el móvil.
 class ExpensesTab extends StatefulWidget {
   const ExpensesTab({super.key});
 
@@ -44,6 +58,7 @@ class _ExpensesTabState extends State<ExpensesTab> {
     });
   }
 
+  /// Misma lógica de filtrado que la versión anterior (sin cambios).
   List<BusinessExpense> _filterExpenses(List<BusinessExpense> expenses) {
     final now = DateTime.now();
     final todayStart = DateTime(now.year, now.month, now.day);
@@ -53,29 +68,47 @@ class _ExpensesTabState extends State<ExpensesTab> {
     // Date filter
     switch (_dateFilter) {
       case 'today':
-        filtered = filtered.where(
-          (e) => e.date.isAfter(todayStart.subtract(const Duration(seconds: 1))),
-        ).toList();
+        filtered = filtered
+            .where(
+              (e) => e.date.isAfter(
+                todayStart.subtract(const Duration(seconds: 1)),
+              ),
+            )
+            .toList();
         break;
       case 'week':
-        final weekStart = todayStart.subtract(Duration(days: todayStart.weekday - 1));
-        filtered = filtered.where(
-          (e) => e.date.isAfter(weekStart.subtract(const Duration(seconds: 1))),
-        ).toList();
+        final weekStart = todayStart.subtract(
+          Duration(days: todayStart.weekday - 1),
+        );
+        filtered = filtered
+            .where(
+              (e) => e.date.isAfter(
+                weekStart.subtract(const Duration(seconds: 1)),
+              ),
+            )
+            .toList();
         break;
       case 'month':
         final monthStart = DateTime(now.year, now.month, 1);
-        filtered = filtered.where(
-          (e) => e.date.isAfter(monthStart.subtract(const Duration(seconds: 1))),
-        ).toList();
+        filtered = filtered
+            .where(
+              (e) => e.date.isAfter(
+                monthStart.subtract(const Duration(seconds: 1)),
+              ),
+            )
+            .toList();
         break;
       case 'custom':
         if (_customStart != null && _customEnd != null) {
-          filtered = filtered.where(
-            (e) =>
-                e.date.isAfter(_customStart!.subtract(const Duration(seconds: 1))) &&
-                e.date.isBefore(_customEnd!.add(const Duration(days: 1))),
-          ).toList();
+          filtered = filtered
+              .where(
+                (e) =>
+                    e.date.isAfter(
+                      _customStart!.subtract(const Duration(seconds: 1)),
+                    ) &&
+                    e.date.isBefore(_customEnd!.add(const Duration(days: 1))),
+              )
+              .toList();
         }
         break;
     }
@@ -105,46 +138,53 @@ class _ExpensesTabState extends State<ExpensesTab> {
           return _buildEmptyState(context);
         }
 
-        return Column(
+        return Stack(
           children: [
-            _buildFilterBar(context, provider, total),
-            Expanded(
-              child: sortedExpenses.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No hay gastos en este período',
-                        style: TextStyle(color: Colors.grey[500]),
-                      ),
-                    )
-                  : Stack(
-                      children: [
-                        ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-                          itemCount: sortedExpenses.length,
-                          itemBuilder: (context, index) {
-                            final expense = sortedExpenses[index];
-                            return _ExpenseCard(expense: expense, provider: provider);
-                          },
-                        ),
-                        Positioned(
-                          bottom: 16,
-                          right: 16,
-                          child: FloatingActionButton(
-                            heroTag: 'add_expense',
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const ExpenseFormScreen(),
-                                ),
-                              );
-                            },
-                            backgroundColor: Colors.red,
-                            child: const Icon(Icons.add),
-                          ),
-                        ),
-                      ],
+            CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: _buildHeader(context, provider.expenses.length),
+                ),
+                SliverToBoxAdapter(
+                  child: _buildSummary(context, total, filteredExpenses.length),
+                ),
+                SliverToBoxAdapter(child: _buildDateChips(context)),
+                SliverToBoxAdapter(child: _buildCategoryChips(context)),
+                if (sortedExpenses.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _buildNoResults(context),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      AppSpacing.xs,
+                      AppSpacing.lg,
+                      144,
                     ),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => _ExpenseTile(
+                          expense: sortedExpenses[index],
+                          provider: provider,
+                        ),
+                        childCount: sortedExpenses.length,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            Positioned(
+              right: AppSpacing.lg,
+              bottom: AppSpacing.lg,
+              child: CashFloatingButton(
+                heroTag: 'add_expense',
+                icon: Icons.add_rounded,
+                label: context.t('rec_new_expense'),
+                backgroundColor: AppColors.expense,
+                onPressed: () => _openCreate(context),
+              ),
             ),
           ],
         );
@@ -152,376 +192,533 @@ class _ExpensesTabState extends State<ExpensesTab> {
     );
   }
 
-  Widget _buildFilterBar(BuildContext context, BusinessProvider provider, double total) {
-    final dateFilters = [
-      {'key': 'all', 'label': 'Todas'},
-      {'key': 'today', 'label': 'Hoy'},
-      {'key': 'week', 'label': 'Esta Semana'},
-      {'key': 'month', 'label': 'Este Mes'},
-      {'key': 'custom', 'label': 'Personalizado'},
-    ];
+  // ---------------------------------------------------------------------------
+  // CABECERA Y RESUMEN
+  // ---------------------------------------------------------------------------
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildHeader(BuildContext context, int total) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.md,
+        AppSpacing.lg,
+        AppSpacing.xs,
+      ),
+      child: Row(
         children: [
-          SizedBox(
-            height: 32,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: dateFilters.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (context, index) {
-                final f = dateFilters[index];
-                final selected = _dateFilter == f['key'];
-                return GestureDetector(
-                  onTap: () {
-                    if (f['key'] == 'custom') {
-                      _showDateRangePicker(context);
-                    } else {
-                      _setDateFilter(f['key'] as String);
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? Theme.of(context).primaryColor
-                          : Theme.of(context).cardColor,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: selected
-                            ? Theme.of(context).primaryColor
-                            : Colors.grey.withOpacity(0.2),
-                      ),
-                    ),
-                    child: Text(
-                      f['label'] as String,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: selected ? Colors.white : Colors.grey[700],
-                      ),
-                    ),
-                  ),
-                );
-              },
+          Expanded(
+            child: Text(
+              context.t('business_expense'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
             ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              // Category filter dropdown
-              Expanded(
-                child: Row(
-                  children: [
-                    Text('Categoría: ', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          showModalBottomSheet(
-                            context: context,
-                            builder: (ctx) => Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                ListTile(
-                                  title: const Text('Todas'),
-                                  selected: _categoryFilter == null,
-                                  onTap: () {
-                                    setState(() => _categoryFilter = null);
-                                    Navigator.pop(ctx);
-                                  },
-                                ),
-                                ...BusinessProvider.expenseCategories.map(
-                                  (cat) => ListTile(
-                                    title: Text(cat),
-                                    selected: _categoryFilter == cat,
-                                    onTap: () {
-                                      setState(() => _categoryFilter = cat);
-                                      Navigator.pop(ctx);
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).cardColor,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey.withOpacity(0.2)),
-                          ),
-                          child: Text(
-                            _categoryFilter ?? 'Todas',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+          const SizedBox(width: AppSpacing.sm),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.xs,
+            ),
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.surfaceDark2
+                  : AppColors.expenseLight,
+              borderRadius: BorderRadius.circular(AppRadius.full),
+            ),
+            child: Text(
+              total == 1 ? '1 gasto' : '$total gastos',
+              maxLines: 1,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: AppColors.expense,
+                fontWeight: FontWeight.w700,
               ),
-              const SizedBox(width: 12),
-              Text(
-                'Total: ',
-                style: TextStyle(color: Colors.grey[600], fontSize: 13),
-              ),
-              Text(
-                '\$${total.toFormattedString(2)}',
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: Colors.red,
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+  Widget _buildSummary(BuildContext context, double total, int count) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.xs,
+        AppSpacing.lg,
+        AppSpacing.sm,
+      ),
+      child: CashCard(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        boxShadow: AppShadows.soft,
+        child: Row(
           children: [
-            Icon(Icons.receipt_long, size: 80, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'No hay gastos registrados',
-              style: GoogleFonts.outfit(fontSize: 18, color: Colors.grey[600]),
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.expense.withValues(alpha: 0.12),
+                borderRadius: AppRadius.radiusMd,
+              ),
+              child: const Icon(
+                Icons.receipt_long_rounded,
+                color: AppColors.expense,
+                size: 22,
+              ),
             ),
-            const SizedBox(height: 8),
-            TextButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ExpenseFormScreen()),
-                );
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Agregar Gasto'),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Total de gastos',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _periodLabel(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: isDark
+                          ? AppColors.textTertiaryDark
+                          : AppColors.textTertiary,
+                    ),
+                  ),
+                  Text(
+                    '$count ${count == 1 ? 'registro' : 'registros'}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: isDark
+                          ? AppColors.textTertiaryDark
+                          : AppColors.textTertiary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Flexible(
+              child: Text(
+                '\$${total.toFormattedString(2)}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: AppColors.expense,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ),
           ],
         ),
       ),
     );
   }
+
+  String _periodLabel() {
+    switch (_dateFilter) {
+      case 'today':
+        return 'Hoy';
+      case 'week':
+        return 'Esta semana';
+      case 'month':
+        return 'Este mes';
+      case 'custom':
+        if (_customStart != null && _customEnd != null) {
+          final fmt = DateFormat('dd/MM/yyyy');
+          return '${fmt.format(_customStart!)} – ${fmt.format(_customEnd!)}';
+        }
+        return 'Todas las fechas';
+      default:
+        return 'Todas las fechas';
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // FILTROS
+  // ---------------------------------------------------------------------------
+
+  Widget _buildDateChips(BuildContext context) {
+    final filters = <(String, String, IconData)>[
+      ('all', 'Todas', Icons.apps_rounded),
+      ('today', 'Hoy', Icons.today_outlined),
+      ('week', 'Esta semana', Icons.date_range_outlined),
+      ('month', 'Este mes', Icons.calendar_month_outlined),
+      ('custom', 'Personalizado', Icons.tune_rounded),
+    ];
+
+    return SizedBox(
+      height: 38,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        children: [
+          for (final (key, label, icon) in filters)
+            Padding(
+              padding: EdgeInsets.only(left: key == 'all' ? 0 : AppSpacing.sm),
+              child: CashChip(
+                label: label,
+                icon: icon,
+                selected: _dateFilter == key,
+                onTap: () {
+                  if (key == 'custom') {
+                    _showDateRangePicker(context);
+                  } else {
+                    _setDateFilter(key);
+                  }
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryChips(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        0,
+      ),
+      child: SizedBox(
+        height: 38,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          children: [
+            CashChip(
+              label: 'Todas las categorías',
+              icon: Icons.category_outlined,
+              selected: _categoryFilter == null,
+              onTap: () => setState(() => _categoryFilter = null),
+            ),
+            for (final category in BusinessProvider.expenseCategories)
+              Padding(
+                padding: const EdgeInsets.only(left: AppSpacing.sm),
+                child: CashChip(
+                  label: category,
+                  icon: _categoryIcon(category),
+                  selected: _categoryFilter == category,
+                  onTap: () => setState(
+                    () => _categoryFilter = _categoryFilter == category
+                        ? null
+                        : category,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // ESTADOS VACÍOS
+  // ---------------------------------------------------------------------------
+
+  Widget _buildEmptyState(BuildContext context) {
+    return CashEmptyState(
+      icon: Icons.receipt_long_outlined,
+      title: 'No hay gastos registrados',
+      message:
+          'Registra los gastos del negocio para controlar su rentabilidad.',
+      buttonLabel: 'Registrar gasto',
+      onButtonPressed: () => _openCreate(context),
+    );
+  }
+
+  Widget _buildNoResults(BuildContext context) {
+    return CashEmptyState(
+      icon: Icons.search_off_rounded,
+      title: 'No hay gastos en este filtro',
+      message: 'Prueba con otro período o cambia la categoría seleccionada.',
+      action: TextButton.icon(
+        onPressed: () => setState(() {
+          _dateFilter = 'all';
+          _customStart = null;
+          _customEnd = null;
+          _categoryFilter = null;
+        }),
+        icon: const Icon(Icons.filter_alt_off_rounded, size: 18),
+        label: const Text('Limpiar filtros'),
+      ),
+    );
+  }
+
+  void _openCreate(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ExpenseFormScreen()),
+    );
+  }
 }
 
-class _ExpenseCard extends StatelessWidget {
+// ---------------------------------------------------------------------------
+// MAPEO DE CATEGORÍAS
+// ---------------------------------------------------------------------------
+
+Color _categoryColor(String category) {
+  switch (category) {
+    case 'Alquiler':
+      return AppColors.purple;
+    case 'Servicios':
+      return AppColors.info;
+    case 'Salarios':
+      return AppColors.secondary;
+    case 'Insumos':
+      return AppColors.orange;
+    case 'Marketing':
+      return const Color(0xFFEC4899);
+    case 'Transporte':
+      return const Color(0xFF6366F1);
+    default:
+      return AppColors.textSecondary;
+  }
+}
+
+IconData _categoryIcon(String category) {
+  switch (category) {
+    case 'Alquiler':
+      return Icons.home_work_outlined;
+    case 'Servicios':
+      return Icons.build_outlined;
+    case 'Salarios':
+      return Icons.people_outline;
+    case 'Insumos':
+      return Icons.inventory_2_outlined;
+    case 'Marketing':
+      return Icons.campaign_outlined;
+    case 'Transporte':
+      return Icons.local_shipping_outlined;
+    default:
+      return Icons.receipt_outlined;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// FILA DE GASTO
+// ---------------------------------------------------------------------------
+
+class _ExpenseTile extends StatelessWidget {
   final BusinessExpense expense;
   final BusinessProvider provider;
 
-  const _ExpenseCard({required this.expense, required this.provider});
+  const _ExpenseTile({required this.expense, required this.provider});
 
-  Color _categoryColor(String category) {
-    switch (category) {
-      case 'Alquiler':
-        return Colors.purple;
-      case 'Servicios':
-        return Colors.blue;
-      case 'Salarios':
-        return Colors.teal;
-      case 'Insumos':
-        return Colors.orange;
-      case 'Marketing':
-        return Colors.pink;
-      case 'Transporte':
-        return Colors.indigo;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  IconData _categoryIcon(String category) {
-    switch (category) {
-      case 'Alquiler':
-        return Icons.home_work;
-      case 'Servicios':
-        return Icons.build;
-      case 'Salarios':
-        return Icons.people;
-      case 'Insumos':
-        return Icons.inventory_2;
-      case 'Marketing':
-        return Icons.campaign;
-      case 'Transporte':
-        return Icons.local_shipping;
-      default:
-        return Icons.receipt;
-    }
-  }
-
-  void _confirmDelete(BuildContext context) {
-    showDialog(
+  Future<bool> _confirmDelete(BuildContext context) async {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Eliminar Gasto'),
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusXl),
+        backgroundColor: isDark
+            ? AppColors.surfaceDark
+            : AppColors.surfaceLight,
+        title: const Row(
+          children: [
+            Icon(Icons.delete_outline, color: AppColors.error, size: 22),
+            SizedBox(width: AppSpacing.sm),
+            Expanded(child: Text('Eliminar gasto')),
+          ],
+        ),
         content: Text(
-          '¿Eliminar el gasto "${expense.description}"?\nEsta acción no se puede deshacer.',
+          '¿Eliminar "${expense.description}"?\n'
+          'Esta acción no se puede deshacer.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Cancelar'),
           ),
-          ElevatedButton(
-            onPressed: () {
-              final appProvider = Provider.of<AppProvider>(context, listen: false);
-              provider.deleteExpense(expense.id, appProvider: appProvider);
-              Navigator.pop(ctx);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Eliminar', style: TextStyle(color: Colors.white)),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            child: const Text('Eliminar'),
           ),
         ],
       ),
     );
+    return confirmed ?? false;
+  }
+
+  Future<void> _delete(BuildContext context) async {
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+    await provider.deleteExpense(expense.id, appProvider: appProvider);
   }
 
   void _openEdit(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => ExpenseFormScreen(expense: expense),
-      ),
+      MaterialPageRoute(builder: (_) => ExpenseFormScreen(expense: expense)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final color = _categoryColor(expense.category);
-    final icon = _categoryIcon(expense.category);
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color color = _categoryColor(expense.category);
+    final IconData icon = _categoryIcon(expense.category);
+    final String subtitle =
+        '${expense.category} · ${DateFormat('dd/MM/yyyy – HH:mm').format(expense.date)}';
 
     return Dismissible(
       key: Key(expense.id),
       direction: DismissDirection.endToStart,
-      confirmDismiss: (_) async {
-        bool confirmed = false;
-        await showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Eliminar Gasto'),
-            content: Text('¿Eliminar "${expense.description}"?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  confirmed = true;
-                  Navigator.pop(ctx);
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                child: const Text('Eliminar', style: TextStyle(color: Colors.white)),
-              ),
-            ],
-          ),
-        );
-        return confirmed;
-      },
-      onDismissed: (_) {
-        final appProvider = Provider.of<AppProvider>(context, listen: false);
-        provider.deleteExpense(expense.id, appProvider: appProvider);
-      },
+      confirmDismiss: (_) => _confirmDelete(context),
+      onDismissed: (_) => _delete(context),
       background: Container(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
+        padding: const EdgeInsets.only(right: AppSpacing.xl),
+        margin: const EdgeInsets.only(bottom: AppSpacing.md),
         decoration: BoxDecoration(
-          color: Colors.red,
-          borderRadius: BorderRadius.circular(16),
+          color: AppColors.error,
+          borderRadius: AppRadius.radiusXl,
         ),
         child: const Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.delete, color: Colors.white),
-            SizedBox(height: 4),
-            Text('Eliminar', style: TextStyle(color: Colors.white, fontSize: 11)),
-          ],
-        ),
-      ),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+            Icon(Icons.delete_outline, color: AppColors.white, size: 22),
+            SizedBox(height: AppSpacing.xxs),
+            Text(
+              'Eliminar',
+              style: TextStyle(color: AppColors.white, fontSize: 11),
             ),
           ],
         ),
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          leading: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
+      ),
+      child: CashCard(
+        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+        padding: const EdgeInsets.all(AppSpacing.compactPadding),
+        onTap: () => _openEdit(context),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: isDark ? 0.22 : 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 21),
             ),
-            child: Icon(icon, color: color, size: 22),
-          ),
-          title: Text(
-            expense.category,
-            style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 2),
-              Text(
-                expense.description,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    expense.description,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 2),
-              Text(
-                DateFormat('dd/MM/yyyy – HH:mm').format(expense.date),
-                style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Flexible(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '\$${expense.amount.toFormattedString(2)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.expense,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text(
+                    expense.currency,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: isDark
+                          ? AppColors.textTertiaryDark
+                          : AppColors.textTertiary,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          trailing: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '\$${expense.amount.toFormattedString(2)}',
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.red,
-                  fontSize: 16,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  expense.currency,
-                  style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          isThreeLine: true,
-          onTap: () => _openEdit(context),
-          onLongPress: () => _confirmDelete(context),
+            ),
+            _buildMenu(context),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildMenu(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    return PopupMenuButton<String>(
+      tooltip: 'Acciones',
+      icon: Icon(Icons.more_vert_rounded, size: 20, color: secondary),
+      constraints: const BoxConstraints(minWidth: 168),
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusLg),
+      onSelected: (value) async {
+        if (value == 'edit') {
+          _openEdit(context);
+        } else if (value == 'delete') {
+          final bool confirmed = await _confirmDelete(context);
+          if (confirmed && context.mounted) _delete(context);
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(Icons.edit_outlined, size: 20, color: secondary),
+              const SizedBox(width: AppSpacing.md),
+              const Text('Editar'),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline, size: 20, color: AppColors.error),
+              SizedBox(width: AppSpacing.md),
+              Text('Eliminar', style: TextStyle(color: AppColors.error)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../providers/business_provider.dart';
+
 import '../../models/product_category.dart';
+import '../../providers/business_provider.dart';
+import '../../services/localization_service.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_radius.dart';
+import '../../theme/app_spacing.dart';
+import '../../widgets/design/cash_button.dart';
+import '../../widgets/design/cash_card.dart';
+import '../../widgets/design/cash_empty_state.dart';
+import '../../widgets/design/cash_floating_button.dart';
+import '../../widgets/design/cash_icon_button.dart';
+import '../../widgets/design/cash_input.dart';
 
 class CategoryManagerScreen extends StatelessWidget {
   const CategoryManagerScreen({super.key});
@@ -12,8 +22,10 @@ class CategoryManagerScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Categorías de Productos',
-          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+          context.t('category_manager_title'),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
         ),
         centerTitle: true,
       ),
@@ -22,103 +34,153 @@ class CategoryManagerScreen extends StatelessWidget {
           final categories = provider.rootCategories;
 
           if (categories.isEmpty) {
-            return _EmptyState(onAdd: () => _showCategoryDialog(context, provider));
+            return CashEmptyState(
+              icon: Icons.category_outlined,
+              title: context.t('category_empty_title'),
+              message: context.t('category_empty_desc'),
+              buttonLabel: context.t('category_add_category'),
+              onButtonPressed: () =>
+                  _showCategoryDialog(context, provider),
+            );
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              120,
+            ),
             itemCount: categories.length,
             itemBuilder: (context, index) {
-              final cat = categories[index];
-              final subcategories = provider.getSubcategories(cat.id);
+              final category = categories[index];
               return _CategoryCard(
-                category: cat,
-                subcategories: subcategories,
+                category: category,
+                subcategories: provider.getSubcategories(category.id),
                 provider: provider,
               );
             },
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: CashFloatingButton(
         heroTag: 'cat_fab',
+        icon: Icons.add_rounded,
+        label: context.t('category_add_category'),
         onPressed: () {
           final provider = context.read<BusinessProvider>();
           _showCategoryDialog(context, provider);
         },
-        icon: const Icon(Icons.add),
-        label: const Text('Nueva Categoría'),
       ),
     );
   }
 
-  static void _showCategoryDialog(
+  /// Diálogo de alta/edición de categoría o subcategoría.
+  static Future<void> _showCategoryDialog(
     BuildContext context,
     BusinessProvider provider, {
     ProductCategory? editing,
     String? parentId,
-  }) {
-    final nameController = TextEditingController(text: editing?.name ?? '');
-    final isSubcat = parentId != null;
-    final title = editing != null
-        ? (isSubcat ? 'Editar Subcategoría' : 'Editar Categoría')
-        : (isSubcat ? 'Nueva Subcategoría' : 'Nueva Categoría');
+  }) async {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final TextEditingController nameController = TextEditingController(
+      text: editing?.name ?? '',
+    );
+    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+    final bool isSubcat = parentId != null;
+    final bool isEditing = editing != null;
 
-    showDialog(
+    final String title = isEditing
+        ? (isSubcat
+              ? context.t('category_edit_sub_title')
+              : context.t('category_edit_title'))
+        : (isSubcat
+              ? context.t('category_new_sub_title')
+              : context.t('category_new_title'));
+
+    final String placeholder = isSubcat
+        ? context.t('category_sub_name_placeholder')
+        : context.t('category_name_placeholder');
+
+    final bool? saved = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusXl),
+        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         title: Row(
           children: [
             Icon(
-              isSubcat ? Icons.subdirectory_arrow_right : Icons.category,
-              color: Theme.of(context).primaryColor,
+              isSubcat ? Icons.subdirectory_arrow_right_rounded : Icons.category_outlined,
+              color: AppColors.primary,
+              size: 22,
             ),
-            const SizedBox(width: 8),
-            Text(title, style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ),
           ],
         ),
-        content: TextField(
-          controller: nameController,
-          autofocus: true,
-          decoration: InputDecoration(
-            labelText: isSubcat ? 'Nombre de Subcategoría' : 'Nombre de Categoría',
-            hintText: isSubcat ? 'Ej: Con Filtro, Sin Filtro...' : 'Ej: Cigarros, Bebidas...',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            prefixIcon: Icon(isSubcat ? Icons.label_outline : Icons.folder_outlined),
+        content: Form(
+          key: formKey,
+          child: CashInput(
+            controller: nameController,
+            autofocus: true,
+            label: placeholder,
+            hint: placeholder,
+            prefix: Icon(
+              isSubcat ? Icons.label_outline_rounded : Icons.folder_outlined,
+            ),
+            textCapitalization: TextCapitalization.words,
+            validator: (value) => value == null || value.trim().isEmpty
+                ? context.t('product_enter_name')
+                : null,
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar'),
+          CashButton(
+            label: context.t('cancel'),
+            type: CashButtonType.outlined,
+            fullWidth: false,
+            height: 44,
+            onPressed: () => Navigator.pop(dialogContext, false),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              final name = nameController.text.trim();
-              if (name.isEmpty) return;
-
-              if (editing != null) {
-                final updated = ProductCategory(
-                  id: editing.id,
-                  businessId: editing.businessId,
-                  name: name,
-                  parentId: editing.parentId,
-                );
-                await provider.editProductCategory(updated);
-              } else {
-                await provider.addProductCategory(name: name, parentId: parentId);
+          const SizedBox(width: AppSpacing.sm),
+          CashButton(
+            label: context.t('save'),
+            fullWidth: false,
+            height: 44,
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(dialogContext, true);
               }
-              if (ctx.mounted) Navigator.pop(ctx);
             },
-            style: ElevatedButton.styleFrom(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: Text(editing != null ? 'Guardar' : 'Crear'),
           ),
         ],
       ),
     );
+
+    if (saved != true || !nameController.text.trim().isNotEmpty) return;
+
+    final String name = nameController.text.trim();
+
+    if (editing != null) {
+      final updated = ProductCategory(
+        id: editing.id,
+        businessId: editing.businessId,
+        name: name,
+        parentId: editing.parentId,
+      );
+      await provider.editProductCategory(updated);
+    } else {
+      await provider.addProductCategory(name: name, parentId: parentId);
+    }
   }
 }
 
@@ -140,130 +202,232 @@ class _CategoryCard extends StatefulWidget {
 class _CategoryCardState extends State<_CategoryCard> {
   bool _expanded = false;
 
+  int get _productCount => widget.provider.products
+      .where((p) => p.categoryId == widget.category.id)
+      .length;
+
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 1,
+    final int subCount = widget.subcategories.length;
+
+    final String subtitle = [
+      context
+          .t('product_total_products')
+          .replaceAll('{count}', '$_productCount'),
+      if (subCount > 0)
+        context
+            .t('category_subcategories_count')
+            .replaceAll('{count}', '$subCount'),
+    ].join(' · ');
+
+    return CashCard(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.compactPadding,
+        vertical: AppSpacing.md,
+      ),
       child: Column(
         children: [
-          ListTile(
-            dense: true,
-            visualDensity: VisualDensity.compact,
-            leading: CircleAvatar(
-              radius: 14,
-              backgroundColor: colorScheme.primary,
-              child: const Icon(Icons.folder, color: Colors.white, size: 14),
-            ),
-            title: Text(
-              widget.category.name,
-              style: GoogleFonts.outfit(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
+          Row(
+            children: [
+              _CategoryAvatar(isSubcategory: false),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.category.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: secondary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            subtitle: Text(
-              '${widget.subcategories.length} subcategoría(s)',
-              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.add_circle_outline, size: 18),
-                  tooltip: 'Agregar subcategoría',
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => CategoryManagerScreen._showCategoryDialog(
-                    context,
-                    widget.provider,
-                    parentId: widget.category.id,
-                  ),
+              if (subCount > 0)
+                CashIconButton(
+                  icon: _expanded
+                      ? Icons.expand_less_rounded
+                      : Icons.expand_more_rounded,
+                  size: 34,
+                  iconSize: 18,
+                  tooltip: '',
+                  onPressed: () => setState(() => _expanded = !_expanded),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 18),
-                  tooltip: 'Editar',
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => CategoryManagerScreen._showCategoryDialog(
-                    context,
-                    widget.provider,
-                    editing: widget.category,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.red, size: 18),
-                  tooltip: 'Eliminar',
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => _confirmDelete(context),
-                ),
-                if (widget.subcategories.isNotEmpty)
-                  IconButton(
-                    icon: Icon(_expanded ? Icons.expand_less : Icons.expand_more, size: 18),
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () => setState(() => _expanded = !_expanded),
-                  ),
-              ],
-            ),
+              _buildMenu(context),
+            ],
           ),
-
-          if (_expanded && widget.subcategories.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(left: 16, bottom: 4),
-              child: Column(
-                children: [
-                  ...widget.subcategories.map((sub) => _SubcategoryTile(
-                    subcategory: sub,
-                    provider: widget.provider,
-                    parentCategory: widget.category,
-                  )),
-                  TextButton.icon(
-                    onPressed: () => CategoryManagerScreen._showCategoryDialog(
-                      context,
-                      widget.provider,
-                      parentId: widget.category.id,
-                    ),
-                    icon: const Icon(Icons.add, size: 14),
-                    label: const Text('Agregar subcategoría', style: TextStyle(fontSize: 12)),
-                    style: TextButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                    ),
-                  ),
-                ],
+          if (_expanded && subCount > 0) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Divider(
+              color: isDark ? AppColors.dividerDark : AppColors.dividerLight,
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            ...widget.subcategories.map(
+              (sub) => _SubcategoryTile(
+                subcategory: sub,
+                parentCategory: widget.category,
+                provider: widget.provider,
               ),
             ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => CategoryManagerScreen._showCategoryDialog(
+                  context,
+                  widget.provider,
+                  parentId: widget.category.id,
+                ),
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: Text(
+                  context.t('category_add_subcategory'),
+                  style: const TextStyle(fontSize: 12),
+                ),
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
+  Widget _buildMenu(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    return PopupMenuButton<String>(
+      tooltip: '',
+      constraints: const BoxConstraints(minWidth: 168),
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusLg),
+      onSelected: (value) {
+        switch (value) {
+          case 'add_sub':
+            CategoryManagerScreen._showCategoryDialog(
+              context,
+              widget.provider,
+              parentId: widget.category.id,
+            );
+          case 'edit':
+            CategoryManagerScreen._showCategoryDialog(
+              context,
+              widget.provider,
+              editing: widget.category,
+            );
+          case 'delete':
+            _confirmDelete(context);
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'add_sub',
+          child: Row(
+            children: [
+              Icon(Icons.create_new_folder_outlined, size: 20, color: AppColors.primary),
+              const SizedBox(width: AppSpacing.md),
+              Text(context.t('category_add_subcategory')),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(Icons.edit_outlined, size: 20, color: secondary),
+              const SizedBox(width: AppSpacing.md),
+              Text(context.t('category_edit')),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: [
+              const Icon(Icons.delete_outline, size: 20, color: AppColors.error),
+              const SizedBox(width: AppSpacing.md),
+              Text(
+                context.t('category_delete'),
+                style: const TextStyle(color: AppColors.error),
+              ),
+            ],
+          ),
+        ),
+      ],
+      child: Icon(Icons.more_vert_rounded, size: 20, color: secondary),
+    );
+  }
+
   void _confirmDelete(BuildContext context) {
-    showDialog(
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Eliminar Categoría'),
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusXl),
+        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        title: Row(
+          children: [
+            const Icon(Icons.delete_outline, color: AppColors.error, size: 22),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                context.t('category_delete_title'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
         content: Text(
-          'Se eliminará "${widget.category.name}" y todas sus subcategorías (${widget.subcategories.length}). Esta acción no se puede deshacer.',
+          context
+              .t('category_confirm_delete')
+              .replaceAll('{name}', widget.category.name),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar'),
+          CashButton(
+            label: context.t('cancel'),
+            type: CashButtonType.outlined,
+            fullWidth: false,
+            height: 44,
+            onPressed: () => Navigator.pop(dialogContext, false),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              await widget.provider.deleteProductCategory(widget.category.id);
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Eliminar', style: TextStyle(color: Colors.white)),
+          const SizedBox(width: AppSpacing.sm),
+          CashButton(
+            label: context.t('delete'),
+            type: CashButtonType.danger,
+            fullWidth: false,
+            height: 44,
+            onPressed: () => Navigator.pop(dialogContext, true),
           ),
         ],
       ),
-    );
+    ).then((confirmed) async {
+      if (confirmed == true) {
+        await widget.provider.deleteProductCategory(widget.category.id);
+      }
+    });
   }
 }
 
@@ -280,21 +444,37 @@ class _SubcategoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      dense: true,
-      visualDensity: VisualDensity.compact,
-      leading: Icon(Icons.subdirectory_arrow_right, color: Colors.grey[500], size: 16),
-      title: Text(
-        subcategory.name,
-        style: GoogleFonts.outfit(fontWeight: FontWeight.w500, fontSize: 13),
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined, size: 16),
-            tooltip: 'Editar',
-            visualDensity: VisualDensity.compact,
+          const SizedBox(width: AppSpacing.md),
+          Icon(
+            Icons.subdirectory_arrow_right_rounded,
+            size: 16,
+            color: secondary,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              subcategory.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+          CashIconButton(
+            icon: Icons.edit_outlined,
+            size: 32,
+            iconSize: 15,
+            tooltip: context.t('category_edit'),
             onPressed: () => CategoryManagerScreen._showCategoryDialog(
               context,
               provider,
@@ -302,10 +482,13 @@ class _SubcategoryTile extends StatelessWidget {
               parentId: parentCategory.id,
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.red, size: 16),
-            tooltip: 'Eliminar',
-            visualDensity: VisualDensity.compact,
+          const SizedBox(width: AppSpacing.xs),
+          CashIconButton(
+            icon: Icons.delete_outline,
+            size: 32,
+            iconSize: 15,
+            tooltip: context.t('category_delete'),
+            iconColor: AppColors.error,
             onPressed: () => _confirmDelete(context),
           ),
         ],
@@ -314,75 +497,82 @@ class _SubcategoryTile extends StatelessWidget {
   }
 
   void _confirmDelete(BuildContext context) {
-    showDialog(
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Eliminar Subcategoría'),
-        content: Text('¿Eliminar la subcategoría "${subcategory.name}"?'),
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusXl),
+        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        title: Row(
+          children: [
+            const Icon(Icons.delete_outline, color: AppColors.error, size: 22),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                context.t('category_delete_sub_title'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          context
+              .t('category_confirm_delete_sub')
+              .replaceAll('{name}', subcategory.name),
+        ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar'),
+          CashButton(
+            label: context.t('cancel'),
+            type: CashButtonType.outlined,
+            fullWidth: false,
+            height: 44,
+            onPressed: () => Navigator.pop(dialogContext, false),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              await provider.deleteProductCategory(subcategory.id);
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Eliminar', style: TextStyle(color: Colors.white)),
+          const SizedBox(width: AppSpacing.sm),
+          CashButton(
+            label: context.t('delete'),
+            type: CashButtonType.danger,
+            fullWidth: false,
+            height: 44,
+            onPressed: () => Navigator.pop(dialogContext, true),
           ),
         ],
       ),
-    );
+    ).then((confirmed) async {
+      if (confirmed == true) {
+        await provider.deleteProductCategory(subcategory.id);
+      }
+    });
   }
 }
 
-class _EmptyState extends StatelessWidget {
-  final VoidCallback onAdd;
-  const _EmptyState({required this.onAdd});
+/// Avatar de carpeta para categorías y subcategorías.
+class _CategoryAvatar extends StatelessWidget {
+  final bool isSubcategory;
+
+  const _CategoryAvatar({this.isSubcategory = false});
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.purple.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.category_outlined, size: 64, color: Colors.purple),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Sin Categorías',
-            style: GoogleFonts.outfit(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[700],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Crea categorías para organizar tus productos\ny generar SKUs automáticamente.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey[500]),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: onAdd,
-            icon: const Icon(Icons.add),
-            label: const Text('Crear primera categoría'),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-        ],
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppColors.primary.withValues(alpha: 0.18)
+            : AppColors.primaryLight,
+        borderRadius: AppRadius.radiusSm,
+      ),
+      child: Icon(
+        isSubcategory
+            ? Icons.subdirectory_arrow_right_rounded
+            : Icons.folder_rounded,
+        size: 20,
+        color: isDark ? AppColors.primary : AppColors.primaryDark,
       ),
     );
   }

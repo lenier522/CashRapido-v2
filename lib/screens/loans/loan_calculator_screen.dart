@@ -1,8 +1,22 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../services/localization_service.dart';
 
+import '../../services/localization_service.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_radius.dart';
+import '../../theme/app_spacing.dart';
+import '../../utils/number_format_utils.dart';
+import '../../widgets/design/cash_card.dart';
+import '../../widgets/design/cash_chip.dart';
+import '../../widgets/design/cash_section.dart';
+
+/// Simulador de préstamos.
+///
+/// Es una herramienta de simulación: no crea préstamos ni escribe nada. El
+/// rediseño reorganiza la pantalla en resultados, parámetros y cronograma sin
+/// tocar la fórmula original ([_calculateTotalRepayment]), los rangos de los
+/// controles ni la lógica del desglose. Todos los importes usan el formateador
+/// numérico de CashRapido.
 class LoanCalculatorScreen extends StatefulWidget {
   const LoanCalculatorScreen({super.key});
 
@@ -14,135 +28,120 @@ class _LoanCalculatorScreenState extends State<LoanCalculatorScreen> {
   double _principal = 1000.0;
   double _interestRate = 10.0;
   int _duration = 10;
-  
+
   String _interestType = 'simple'; // 'fixed', 'simple', 'compound'
   String _frequency = 'weekly'; // 'daily', 'weekly', 'biweekly', 'monthly'
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
-    // Calculations
+    // Cálculos existentes (sin modificar).
     final totalRepayment = _calculateTotalRepayment();
     final totalProfit = totalRepayment - _principal;
     final installmentAmount = totalRepayment / _duration;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0A0A14) : Colors.grey[50],
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          context.t('calc_title'),
-          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-        ),
+        title: Text(context.t('calc_title')),
         centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: isDark ? Colors.white : Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenHorizontal,
+          vertical: AppSpacing.screenVertical,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Dashboard Metrics simulated panel
-            _buildSimulationResults(totalRepayment, totalProfit, installmentAmount, isDark),
-            const SizedBox(height: 28),
+            _buildSimulationResults(totalRepayment, totalProfit, installmentAmount),
+            const SizedBox(height: AppSpacing.xxl),
 
-            Text(
-              context.t('calc_parameters'),
-              style: GoogleFonts.outfit(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.primary,
+            CashSection(
+              title: context.t('calc_parameters'),
+              child: Column(
+                children: [
+                  _buildSliderSection(
+                    title: context.t('calc_principal'),
+                    value: _principal,
+                    min: 100,
+                    max: 20000,
+                    divisions: 199,
+                    displayVal: '\$${_principal.toStringAsFixed(0)}',
+                    onChanged: (val) => setState(() => _principal = val),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildSelectionBlock(
+                    label: context.t('calc_interest_scheme'),
+                    choices: _buildChoiceRow(
+                      choices: [
+                        _Choice('fixed', context.t('calc_type_fixed'), Icons.attach_money_rounded),
+                        _Choice('simple', context.t('calc_type_percentage'), Icons.percent_rounded),
+                        _Choice('compound', context.t('calc_type_compound'), Icons.trending_up_rounded),
+                      ],
+                      selected: _interestType,
+                      onSelected: _selectInterestType,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildSliderSection(
+                    title: _interestType == 'fixed'
+                        ? context.t('calc_fixed_interest')
+                        : context.t('calc_rate'),
+                    value: _interestRate,
+                    min: 1,
+                    max: _interestType == 'fixed' ? 5000 : 100,
+                    divisions: _interestType == 'fixed' ? 100 : 99,
+                    displayVal: _interestType == 'fixed'
+                        ? '\$${_interestRate.toStringAsFixed(0)}'
+                        : '${_interestRate.toStringAsFixed(0)}%',
+                    onChanged: (val) => setState(() => _interestRate = val),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildSelectionBlock(
+                    label: context.t('calc_frequency_label'),
+                    choices: _buildChoiceRow(
+                      choices: [
+                        _Choice('daily', context.t('freq_daily'), Icons.today_rounded),
+                        _Choice('weekly', context.t('freq_weekly'), Icons.view_week_rounded),
+                        _Choice('biweekly', context.t('freq_biweekly'), Icons.date_range_rounded),
+                        _Choice('monthly', context.t('freq_monthly'), Icons.calendar_month_rounded),
+                      ],
+                      selected: _frequency,
+                      onSelected: (val) => setState(() => _frequency = val),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildSliderSection(
+                    title: context.t('calc_term'),
+                    value: _duration.toDouble(),
+                    min: 1,
+                    max: 60,
+                    divisions: 59,
+                    displayVal: context.t('calc_installments_count').replaceAll(
+                      '{count}',
+                      _duration.toStringAsFixed(0),
+                    ),
+                    onChanged: (val) => setState(() => _duration = val.toInt()),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.xxl),
 
-            // Principal
-            _buildSliderSection(
-              title: context.t('calc_principal'),
-              value: _principal,
-              min: 100,
-              max: 20000,
-              divisions: 199,
-              displayVal: "\$${_principal.toStringAsFixed(0)}",
-              onChanged: (val) {
-                setState(() {
-                  _principal = val;
-                });
-              },
-              isDark: isDark,
+            CashSection(
+              title: context.t('calc_amort_table'),
+              child: _buildAmortizationBreakdown(installmentAmount),
             ),
-            const SizedBox(height: 20),
-
-            // Interest type
-            _buildInterestTypeSelector(isDark),
-            const SizedBox(height: 20),
-
-            // Interest Rate
-            _buildSliderSection(
-              title: _interestType == 'fixed'
-                  ? context.t('calc_fixed_interest')
-                  : context.t('calc_rate'),
-              value: _interestRate,
-              min: 1,
-              max: _interestType == 'fixed' ? 5000 : 100,
-              divisions: _interestType == 'fixed' ? 100 : 99,
-              displayVal: _interestType == 'fixed' 
-                  ? "\$${_interestRate.toStringAsFixed(0)}" 
-                  : "${_interestRate.toStringAsFixed(0)}%",
-              onChanged: (val) {
-                setState(() {
-                  _interestRate = val;
-                });
-              },
-              isDark: isDark,
-            ),
-            const SizedBox(height: 20),
-
-            // Frequency
-            _buildFrequencySelector(isDark),
-            const SizedBox(height: 20),
-
-            // Duration
-            _buildSliderSection(
-              title: context.t('calc_term'),
-              value: _duration.toDouble(),
-              min: 1,
-              max: 60,
-              divisions: 59,
-              displayVal: context.t('calc_installments_count').replaceAll('{count}', _duration.toStringAsFixed(0)),
-              onChanged: (val) {
-                setState(() {
-                  _duration = val.toInt();
-                });
-              },
-              isDark: isDark,
-            ),
-            const SizedBox(height: 32),
-
-            // Schedule breakdown
-            Text(
-              context.t('calc_amort_table'),
-              style: GoogleFonts.outfit(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            _buildAmortizationBreakdown(installmentAmount, isDark),
+            const SizedBox(height: AppSpacing.xxxl),
           ],
         ),
       ),
     );
   }
 
+  /// Fórmula original del simulador: idéntica a la anterior.
   double _calculateTotalRepayment() {
     if (_interestRate <= 0) return _principal;
     switch (_interestType) {
@@ -157,87 +156,75 @@ class _LoanCalculatorScreenState extends State<LoanCalculatorScreen> {
     }
   }
 
+  void _selectInterestType(String value) {
+    setState(() {
+      _interestType = value;
+      // Mismo ajuste de rango que la implementación anterior.
+      if (_interestType == 'fixed' && _interestRate > 5000) {
+        _interestRate = 500;
+      } else if (_interestType != 'fixed' && _interestRate > 100) {
+        _interestRate = 10;
+      }
+    });
+  }
+
+  // ──────────────────────────────────────────
+  //   RESULTADOS
+  // ──────────────────────────────────────────
   Widget _buildSimulationResults(
     double totalRepayment,
     double totalProfit,
     double installmentAmount,
-    bool isDark,
   ) {
     final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark 
-              ? [const Color(0xFF1E1E3F), const Color(0xFF141428)] 
-              : [theme.colorScheme.primary.withValues(alpha: 0.8), theme.colorScheme.primary],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: theme.colorScheme.primary.withValues(alpha: 0.15),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
+    final isDark = theme.brightness == Brightness.dark;
+    final secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    return CashCard(
+      color: isDark ? AppColors.surfaceDark2 : AppColors.primarySurface,
+      border: Border.all(
+        color: AppColors.primary.withValues(alpha: isDark ? 0.35 : 0.25),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    context.t('calc_total_to_pay'),
-                    style: GoogleFonts.outfit(color: Colors.white60, fontSize: 11, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "\$${totalRepayment.toStringAsFixed(2)}",
-                    style: GoogleFonts.outfit(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    context.t('calc_interest_earned'),
-                    style: GoogleFonts.outfit(color: Colors.white60, fontSize: 11, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "\$${totalProfit.toStringAsFixed(2)}",
-                    style: GoogleFonts.outfit(
-                      color: Colors.greenAccent,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          Text(
+            context.t('calc_total_to_pay'),
+            style: theme.textTheme.labelMedium?.copyWith(color: secondary),
           ),
-          const Divider(color: Colors.white24, height: 28),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                context.t('calc_estimated_quota'),
-                style: GoogleFonts.outfit(color: Colors.white70, fontSize: 14),
+          const SizedBox(height: AppSpacing.xxs),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '\$${totalRepayment.toFormattedString(2)}',
+              maxLines: 1,
+              style: theme.textTheme.displaySmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
               ),
-              Text(
-                "\$${installmentAmount.toStringAsFixed(2)}",
-                style: GoogleFonts.outfit(
-                  color: Colors.yellowAccent,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+            ),
+          ),
+          const Divider(height: AppSpacing.xxl),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _buildResultMetric(
+                  label: context.t('calc_interest_earned'),
+                  value: '\$${totalProfit.toFormattedString(2)}',
+                  color: AppColors.income,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: _buildResultMetric(
+                  label: context.t('calc_estimated_quota'),
+                  value: '\$${installmentAmount.toFormattedString(2)}',
+                  color: AppColors.primary,
+                  alignEnd: true,
                 ),
               ),
             ],
@@ -247,6 +234,50 @@ class _LoanCalculatorScreenState extends State<LoanCalculatorScreen> {
     );
   }
 
+  Widget _buildResultMetric({
+    required String label,
+    required String value,
+    required Color color,
+    bool alignEnd = false,
+  }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    return Column(
+      crossAxisAlignment: alignEnd
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: alignEnd ? TextAlign.end : TextAlign.start,
+          style: theme.textTheme.labelSmall?.copyWith(color: secondary),
+        ),
+        const SizedBox(height: AppSpacing.xxs),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: alignEnd ? Alignment.centerRight : Alignment.centerLeft,
+          child: Text(
+            value,
+            maxLines: 1,
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ──────────────────────────────────────────
+  //   PARÁMETROS
+  // ──────────────────────────────────────────
   Widget _buildSliderSection({
     required String title,
     required double value,
@@ -255,32 +286,34 @@ class _LoanCalculatorScreenState extends State<LoanCalculatorScreen> {
     required int divisions,
     required String displayVal,
     required ValueChanged<double> onChanged,
-    required bool isDark,
   }) {
     final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF141428) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.withValues(alpha: 0.15)),
-      ),
+    final isDark = theme.brightness == Brightness.dark;
+    final secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    return CashCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                title,
-                style: GoogleFonts.outfit(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w600),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelLarge?.copyWith(color: secondary),
+                ),
               ),
+              const SizedBox(width: AppSpacing.sm),
               Text(
                 displayVal,
-                style: GoogleFonts.outfit(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
@@ -290,8 +323,8 @@ class _LoanCalculatorScreenState extends State<LoanCalculatorScreen> {
             min: min,
             max: max,
             divisions: divisions,
-            activeColor: theme.colorScheme.primary,
-            inactiveColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+            activeColor: AppColors.primary,
+            inactiveColor: AppColors.primary.withValues(alpha: 0.15),
             onChanged: onChanged,
           ),
         ],
@@ -299,216 +332,173 @@ class _LoanCalculatorScreenState extends State<LoanCalculatorScreen> {
     );
   }
 
-  Widget _buildInterestTypeSelector(bool isDark) {
+  Widget _buildSelectionBlock({
+    required String label,
+    required Widget choices,
+  }) {
     final theme = Theme.of(context);
-    final types = [
-      {'val': 'fixed', 'lbl': context.t('calc_type_fixed')},
-      {'val': 'simple', 'lbl': context.t('calc_type_percentage')},
-      {'val': 'compound', 'lbl': context.t('calc_type_compound')},
-    ];
+    final isDark = theme.brightness == Brightness.dark;
+    final secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          context.t('calc_interest_scheme'),
-          style: GoogleFonts.outfit(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: types.map((t) {
-            final active = _interestType == t['val'];
-            return Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _interestType = t['val']!;
-                    if (_interestType == 'fixed' && _interestRate > 5000) {
-                      _interestRate = 500;
-                    } else if (_interestType != 'fixed' && _interestRate > 100) {
-                      _interestRate = 10;
-                    }
-                  });
-                },
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: active
-                        ? theme.colorScheme.primary.withValues(alpha: 0.15)
-                        : (isDark ? const Color(0xFF141428) : Colors.white),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: active 
-                          ? theme.colorScheme.primary 
-                          : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.withValues(alpha: 0.15)),
-                    ),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    t['lbl']!,
-                    style: GoogleFonts.outfit(
-                      color: active ? theme.colorScheme.primary : Colors.grey,
-                      fontWeight: active ? FontWeight.bold : FontWeight.normal,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
+    return CashCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.labelLarge?.copyWith(color: secondary),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          choices,
+        ],
+      ),
     );
   }
 
-  Widget _buildFrequencySelector(bool isDark) {
-    final theme = Theme.of(context);
-    final freqs = [
-      {'val': 'daily', 'lbl': context.t('freq_daily')},
-      {'val': 'weekly', 'lbl': context.t('freq_weekly')},
-      {'val': 'biweekly', 'lbl': context.t('freq_biweekly')},
-      {'val': 'monthly', 'lbl': context.t('freq_monthly')},
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          context.t('calc_frequency_label'),
-          style: GoogleFonts.outfit(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: freqs.map((f) {
-            final active = _frequency == f['val'];
-            return Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _frequency = f['val']!;
-                  });
-                },
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 2),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: BoxDecoration(
-                    color: active
-                        ? theme.colorScheme.primary.withValues(alpha: 0.15)
-                        : (isDark ? const Color(0xFF141428) : Colors.white),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: active 
-                          ? theme.colorScheme.primary 
-                          : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.withValues(alpha: 0.15)),
-                    ),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    f['lbl']!,
-                    style: GoogleFonts.outfit(
-                      color: active ? theme.colorScheme.primary : Colors.grey,
-                      fontWeight: active ? FontWeight.bold : FontWeight.normal,
-                      fontSize: 11,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
+  /// Fila de opciones desplazable horizontalmente: conserva las etiquetas
+  /// completas incluso en pantallas estrechas.
+  Widget _buildChoiceRow({
+    required List<_Choice> choices,
+    required String selected,
+    required ValueChanged<String> onSelected,
+  }) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final choice in choices) ...[
+            CashChip(
+              label: choice.label,
+              icon: choice.icon,
+              selected: selected == choice.value,
+              onTap: () => onSelected(choice.value),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+          ],
+        ],
+      ),
     );
   }
 
-  Widget _buildAmortizationBreakdown(double quotaAmount, bool isDark) {
+  // ──────────────────────────────────────────
+  //   CRONOGRAMA
+  // ──────────────────────────────────────────
+  Widget _buildAmortizationBreakdown(double quotaAmount) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
+    final count = _duration > 15 ? 15 : _duration;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF141428) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.withValues(alpha: 0.15)),
-      ),
+    return CashCard(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: ListView.separated(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        itemCount: _duration > 15 ? 15 : _duration,
-        separatorBuilder: (context, idx) => Divider(color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.grey[200], height: 1),
+        itemCount: count,
+        separatorBuilder: (context, idx) => Divider(
+          color: isDark ? AppColors.dividerDark : AppColors.dividerLight,
+          height: 1,
+        ),
         itemBuilder: (context, idx) {
-          final count = idx + 1;
+          final quota = idx + 1;
+          // Misma lógica de fechas que la versión anterior.
           DateTime simDate;
           switch (_frequency) {
             case 'daily':
-              simDate = today.add(Duration(days: count));
+              simDate = today.add(Duration(days: quota));
               break;
             case 'weekly':
-              simDate = today.add(Duration(days: count * 7));
+              simDate = today.add(Duration(days: quota * 7));
               break;
             case 'biweekly':
-              simDate = today.add(Duration(days: count * 14));
+              simDate = today.add(Duration(days: quota * 14));
               break;
             case 'monthly':
               int y = today.year;
-              int m = today.month + count;
+              int m = today.month + quota;
               while (m > 12) {
                 y++;
                 m -= 12;
               }
               int d = today.day;
-              int maxDays = DateUtils.getDaysInMonth(y, m);
+              final int maxDays = DateUtils.getDaysInMonth(y, m);
               if (d > maxDays) d = maxDays;
               simDate = DateTime(y, m, d);
               break;
             default:
-              simDate = today.add(Duration(days: count * 30));
+              simDate = today.add(Duration(days: quota * 30));
               break;
           }
 
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
+            ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "${context.t('calc_quota')} #$count",
-                      style: GoogleFonts.outfit(
-                        color: isDark ? Colors.white70 : Colors.black87,
-                        fontWeight: FontWeight.w500,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${context.t('calc_quota')} #$quota',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    Text(
-                      "${simDate.day}/${simDate.month}/${simDate.year}",
-                      style: GoogleFonts.outfit(fontSize: 11, color: Colors.grey),
-                    ),
-                  ],
+                      const SizedBox(height: 2),
+                      Text(
+                        '${simDate.day}/${simDate.month}/${simDate.year}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: secondary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                Row(
-                  children: [
-                    Text(
-                      "\$${quotaAmount.toStringAsFixed(2)}",
-                      style: GoogleFonts.outfit(
-                        color: isDark ? Colors.white : Colors.black87,
-                        fontWeight: FontWeight.bold,
+                const SizedBox(width: AppSpacing.md),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      '\$${quotaAmount.toFormattedString(2)}',
+                      maxLines: 1,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        context.t('calc_simulated'),
-                        style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey),
-                      ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xxs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppColors.surfaceDark3
+                        : AppColors.surfaceVariantLight,
+                    borderRadius: AppRadius.radiusXs,
+                  ),
+                  child: Text(
+                    context.t('calc_simulated'),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: secondary,
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),
@@ -517,4 +507,12 @@ class _LoanCalculatorScreenState extends State<LoanCalculatorScreen> {
       ),
     );
   }
+}
+
+class _Choice {
+  final String value;
+  final String label;
+  final IconData icon;
+
+  const _Choice(this.value, this.label, this.icon);
 }

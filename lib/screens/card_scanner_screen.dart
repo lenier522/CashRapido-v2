@@ -1,12 +1,24 @@
+import 'dart:convert';
+import 'dart:math' as math;
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'dart:convert';
-import '../services/localization_service.dart';
 
+import '../services/localization_service.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
+import '../widgets/design/cash_button.dart';
+
+/// Escáner de tarjeta con cámara + IA (Gemini).
+///
+/// La **lógica no cambia**: permisos, inicialización de cámara, captura,
+/// prompt de Gemini, parseo JSON y devolución del resultado a AddCardScreen.
+/// Sólo se rediseñó la interfaz (overlay adaptativo, colores de marca,
+/// textos localizados y lectura a pantalla de carga) manteniendo intacto el
+/// flujo de negocio.
 class CardScannerScreen extends StatefulWidget {
   const CardScannerScreen({super.key});
 
@@ -14,7 +26,8 @@ class CardScannerScreen extends StatefulWidget {
   State<CardScannerScreen> createState() => _CardScannerScreenState();
 }
 
-class _CardScannerScreenState extends State<CardScannerScreen> with SingleTickerProviderStateMixin {
+class _CardScannerScreenState extends State<CardScannerScreen>
+    with SingleTickerProviderStateMixin {
   CameraController? _controller;
   bool _isProcessing = false;
   late String _statusText;
@@ -31,12 +44,12 @@ class _CardScannerScreenState extends State<CardScannerScreen> with SingleTicker
   void initState() {
     super.initState();
     _initializeCamera();
-    
+
     _animationController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
     )..repeat(reverse: true);
-    
+
     _animation = Tween<double>(begin: 0, end: 1).animate(_animationController);
   }
 
@@ -61,6 +74,12 @@ class _CardScannerScreenState extends State<CardScannerScreen> with SingleTicker
     setState(() {});
   }
 
+  /// Tamaño del recuadro de escaneo, adaptado al ancho real (320–430 px).
+  double _overlayWidth(BuildContext context) =>
+      math.min(MediaQuery.sizeOf(context).width * 0.86, 340);
+
+  double _overlayHeight(double width) => width * 0.64; // Ratio de una tarjeta
+
   Future<void> _captureAndScan() async {
     if (_controller == null ||
         !_controller!.value.isInitialized ||
@@ -70,7 +89,7 @@ class _CardScannerScreenState extends State<CardScannerScreen> with SingleTicker
 
     setState(() {
       _isProcessing = true;
-      _statusText = "Analizando tarjeta con IA...";
+      _statusText = context.t('scan_analyzing');
     });
 
     try {
@@ -120,15 +139,17 @@ Si no encuentras algún dato, usa null. NO agregues ni una palabra más al texto
           });
         }
       } else {
+        if (!mounted) return;
         setState(() {
-          _statusText = "Tarjeta no detectada. Acércala más.";
+          _statusText = context.t('scan_not_detected');
           _isProcessing = false;
         });
       }
     } catch (e) {
       print("Error escaneando tarjeta con IA: $e");
+      if (!mounted) return;
       setState(() {
-        _statusText = "Reintenta alinear mejor la tarjeta.";
+        _statusText = context.t('scan_align_error');
         _isProcessing = false;
       });
     }
@@ -144,61 +165,84 @@ Si no encuentras algún dato, usa null. NO agregues ni una palabra más al texto
   @override
   Widget build(BuildContext context) {
     if (_controller == null || !_controller!.value.isInitialized) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: Colors.black,
-        body: Center(
-          child: CircularProgressIndicator(color: Colors.deepPurple),
+        body: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(color: AppColors.primary),
+                const SizedBox(height: 20),
+                Text(
+                  context.t('scan_camera_loading'),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.white70,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       );
     }
 
+    final double overlayWidth = _overlayWidth(context);
+    final double overlayHeight = _overlayHeight(overlayWidth);
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
+        fit: StackFit.expand,
         children: [
           CameraPreview(_controller!),
 
+          // Recuadro de escaneo (oscurece fuera del área)
           Container(
-            decoration: const ShapeDecoration(
+            decoration: ShapeDecoration(
               shape: _ScannerOverlayShape(
-                borderColor: Colors.deepPurple,
-                borderRadius: 10,
-                borderLength: 30,
-                borderWidth: 5,
-                cutOutSize: 300,
-                cutOutHeight: 200, // Card ratio roughly
+                borderColor: AppColors.primary,
+                borderRadius: 16,
+                borderWidth: 3,
+                cutOutSize: overlayWidth,
+                cutOutHeight: overlayHeight,
               ),
             ),
           ),
 
-          // Scanning Animation (Laser Line)
+          // Línea láser animada
           AnimatedBuilder(
             animation: _animation,
             builder: (context, child) {
               return Center(
-                child: Container(
-                  width: 300,
-                  height: 200,
-                  alignment: Alignment.topCenter,
-                  child: Transform.translate(
-                    offset: Offset(0, _animation.value * 200),
-                    child: Container(
-                      height: 2,
-                      width: 300,
-                      decoration: BoxDecoration(
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.deepPurpleAccent.withOpacity(0.5),
-                            blurRadius: 10,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.transparent,
-                            Colors.deepPurpleAccent.withOpacity(0.8),
-                            Colors.transparent,
+                child: SizedBox(
+                  width: overlayWidth,
+                  height: overlayHeight,
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: Transform.translate(
+                      offset: Offset(0, _animation.value * overlayHeight),
+                      child: Container(
+                        height: 2.5,
+                        width: overlayWidth - 24,
+                        decoration: BoxDecoration(
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primaryLight.withValues(
+                                alpha: 0.6,
+                              ),
+                              blurRadius: 12,
+                              spreadRadius: 2,
+                            ),
                           ],
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.transparent,
+                              AppColors.primary.withValues(alpha: 0.9),
+                              Colors.transparent,
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -211,73 +255,103 @@ Si no encuentras algún dato, usa null. NO agregues ni una palabra más al texto
           SafeArea(
             child: Column(
               children: [
+                // Cabecera: cerrar + estado
                 Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      IconButton(
-                        icon: const Icon(
-                          Icons.close,
-                          color: Colors.white,
-                          size: 30,
-                        ),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          _statusText,
-                          style: GoogleFonts.outfit(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                      _CloseButton(onPressed: () => Navigator.pop(context)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.55),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.full,
+                              ),
+                            ),
+                            child: Text(
+                              _statusText,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.labelMedium
+                                  ?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 48), // Balance
+                      const SizedBox(width: 48), // Equilibra el botón de cierre
                     ],
                   ),
                 ),
                 const Spacer(),
-                if (_isProcessing)
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 50.0),
-                    child: CircularProgressIndicator(color: Colors.white),
-                  )
-                else
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 50.0),
-                    child: ElevatedButton.icon(
-                      onPressed: _captureAndScan,
-                      icon: const Icon(Icons.camera_alt, color: Colors.white),
-                      label: Text(
-                        "Capturar Tarjeta",
-                        style: GoogleFonts.outfit(
-                          fontSize: 18,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+
+                // Controles inferiores
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_isProcessing)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.55),
+                            borderRadius: BorderRadius.circular(AppRadius.full),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                context.t('scan_analyzing'),
+                                style: Theme.of(context).textTheme.labelLarge
+                                    ?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        CashButton(
+                          label: context.t('scan_capture_btn'),
+                          icon: const Icon(Icons.camera_alt_rounded, size: 20),
+                          onPressed: _captureAndScan,
+                        ),
+                      const SizedBox(height: 12),
+                      Text(
+                        context.t('scan_frame_hint'),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.75),
                         ),
                       ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepPurple,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 32,
-                          vertical: 16,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                      ),
-                    ),
+                    ],
                   ),
+                ),
               ],
             ),
           ),
@@ -287,22 +361,43 @@ Si no encuentras algún dato, usa null. NO agregues ni una palabra más al texto
   }
 }
 
-// Custom Painter for Overlay
+class _CloseButton extends StatelessWidget {
+  final VoidCallback onPressed;
+
+  const _CloseButton({required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black.withValues(alpha: 0.45),
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onPressed,
+        customBorder: const CircleBorder(),
+        child: const SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(Icons.close_rounded, color: Colors.white, size: 24),
+        ),
+      ),
+    );
+  }
+}
+
+/// Overlay de escaneo: oscurece el exterior y dibuja recuadro + esquinas.
 class _ScannerOverlayShape extends ShapeBorder {
   final Color borderColor;
   final double borderWidth;
-  final double borderLength;
   final double borderRadius;
   final double cutOutSize;
   final double cutOutHeight;
 
   const _ScannerOverlayShape({
     required this.borderColor,
-    this.borderWidth = 10.0,
-    this.borderLength = 20.0,
-    this.borderRadius = 10.0,
-    this.cutOutSize = 250.0,
-    this.cutOutHeight = 250.0,
+    this.borderWidth = 3.0,
+    this.borderRadius = 16.0,
+    required this.cutOutSize,
+    required this.cutOutHeight,
   });
 
   @override
@@ -314,14 +409,7 @@ class _ScannerOverlayShape extends ShapeBorder {
       ..fillType = PathFillType.evenOdd
       ..addPath(getOuterPath(rect), Offset.zero)
       ..addRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromCenter(
-            center: rect.center,
-            width: cutOutSize,
-            height: cutOutHeight,
-          ),
-          Radius.circular(borderRadius),
-        ),
+        RRect.fromRectAndRadius(_boxRect(rect), Radius.circular(borderRadius)),
       );
   }
 
@@ -330,53 +418,79 @@ class _ScannerOverlayShape extends ShapeBorder {
     return Path()..addRect(rect);
   }
 
+  Rect _boxRect(Rect rect) => Rect.fromCenter(
+    center: rect.center,
+    width: cutOutSize,
+    height: cutOutHeight,
+  );
+
   @override
   void paint(Canvas canvas, Rect rect, {TextDirection? textDirection}) {
-    final width = cutOutSize;
-    final height = cutOutHeight;
-    // final borderOffset = borderWidth / 2; // Unused
-    final double halfBorderLength = borderLength / 2;
-    // final double halfWidth = width / 2; // Unused
-    // final double halfHeight = height / 2; // Unused
-
-    final backgroundPaint = Paint()
-      ..color = Colors.black54
-      ..style = PaintingStyle.fill;
-
-    final borderPaint = Paint()
-      ..color = borderColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = borderWidth;
-
-    final boxRect = Rect.fromCenter(
-      center: rect.center,
-      width: width,
-      height: height,
+    final Rect boxRect = _boxRect(rect);
+    final RRect rrect = RRect.fromRectAndRadius(
+      boxRect,
+      Radius.circular(borderRadius),
     );
 
+    // Oscurece todo lo que queda fuera del recuadro.
     canvas.drawPath(
       Path.combine(
         PathOperation.difference,
         Path()..addRect(rect),
-        Path()..addRRect(
-          RRect.fromRectAndRadius(boxRect, Radius.circular(borderRadius)),
-        ),
+        Path()..addRRect(rrect),
       ),
-      backgroundPaint,
+      Paint()..color = Colors.black.withValues(alpha: 0.62),
     );
 
-    // Draw corners
-    // Top Left
-    canvas.drawLine(
-      Offset(boxRect.left, boxRect.top + halfBorderLength),
-      Offset(boxRect.left, boxRect.top - halfBorderLength + borderLength),
-      borderPaint,
-    );
-    // ... (simplify drawing for brevity, could draw 4 corners)
-    // Actually let's just draw the RRect border for simplicity and aesthetics
+    // Borde del recuadro.
     canvas.drawRRect(
-      RRect.fromRectAndRadius(boxRect, Radius.circular(borderRadius)),
-      borderPaint,
+      rrect,
+      Paint()
+        ..color = borderColor.withValues(alpha: 0.9)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = borderWidth,
+    );
+
+    // Esquinas tipo "brújula".
+    final double corner = math.min(42.0, cutOutSize * 0.30);
+    final Paint cornerPaint = Paint()
+      ..color = borderColor
+      ..strokeWidth = borderWidth + 1.5
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
+    final Offset tl = boxRect.topLeft;
+    final Offset tr = boxRect.topRight;
+    final Offset bl = boxRect.bottomLeft;
+    final Offset br = boxRect.bottomRight;
+
+    canvas.drawPath(
+      Path()
+        ..moveTo(tl.dx, tl.dy + corner)
+        ..lineTo(tl.dx, tl.dy)
+        ..lineTo(tl.dx + corner, tl.dy),
+      cornerPaint,
+    );
+    canvas.drawPath(
+      Path()
+        ..moveTo(tr.dx - corner, tr.dy)
+        ..lineTo(tr.dx, tr.dy)
+        ..lineTo(tr.dx, tr.dy + corner),
+      cornerPaint,
+    );
+    canvas.drawPath(
+      Path()
+        ..moveTo(bl.dx, bl.dy - corner)
+        ..lineTo(bl.dx, bl.dy)
+        ..lineTo(bl.dx + corner, bl.dy),
+      cornerPaint,
+    );
+    canvas.drawPath(
+      Path()
+        ..moveTo(br.dx - corner, br.dy)
+        ..lineTo(br.dx, br.dy)
+        ..lineTo(br.dx, br.dy - corner),
+      cornerPaint,
     );
   }
 
@@ -385,8 +499,9 @@ class _ScannerOverlayShape extends ShapeBorder {
     return _ScannerOverlayShape(
       borderColor: borderColor,
       borderWidth: borderWidth,
-      cutOutSize: cutOutSize,
-      cutOutHeight: cutOutHeight,
+      borderRadius: borderRadius,
+      cutOutSize: cutOutSize * t,
+      cutOutHeight: cutOutHeight * t,
     );
   }
 }
