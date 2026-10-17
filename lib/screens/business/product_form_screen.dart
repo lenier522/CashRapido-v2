@@ -145,22 +145,24 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         builder: (context) => const BarcodeScannerScreen(continuous: false),
       ),
     );
-    if (code != null && code.isNotEmpty) {
-      setState(() {
-        _skuController.text = code;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              context.t('product_barcode_scanned').replaceAll('{code}', code),
-            ),
-            backgroundColor: AppColors.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
+    if (code == null || code.isEmpty) return;
+    // Tras el `await` del escáner la pantalla puede haberse desmontado: el
+    // guard evita llamar a `setState` y usar `context` sobre un widget ya
+    // desechado (línea que antes quedaba sin proteger).
+    if (!mounted) return;
+
+    setState(() {
+      _skuController.text = code;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          context.t('product_barcode_scanned').replaceAll('{code}', code),
+        ),
+        backgroundColor: AppColors.primary,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   // ---------------------------------------------------------------------------

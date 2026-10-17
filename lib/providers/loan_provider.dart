@@ -75,6 +75,20 @@ class LoanProvider with ChangeNotifier {
     _activities.sort((a, b) => b.timestamp.compareTo(a.timestamp));
   }
 
+  /// Elimina todos los datos del módulo de préstamos de este dispositivo.
+  ///
+  /// Forma parte del restablecimiento general: borra préstamos, pagos,
+  /// deudores y actividad. No toca preferencias, licencia ni copias de
+  /// seguridad.
+  Future<void> clearAllData() async {
+    await _borrowerBox.clear();
+    await _loanBox.clear();
+    await _paymentBox.clear();
+    await _activityBox.clear();
+    _fetchData();
+    notifyListeners();
+  }
+
   // ========== METRICS & REPORTS DATA ==========
 
   double getMetricTotalLoaned(String currency) {

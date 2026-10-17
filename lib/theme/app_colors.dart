@@ -152,6 +152,22 @@ abstract final class AppColors {
   static const Color purple = Color(0xFF8B5CF6);
 
   // ---------------------------------------------------------------------------
+  // PERFIL (tarjeta destacada de Google Drive)
+  // ---------------------------------------------------------------------------
+
+  /// Verde lima brillante de la tarjeta principal de Perfil.
+  ///
+  /// Se añade como token de alcance controlado: sólo lo usa la tarjeta de
+  /// Google Drive de Perfil, no cambia la identidad verde del resto de la app.
+  static const Color lime = Color(0xFFCDF23F);
+
+  /// Verde lima algo más oscuro para bordes o detalles sobre el lima.
+  static const Color limeDeep = Color(0xFF9CC41F);
+
+  /// Texto oscuro legible sobre [lime].
+  static const Color onLime = Color(0xFF14210B);
+
+  // ---------------------------------------------------------------------------
   // COMMON
   // ---------------------------------------------------------------------------
 

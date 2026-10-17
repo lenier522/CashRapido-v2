@@ -44,16 +44,51 @@ class NotificationService {
 
   // Request notification permissions (Android 13+)
   Future<bool> requestPermissions() async {
-    final android = _notifications
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
+    // Sin plugin inicializado (escritorio) no hay permiso que solicitar y
+    // `resolvePlatformSpecificImplementation` lanzaría LateInitializationError.
+    if (!_initialized) return false;
 
-    if (android != null) {
-      final granted = await android.requestNotificationsPermission();
-      return granted ?? false;
+    try {
+      final android = _notifications
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+
+      if (android != null) {
+        final granted = await android.requestNotificationsPermission();
+        return granted ?? false;
+      }
+      return true;
+    } catch (_) {
+      return false;
     }
-    return true;
+  }
+
+  /// Estado real del permiso/ajuste de notificaciones del sistema.
+  ///
+  /// Devuelve `true` si el sistema permite publicar notificaciones,
+  /// `false` si están bloqueadas y `null` si no se puede determinar
+  /// (por ejemplo, servicio no inicializado o plataforma no Android).
+  /// No solicita permisos: solo consulta.
+  Future<bool?> areNotificationsEnabled() async {
+    if (!_initialized) return null;
+
+    try {
+      final android = _notifications
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+
+      if (android == null) return true;
+
+      try {
+        return await android.areNotificationsEnabled();
+      } catch (_) {
+        return null;
+      }
+    } catch (_) {
+      return null;
+    }
   }
 
   // Schedule all notifications
@@ -64,6 +99,7 @@ class NotificationService {
     int dailyReminderMinute = 0,
     bool tipsEnabled = true,
   }) async {
+    if (!_initialized) return;
     if (dailyReminderEnabled) {
       await scheduleDailyReminder(langCode, dailyReminderHour, dailyReminderMinute);
     } else {
@@ -78,10 +114,12 @@ class NotificationService {
   }
 
   Future<void> cancelDailyReminder() async {
+    if (!_initialized) return;
     await _notifications.cancel(0);
   }
 
   Future<void> cancelMotivationalTips() async {
+    if (!_initialized) return;
     await _notifications.cancel(10);
     await _notifications.cancel(11);
     await _notifications.cancel(12);
@@ -89,6 +127,7 @@ class NotificationService {
 
   // Daily reminder at custom time
   Future<void> scheduleDailyReminder(String langCode, int hour, int minute) async {
+    if (!_initialized) return;
     final title = AppLocalizations.getString(langCode, 'notif_daily_title');
     final body = AppLocalizations.getString(langCode, 'notif_daily_body');
 
@@ -114,6 +153,7 @@ class NotificationService {
 
   // Weekly summary on Sundays at 7:00 PM
   Future<void> scheduleWeeklySummary(String langCode) async {
+    if (!_initialized) return;
     final title = AppLocalizations.getString(langCode, 'notif_weekly_title');
     final body = AppLocalizations.getString(langCode, 'notif_weekly_body');
 
@@ -139,6 +179,7 @@ class NotificationService {
 
   // Motivational tips (3 random times per week)
   Future<void> scheduleMotivationalTips(String langCode) async {
+    if (!_initialized) return;
     // Schedule 3 tips per week (Mon, Wed, Fri at different times)
     final schedules = [
       {'day': DateTime.monday, 'hour': 14, 'minute': 0},
@@ -181,6 +222,7 @@ class NotificationService {
 
   // Cancel all scheduled notifications
   Future<void> cancelAllNotifications() async {
+    if (!_initialized) return;
     await _notifications.cancelAll();
   }
 
@@ -232,6 +274,7 @@ class NotificationService {
     required String currency,
     required DateTime dueDate,
   }) async {
+    if (!_initialized) return;
     // Generate a unique positive 32-bit int notification ID
     final notificationId = (loanId.hashCode + installmentNumber) & 0x7FFFFFFF;
 
@@ -273,6 +316,7 @@ class NotificationService {
   }
 
   Future<void> cancelInstallmentReminder(String loanId, int installmentNumber) async {
+    if (!_initialized) return;
     final notificationId = (loanId.hashCode + installmentNumber) & 0x7FFFFFFF;
     await _notifications.cancel(notificationId);
   }

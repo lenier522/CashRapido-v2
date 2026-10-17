@@ -16,21 +16,27 @@ import '../utils/icon_constants.dart';
 import '../utils/number_format_utils.dart';
 import '../utils/tour_keys.dart';
 import '../widgets/add_transaction_modal.dart';
+import '../widgets/design/cash_account_avatar.dart';
 import '../widgets/design/cash_button.dart';
 import '../widgets/design/cash_card.dart';
 import '../widgets/design/cash_chip.dart';
+import '../widgets/design/cash_dialog.dart';
 import '../widgets/design/cash_empty_state.dart';
 import '../widgets/design/cash_icon_button.dart';
 import '../widgets/design/cash_quick_action.dart';
 import '../widgets/design/cash_section.dart';
+import '../widgets/design/cash_snack.dart';
 import '../widgets/design/cash_stat_card.dart';
 import '../widgets/design/cash_transaction_tile.dart';
 import 'all_transactions_screen.dart';
+import 'add_card_screen.dart';
+import 'business/business_gatekeeper.dart';
 import 'card_scanner_screen.dart';
 import 'info_screens.dart';
 import 'licenses_screen.dart';
 import 'loans/loans_gatekeeper.dart';
 import 'notifications_screen.dart';
+import 'profile/google_drive_screen.dart';
 import 'recurring_transactions_screen.dart';
 import 'streak_calendar_screen.dart';
 import 'transfermovil_screen.dart';
@@ -122,51 +128,156 @@ class _HomeScreenState extends State<HomeScreen> {
         ? AppColors.textSecondaryDark
         : AppColors.textSecondary;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _greeting(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.headlineMedium,
+        // Barra superior: la cuenta (Google Drive) queda lo primero a la
+        // izquierda; a la derecha se mantienen racha y notificaciones.
+        Row(
+          children: [
+            Expanded(child: _buildAccountChip(context, provider)),
+            const SizedBox(width: AppSpacing.sm),
+            CashChip(
+              label: '${provider.streakDays}',
+              icon: Icons.local_fire_department_rounded,
+              color: AppColors.orange,
+              selected: provider.streakDays > 0,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const StreakCalendarScreen()),
               ),
-              const SizedBox(height: AppSpacing.xxs),
-              Text(
-                context.t('daily_summary'),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium?.copyWith(color: secondary),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            _NotificationsButton(
+              count: provider.unreadNotificationsCount,
+              tooltip: context.t('tooltip_notifications'),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        Text(
+          _greeting(),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.headlineMedium,
+        ),
+        const SizedBox(height: AppSpacing.xxs),
+        Text(
+          context.t('daily_summary'),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodyMedium?.copyWith(color: secondary),
+        ),
+      ],
+    );
+  }
+
+  /// Cuenta de Google Drive en la barra superior de Inicio.
+  ///
+  /// Es lo primero a la izquierda: muestra la foto real y el nombre cuando hay
+  /// sesión iniciada. Si no la hay, muestra «Invitado» y, al pulsar, permite
+  /// conectar la cuenta desde aquí mismo.
+  Widget _buildAccountChip(BuildContext context, AppProvider provider) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+    final Color secondary = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondary;
+
+    final user = provider.currentUser;
+    final bool connected = user != null;
+    final String displayName = user?.displayName?.trim() ?? '';
+    final String? email = user?.email;
+    final String accountName = displayName.isNotEmpty
+        ? displayName
+        : (email ?? context.t('user_default'));
+
+    final String label = connected ? accountName : context.t('home_guest');
+    final String subtitle = connected
+        ? context.t('profile_drive_title')
+        : context.t('profile_drive_connect');
+
+    return Semantics(
+      button: true,
+      label: label,
+      child: InkWell(
+        borderRadius: AppRadius.radiusXl,
+        onTap: () => _onAccountTap(context, provider),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+          child: Row(
+            children: [
+              CashAccountAvatar(
+                imageUrl: user?.photoUrl,
+                name: connected
+                    ? (displayName.isNotEmpty ? displayName : email)
+                    : null,
+                size: 42,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: secondary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
         ),
-        const SizedBox(width: AppSpacing.sm),
-        CashChip(
-          label: '${provider.streakDays}',
-          icon: Icons.local_fire_department_rounded,
-          color: AppColors.orange,
-          selected: provider.streakDays > 0,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const StreakCalendarScreen()),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        _NotificationsButton(
-          count: provider.unreadNotificationsCount,
-          tooltip: context.t('tooltip_notifications'),
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-          ),
-        ),
-      ],
+      ),
     );
+  }
+
+  Future<void> _onAccountTap(BuildContext context, AppProvider provider) async {
+    // Con sesión: abre la gestión de la copia en Drive.
+    if (provider.currentUser != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const GoogleDriveScreen()),
+      );
+      return;
+    }
+
+    // Sin sesión: primero comprueba que la función esté disponible.
+    if (!provider.canSyncDrive) {
+      _showLockedFeatureDialog(context);
+      return;
+    }
+
+    try {
+      await provider.signInToGoogle();
+      if (!context.mounted) return;
+      if (provider.currentUser != null) {
+        CashSnack.success(context, context.t('profile_drive_connected_msg'));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        CashSnack.error(context, context.t('profile_drive_error'));
+      }
+    }
   }
 
   String _greeting() {
@@ -525,6 +636,14 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     final List<Widget> secondaryActions = [
+      CashChip(
+        label: context.t('nav_business'),
+        icon: Icons.storefront_rounded,
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const BusinessGatekeeper()),
+        ),
+      ),
       CashChip(
         label: context.t('recurring'),
         icon: Icons.autorenew_rounded,
@@ -946,8 +1065,9 @@ class _HomeScreenState extends State<HomeScreen> {
             CashQuickAction(
               icon: Icons.qr_code_scanner_rounded,
               label: context.t('action_scan'),
-              onTap: () =>
-                  _navigateFromMoreOptions(context, const CardScannerScreen()),
+              // El resultado del escáner ya no se descarta: se precarga en el
+              // formulario de alta de la tarjeta.
+              onTap: _scanCardFromHome,
             ),
           CashQuickAction(
             icon: Icons.history_rounded,
@@ -1022,6 +1142,34 @@ class _HomeScreenState extends State<HomeScreen> {
   void _navigateFromMoreOptions(BuildContext context, Widget destination) {
     Navigator.pop(context);
     Navigator.push(context, MaterialPageRoute(builder: (_) => destination));
+  }
+
+  /// Escanea una tarjeta física y ofrece darla de alta con los datos leídos.
+  ///
+  /// Antes la acción "Escanear" descartaba el resultado del escáner y la
+  /// lectura no servía para nada; ahora se reutiliza para precargar el
+  /// formulario de alta (`AddCardScreen`).
+  Future<void> _scanCardFromHome() async {
+    Navigator.pop(context); // Cierra el bottom sheet de "Más opciones".
+
+    final dynamic result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CardScannerScreen()),
+    );
+
+    // Tras el `await` la pantalla puede haberse desmontado.
+    if (!mounted || result is! Map) return;
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddCardScreen(
+          initialHolder: result['holder'] as String?,
+          initialNumber: result['number'] as String?,
+          initialExpiry: result['expiry'] as String?,
+        ),
+      ),
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -1284,38 +1432,21 @@ class _HomeScreenState extends State<HomeScreen> {
     AppProvider provider,
     InternalTransaction tx,
   ) {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(
-          ctx.t('delete_transaction'),
-          style: Theme.of(ctx).textTheme.titleLarge,
-        ),
-        content: Text(
-          ctx.t('delete_transaction_confirm'),
-          style: Theme.of(ctx).textTheme.bodyMedium,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(ctx.t('cancel')),
-          ),
-          CashButton(
-            label: ctx.t('delete'),
-            type: CashButtonType.danger,
-            fullWidth: false,
-            onPressed: () async {
-              await provider.deleteTransaction(tx.id);
-              if (!ctx.mounted) return;
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(context.t('transaction_deleted'))),
-              );
-            },
-          ),
-        ],
-      ),
-    );
+    showCashConfirmDialog(
+      context,
+      title: context.t('delete_transaction'),
+      message: context.t('delete_transaction_confirm'),
+      confirmLabel: context.t('delete'),
+      cancelLabel: context.t('cancel'),
+      icon: Icons.delete_outline_rounded,
+    ).then((confirmed) async {
+      if (confirmed == true && context.mounted) {
+        await provider.deleteTransaction(tx.id);
+        if (context.mounted) {
+          CashSnack.success(context, context.t('transaction_deleted'));
+        }
+      }
+    });
   }
 }
 

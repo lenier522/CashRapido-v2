@@ -16,6 +16,7 @@ import '../../widgets/design/cash_bottom_sheet.dart';
 import '../../widgets/design/cash_button.dart';
 import '../../widgets/design/cash_card.dart';
 import '../../widgets/design/cash_chip.dart';
+import '../../widgets/design/cash_dialog.dart';
 import '../../widgets/design/cash_icon_button.dart';
 import '../../widgets/design/cash_input.dart';
 import '../../widgets/design/cash_selector_field.dart';
@@ -634,27 +635,13 @@ class _BusinessFormScreenState extends State<BusinessFormScreen> {
   }
 
   Future<void> _showDeleteDialog() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: const RoundedRectangleBorder(borderRadius: AppRadius.radiusXl),
-        icon: const Icon(Icons.delete_outline, color: AppColors.error),
-        title: Text(context.t('business_delete_title')),
-        content: Text(context.t('business_delete_confirm')),
-        actions: [
-          CashButton(
-            label: context.t('cancel'),
-            fullWidth: false,
-            onPressed: () => Navigator.pop(dialogContext, false),
-          ),
-          CashButton(
-            label: context.t('delete'),
-            type: CashButtonType.danger,
-            fullWidth: false,
-            onPressed: () => Navigator.pop(dialogContext, true),
-          ),
-        ],
-      ),
+    final confirmed = await showCashConfirmDialog(
+      context,
+      title: context.t('business_delete_title'),
+      message: context.t('business_delete_confirm'),
+      confirmLabel: context.t('delete'),
+      cancelLabel: context.t('cancel'),
+      icon: Icons.delete_outline_rounded,
     );
 
     if (confirmed == true && mounted) {

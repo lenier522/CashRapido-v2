@@ -83,13 +83,18 @@ class CashStatCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: primaryText,
-              fontWeight: FontWeight.w700,
+          // El importe nunca se recorta: si no cabe en una tarjeta estrecha se
+          // ajusta de tamaño. Recortar la cifra principal escondería el dato.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: primaryText,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
           // El distintivo va debajo de la cifra y no junto al icono: en una
@@ -161,11 +166,17 @@ class _TrendBadge extends StatelessWidget {
             color: color,
           ),
           const SizedBox(width: 3),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w700,
+          // En una tarjeta estrecha el distintivo cede antes que la tarjeta:
+          // se recorta el porcentaje, nunca el importe.
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],

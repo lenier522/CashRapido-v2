@@ -12,17 +12,30 @@ import '../theme/app_radius.dart';
 import '../theme/app_shadows.dart';
 import '../widgets/design/cash_button.dart';
 import 'ai_chat_screen.dart';
+import 'all_transactions_screen.dart';
 import 'home_screen.dart';
-import 'more_hub_screen.dart';
+import 'profile/profile_screen.dart';
 import 'stats_screen.dart';
-import 'wallet_screen.dart';
 
 /// Pestañas del [MainScreen].
 ///
 /// El orden sigue a la navegación conceptual de la app:
-/// Inicio, Finanzas, Análisis y Más. La acción principal ("+") no es una
+/// Inicio, Movimientos, Análisis y Perfil. La acción principal ("+") no es una
 /// pestaña, ocupa el slot central de la barra.
-enum MainTab { home, wallet, stats, more }
+///
+/// La pestaña de Movimientos reutiliza la pantalla de historial completo
+/// (`AllTransactionsScreen`), ampliada con selector de período y resumen
+/// financiero. La Billetera sigue existiendo y se abre desde las acciones
+/// rápidas de Inicio (acción "Balances").
+enum MainTab { home, movements, stats, more }
+
+/// Solicitud global de cambio de pestaña.
+///
+/// La usa el catálogo de «Funciones Principales» (y cualquier pantalla abierta
+/// fuera de la barra inferior) para volver a una pestaña concreta de
+/// [MainScreen]: la pantalla hace `popUntil` hasta la raíz y publica aquí la
+/// pestaña deseada.
+final ValueNotifier<MainTab?> mainTabRequest = ValueNotifier<MainTab?>(null);
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -42,15 +55,16 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   /// el estado de scroll y selección de cada una.
   static const List<Widget> _screens = <Widget>[
     HomeScreen(),
-    WalletScreen(),
+    AllTransactionsScreen(),
     StatsScreen(),
-    MoreHubScreen(),
+    ProfileScreen(),
   ];
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    mainTabRequest.addListener(_onTabRequested);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkFirstSeen();
       FeedbackService.checkAndShowFeedback(context);
@@ -59,8 +73,18 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    mainTabRequest.removeListener(_onTabRequested);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  /// Atiende las peticiones de cambio de pestaña hechas desde pantallas
+  /// secundarias (por ejemplo, el catálogo de Funciones Principales).
+  void _onTabRequested() {
+    final MainTab? tab = mainTabRequest.value;
+    if (!mounted || tab == null) return;
+    mainTabRequest.value = null;
+    _selectTab(tab);
   }
 
   @override
@@ -88,7 +112,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   }
 
   /// El tour navega por índice de pestaña (0 Inicio, 1 Finanzas,
-  /// 2 Análisis, 3 Más).
+  /// 2 Análisis, 3 Perfil).
   void _selectTourDestination(int index) {
     if (!mounted || index < 0 || index >= MainTab.values.length) {
       return;
@@ -180,7 +204,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 ///
 /// Usa `NavigationBar` de Material 3 (por lo que hereda el
 /// `navigationBarTheme` de `AppTheme`) y reserva el destino central para la
-/// acción principal, que se dibuja elevada sobre la barra.
+/// acción principal (IA), que se dibuja centrada dentro de la barra.
 class _MainNavigationBar extends StatelessWidget {
   const _MainNavigationBar({
     required this.navBarKey,
@@ -191,9 +215,6 @@ class _MainNavigationBar extends StatelessWidget {
     required this.onPrimaryAction,
   });
 
-  /// Alto del botón central que sobresale por encima de la barra.
-  static const double _actionOverhang = 20;
-
   /// Diámetro del círculo interior del botón central.
   static const double _actionDiameter = 52;
 
@@ -203,7 +224,7 @@ class _MainNavigationBar extends StatelessWidget {
   /// Mapa destino de la barra -> pestaña. El slot central queda reservado.
   static const List<MainTab?> _tabByDestination = <MainTab?>[
     MainTab.home,
-    MainTab.wallet,
+    MainTab.movements,
     null,
     MainTab.stats,
     MainTab.more,
@@ -220,27 +241,15 @@ class _MainNavigationBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       key: navBarKey,
+      alignment: Alignment.center,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(top: _actionOverhang),
-          child: NavigationBar(
-            selectedIndex: _tabByDestination.indexOf(currentTab),
-            onDestinationSelected: _handleDestinationSelected,
-            destinations: _buildDestinations(context),
-          ),
+        NavigationBar(
+          selectedIndex: _tabByDestination.indexOf(currentTab),
+          onDestinationSelected: _handleDestinationSelected,
+          destinations: _buildDestinations(context),
         ),
         if (showPrimaryAction)
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: _PrimaryActionButton(
-                key: primaryActionKey,
-                onPressed: onPrimaryAction,
-              ),
-            ),
-          ),
+          _PrimaryActionButton(key: primaryActionKey, onPressed: onPrimaryAction),
       ],
     );
   }
@@ -260,9 +269,9 @@ class _MainNavigationBar extends StatelessWidget {
         label: context.t('nav_home'),
       ),
       NavigationDestination(
-        icon: const Icon(Icons.account_balance_wallet_outlined),
-        selectedIcon: const Icon(Icons.account_balance_wallet_rounded),
-        label: context.t('nav_wallet'),
+        icon: const Icon(Icons.receipt_long_outlined),
+        selectedIcon: const Icon(Icons.receipt_long_rounded),
+        label: context.t('nav_movements'),
       ),
       // Slot reservado: lo ocupa la acción principal (IA).
       const NavigationDestination(
@@ -276,9 +285,9 @@ class _MainNavigationBar extends StatelessWidget {
         label: context.t('statistics'),
       ),
       NavigationDestination(
-        icon: const Icon(Icons.grid_view_outlined),
-        selectedIcon: const Icon(Icons.grid_view_rounded),
-        label: context.t('action_more'),
+        icon: const Icon(Icons.person_outline_rounded),
+        selectedIcon: const Icon(Icons.person_rounded),
+        label: context.t('nav_profile'),
       ),
     ];
   }

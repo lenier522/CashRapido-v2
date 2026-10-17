@@ -2,10 +2,12 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../models/models.dart';
 import '../providers/app_provider.dart';
 import '../services/localization_service.dart';
+import '../services/stats_aggregator.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
 import '../theme/app_spacing.dart';
@@ -20,14 +22,24 @@ import '../widgets/design/cash_icon_button.dart';
 import '../widgets/design/cash_input.dart';
 import '../widgets/design/cash_progress_bar.dart';
 import '../widgets/design/cash_section.dart';
+import '../widgets/design/cash_snack.dart';
 import '../widgets/design/cash_stat_card.dart';
 import 'licenses_screen.dart';
+import 'stats/stats_calendar_view.dart';
+import 'stats/stats_projection_view.dart';
+import 'stats/stats_shared.dart';
 
 /// Períodos disponibles en el análisis.
 ///
 /// El conjunto no se reduce ni se amplía: `canViewDetailedStats` decide cuáles
 /// están abiertos, igual que antes.
 enum TimeRange { day, week, month, year, custom }
+
+/// Apartados del centro de análisis de Estadísticas.
+///
+/// No son tres pantallas independientes: son tres vistas del mismo módulo,
+/// que comparten estado (moneda, cuenta, movimientos) y navegación inferior.
+enum StatsView { analytics, projection, calendar }
 
 /// Ventana de fechas analizada. Ambas extremos son inclusivos por día.
 class _Period {
@@ -59,12 +71,6 @@ class _StatsSummary {
   });
 
   double get net => income - expense;
-
-  /// Periodo sin ningún movimiento, ni de ingreso ni de gasto.
-  bool get hasNoMovements => count == 0;
-
-  /// El lado seleccionado (gasto o ingreso) no tiene nada que repartir.
-  bool isScopeEmpty(bool showIncome) => showIncome ? income == 0 : expense == 0;
 
   /// Porcentaje que representa [value] sobre el total del lado seleccionado.
   double shareOf(double value, bool showIncome) {
@@ -106,16 +112,32 @@ class _StatsScreenState extends State<StatsScreen> {
   /// Categorías mostradas antes de desplegar la lista completa.
   static const int _collapsedCategories = 5;
 
-  /// Secciones que se muestran en el gráfico circular antes de agrupar el
-  /// resto en "Otros". La lista de texto siempre las enumera todas.
-  static const int _maxPieSections = 5;
+  /// Categorías con presupuesto que entran en la gráfica de presupuestos.
+  static const int _maxBudgetBars = 6;
+
+  /// Porciones o barras de la gráfica principal antes de agrupar el resto.
+  static const int _maxChartSections = 6;
+
+  /// Apartado activo. Analítica es el predeterminado.
+  StatsView _view = StatsView.analytics;
+
+  /// Día seleccionado del calendario.
+  ///
+  /// Vive aquí para poder compartirlo desde la cabecera sin reconstruir el
+  /// módulo entero cada vez que el usuario toca un día: la vista del
+  /// calendario escribe en este notificador y la pantalla lo lee al compartir.
+  final ValueNotifier<DateTime> _calendarDay = ValueNotifier<DateTime>(
+    DateTime.now(),
+  );
 
   /// Fechas de la línea de tiempo.
   DateTime _selectedDate = DateTime.now();
   TimeRange _timeRange = TimeRange.month;
   DateTimeRange? _customDateRange;
 
-  /// Lado que muestran el gráfico y el desglose: `false` gasto, `true` ingreso.
+  /// Lado que muestran la gráfica principal y el desglose: `false` gasto,
+  /// `true` ingreso. El tipo de gráfica (circular, barras o línea) no se guarda
+  /// aquí: es el ajuste `provider.chartType`, compartido con Ajustes.
   bool _showIncome = false;
 
   /// 'all' | 'card' | 'cash' | id de cuenta.
@@ -130,8 +152,11 @@ class _StatsScreenState extends State<StatsScreen> {
   /// Despliega la lista completa de categorías.
   bool _showAllCategories = false;
 
-  /// Índice de la porción del gráfico circular que el dedo está tocando.
-  int _touchedIndex = -1;
+  @override
+  void dispose() {
+    _calendarDay.dispose();
+    super.dispose();
+  }
 
   // ---------------------------------------------------------------------------
   // ESTRUCTURA
@@ -155,19 +180,6 @@ class _StatsScreenState extends State<StatsScreen> {
               _currencyCode = _defaultCurrencyCode(currencies);
             }
 
-            final _Period period = _currentPeriod();
-            final List<InternalTransaction> transactions = _filter(
-              provider,
-              period,
-            );
-            final _StatsSummary summary = _summarize(
-              transactions,
-              showIncome: _showIncome,
-            );
-            final _StatsSummary previous = _summarize(
-              _filter(provider, _previousPeriod()),
-              showIncome: _showIncome,
-            );
             final int hiddenCurrencies = currencies
                 .where((Currency c) => c.code != _currencyCode)
                 .where(
@@ -186,32 +198,12 @@ class _StatsScreenState extends State<StatsScreen> {
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: <Widget>[
                   _buildHeader(context, provider),
                   const SizedBox(height: AppSpacing.xxl),
-                  _buildPeriodSelector(context, provider),
-                  const SizedBox(height: AppSpacing.lg),
-                  _buildPeriodNavigator(context, provider),
-                  const SizedBox(height: AppSpacing.lg),
                   _buildFilterBar(context, provider, currencies),
                   const SizedBox(height: AppSpacing.xxl),
-                  if (summary.hasNoMovements)
-                    _buildEmptyState(context, provider, hiddenCurrencies)
-                  else ...[
-                    _buildSummary(context, provider, summary, previous),
-                    const SizedBox(height: AppSpacing.xxl),
-                    _buildChart(
-                      context,
-                      provider,
-                      transactions,
-                      summary,
-                      period,
-                    ),
-                    const SizedBox(height: AppSpacing.xxl),
-                    _buildCategories(context, provider, summary),
-                    const SizedBox(height: AppSpacing.xxl),
-                    _buildInsights(context, provider, summary, previous),
-                  ],
+                  ..._buildActiveView(context, provider, hiddenCurrencies),
                 ],
               ),
             );
@@ -219,6 +211,113 @@ class _StatsScreenState extends State<StatsScreen> {
         ),
       ),
     );
+  }
+
+  /// Cuerpo del apartado activo.
+  ///
+  /// Cada vista recibe exactamente lo que usa: Analítica trabaja sólo con el
+  /// período elegido, Proyección con el mes en curso y Calendario con el
+  /// historial completo del alcance (moneda y cuenta), porque necesita poder
+  /// navegar por cualquier mes. Así el historial completo no se materializa
+  /// mientras el usuario está en Analítica.
+  List<Widget> _buildActiveView(
+    BuildContext context,
+    AppProvider provider,
+    int hiddenCurrencies,
+  ) {
+    switch (_view) {
+      case StatsView.analytics:
+        return _buildAnalytics(context, provider, hiddenCurrencies);
+      case StatsView.projection:
+        final DateTime today = DateTime.now();
+        return <Widget>[
+          StatsProjectionView(
+            transactions: _filter(
+              provider,
+              _Period(
+                StatsAggregator.firstDayOfMonth(today),
+                StatsAggregator.lastDayOfMonth(today),
+              ),
+            ),
+            money: (double value, {bool signed = false}) =>
+                _money(provider, value, signed: signed),
+          ),
+        ];
+      case StatsView.calendar:
+        return <Widget>[
+          StatsCalendarView(
+            transactions: _filterAll(provider),
+            money: (double value, {bool signed = false}) =>
+                _money(provider, value, signed: signed),
+            categoryFor: _categoryFor,
+            titleFor: (InternalTransaction tx) =>
+                _transactionTitle(context, tx),
+            cardLabelFor: (InternalTransaction tx) =>
+                _cardLabelFor(context, provider, tx),
+            selectedDayNotifier: _calendarDay,
+          ),
+        ];
+    }
+  }
+
+  /// Contenido de Analítica: período, resumen mensual, una gráfica elegible,
+  /// desglose por categorías e insights.
+  List<Widget> _buildAnalytics(
+    BuildContext context,
+    AppProvider provider,
+    int hiddenCurrencies,
+  ) {
+    final _Period period = _currentPeriod();
+    final List<InternalTransaction> transactions = _filter(provider, period);
+
+    // Resumen de ambas caras del período: lo necesitan el balance del mes y la
+    // tasa de ahorro, que no dependen del lado que estén mirando las gráficas.
+    final StatsTotals totals = StatsAggregator.totals(transactions);
+    final StatsTotals previousTotals = StatsAggregator.totals(
+      _filter(provider, _previousPeriod()),
+    );
+
+    // Resumen de una sola cara: alimenta las gráficas y el desglose.
+    final _StatsSummary summary = _summarize(
+      transactions,
+      showIncome: _showIncome,
+    );
+    final _StatsSummary previous = _summarize(
+      _filter(provider, _previousPeriod()),
+      showIncome: _showIncome,
+    );
+    final _StatsSummary expenses = _summarize(
+      transactions,
+      showIncome: false,
+    );
+
+    return <Widget>[
+      _buildPeriodSelector(context, provider),
+      const SizedBox(height: AppSpacing.lg),
+      _buildPeriodNavigator(context, provider),
+      const SizedBox(height: AppSpacing.xxl),
+      if (totals.isEmpty)
+        _buildEmptyState(context, provider, hiddenCurrencies)
+      else ...[
+        _buildMonthlySummary(
+          context,
+          provider,
+          totals,
+          previousTotals,
+          period,
+        ),
+        const SizedBox(height: AppSpacing.xxl),
+        // Gráfica principal: una sola, con el tipo elegido en la propia
+        // pantalla (circular, barras o línea) y los importes siempre a la vista.
+        _buildChart(context, provider, summary, transactions, period),
+        const SizedBox(height: AppSpacing.xxl),
+        _buildBudgetChart(context, provider, expenses),
+        const SizedBox(height: AppSpacing.xxl),
+        _buildCategories(context, provider, summary),
+        const SizedBox(height: AppSpacing.xxl),
+        _buildInsights(context, provider, summary, previous),
+      ],
+    ];
   }
 
   // ---------------------------------------------------------------------------
@@ -232,44 +331,147 @@ class _StatsScreenState extends State<StatsScreen> {
         ? AppColors.textSecondaryDark
         : AppColors.textSecondary;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                context.t('statistics'),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.headlineMedium,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.t('statistics'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.headlineMedium,
+                  ),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    context.t('stats_subtitle'),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: secondary,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: AppSpacing.xxs),
-              Text(
-                context.t('stats_subtitle'),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium?.copyWith(color: secondary),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            CashIconButton(
+              icon: Icons.ios_share_rounded,
+              tooltip: context.t('stats_share'),
+              onPressed: () => _shareStats(context, provider),
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            _buildViewMenu(context),
+          ],
         ),
-        const SizedBox(width: AppSpacing.md),
-        CashIconButton(
-          icon: Icons.calendar_month_rounded,
-          tooltip: context.t('stats_select_range'),
-          onPressed: () => _guard(
-            context,
-            provider.canViewDetailedStats,
-            () => _showDatePickerForRange(context),
+        const SizedBox(height: AppSpacing.sm),
+        // El apartado activo se indica de forma explícita, no sólo por el menú.
+        _buildActiveViewBadge(context),
+      ],
+    );
+  }
+
+  /// Menú de tres puntos con los tres apartados del módulo.
+  ///
+  /// Presenta exactamente Analítica, Proyección financiera y Calendario
+  /// financiero, cada uno con su icono y su etiqueta, y marca el activo con un
+  /// check para que el estado no dependa del color.
+  Widget _buildViewMenu(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return PopupMenuButton<StatsView>(
+      tooltip: StatsShared.text(context, 'stats_view_analytics'),
+      icon: const Icon(Icons.more_vert_rounded),
+      onSelected: _selectView,
+      itemBuilder: (BuildContext context) => <PopupMenuEntry<StatsView>>[
+        for (final StatsView view in StatsView.values)
+          PopupMenuItem<StatsView>(
+            value: view,
+            child: Row(
+              children: <Widget>[
+                Icon(
+                  _viewIcon(view),
+                  size: 20,
+                  color: view == _view
+                      ? AppColors.primary
+                      : StatsShared.secondaryText(context),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Text(
+                    _viewLabel(context, view),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: view == _view
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: view == _view ? AppColors.primary : null,
+                    ),
+                  ),
+                ),
+                if (view == _view)
+                  const Icon(
+                    Icons.check_rounded,
+                    size: 18,
+                    color: AppColors.primary,
+                  ),
+              ],
+            ),
           ),
-          // El candado avisa de que el salto por fechas es una función de pago
-          // antes de que el usuario lo descubra al tocar.
-          badge: provider.canViewDetailedStats ? null : const _LockBadge(),
+      ],
+    );
+  }
+
+  Widget _buildActiveViewBadge(BuildContext context) {
+    return Row(
+      children: <Widget>[
+        Icon(_viewIcon(_view), size: 16, color: AppColors.primary),
+        const SizedBox(width: AppSpacing.xs),
+        Flexible(
+          child: Text(
+            _viewLabel(context, _view),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ),
       ],
     );
+  }
+
+  IconData _viewIcon(StatsView view) {
+    switch (view) {
+      case StatsView.analytics:
+        return Icons.insights_rounded;
+      case StatsView.projection:
+        return Icons.trending_up_rounded;
+      case StatsView.calendar:
+        return Icons.calendar_month_rounded;
+    }
+  }
+
+  String _viewLabel(BuildContext context, StatsView view) {
+    switch (view) {
+      case StatsView.analytics:
+        return context.t('stats_view_analytics');
+      case StatsView.projection:
+        return context.t('stats_view_projection');
+      case StatsView.calendar:
+        return context.t('stats_view_calendar');
+    }
+  }
+
+  void _selectView(StatsView view) {
+    if (view == _view) return;
+    setState(() => _view = view);
   }
 
   // ---------------------------------------------------------------------------
@@ -336,7 +538,6 @@ class _StatsScreenState extends State<StatsScreen> {
     }
     setState(() {
       _timeRange = range;
-      _touchedIndex = -1;
     });
   }
 
@@ -358,7 +559,6 @@ class _StatsScreenState extends State<StatsScreen> {
     setState(() {
       _timeRange = TimeRange.custom;
       _customDateRange = picked;
-      _touchedIndex = -1;
     });
   }
 
@@ -446,6 +646,22 @@ class _StatsScreenState extends State<StatsScreen> {
           icon: Icons.chevron_right_rounded,
           onPressed: () => setState(() => _updateDate(1)),
         ),
+        const SizedBox(width: AppSpacing.xs),
+        // El salto directo por fecha se movió aquí desde la cabecera para
+        // dejar sitio al compartir y al menú de apartados sin recortar el
+        // título en pantallas de 320 px.
+        CashIconButton(
+          icon: Icons.calendar_month_rounded,
+          tooltip: context.t('stats_select_range'),
+          size: 44,
+          bordered: true,
+          onPressed: () => _guard(
+            context,
+            provider.canViewDetailedStats,
+            () => _showDatePickerForRange(context),
+          ),
+          badge: provider.canViewDetailedStats ? null : const _LockBadge(),
+        ),
       ],
     );
   }
@@ -493,7 +709,6 @@ class _StatsScreenState extends State<StatsScreen> {
           // El rango personalizado se cambia con el selector, no con las flechas.
           break;
       }
-      _touchedIndex = -1;
     });
   }
 
@@ -747,22 +962,51 @@ class _StatsScreenState extends State<StatsScreen> {
   // RESUMEN FINANCIERO
   // ---------------------------------------------------------------------------
 
-  Widget _buildSummary(
+  // ---------------------------------------------------------------------------
+  // RESUMEN FINANCIERO DEL MES
+  // ---------------------------------------------------------------------------
+
+  /// Resumen bilateral del período: balance, ingresos, gastos y tasa de ahorro.
+  ///
+  /// A diferencia del desglose por lados, este resumen muestra siempre las dos
+  /// caras del período, porque el balance y la tasa de ahorro no tienen sentido
+  /// con una sola: la tasa necesita los ingresos como base y el balance
+  /// necesita ambos.
+  Widget _buildMonthlySummary(
     BuildContext context,
     AppProvider provider,
-    _StatsSummary summary,
-    _StatsSummary previous,
+    StatsTotals totals,
+    StatsTotals previousTotals,
+    _Period period,
   ) {
-    final _Trend? incomeTrend = _trend(summary.income, previous.income);
-    final _Trend? expenseTrend = _trend(summary.expense, previous.expense);
-    final _Trend? netTrend = previous.net > 0
-        ? _trend(summary.net, previous.net)
+    final _Trend? incomeTrend = _trend(totals.income, previousTotals.income);
+    final _Trend? expenseTrend = _trend(totals.expense, previousTotals.expense);
+    // La comparación del balance sólo se hace con una base positiva, igual que
+    // antes: un período anterior en negativo no da una variación interpretable.
+    final _Trend? netTrend = previousTotals.net > 0
+        ? _trend(totals.net, previousTotals.net)
         : null;
 
+    final double? savingsRate = totals.savingsRate;
+
+    // Las cuatro métricas del mes van en una sola rejilla 2×2: el balance (la
+    // cifra que responde "¿cómo va el mes?") encabeza, y debajo se leen los dos
+    // flujos y la tasa de ahorro. Así el resumen ocupa dos filas en vez de
+    // dejar una tarjeta suelta en una tercera.
     final List<Widget> cards = <Widget>[
       CashStatCard(
+        title: context.t('stats_balance_month'),
+        value: _money(provider, totals.net, signed: true),
+        icon: totals.net >= 0
+            ? Icons.savings_rounded
+            : Icons.trending_down_rounded,
+        iconColor: totals.net >= 0 ? AppColors.income : AppColors.expense,
+        trend: netTrend?.label,
+        trendPositive: netTrend?.increased,
+      ),
+      CashStatCard(
         title: context.t('income'),
-        value: _money(provider, summary.income),
+        value: _money(provider, totals.income),
         icon: Icons.south_west_rounded,
         iconColor: AppColors.income,
         trend: incomeTrend?.label,
@@ -770,7 +1014,7 @@ class _StatsScreenState extends State<StatsScreen> {
       ),
       CashStatCard(
         title: context.t('expense'),
-        value: _money(provider, summary.expense),
+        value: _money(provider, totals.expense),
         icon: Icons.north_east_rounded,
         iconColor: AppColors.expense,
         trend: expenseTrend?.label,
@@ -779,45 +1023,50 @@ class _StatsScreenState extends State<StatsScreen> {
         trendGoodWhenDown: true,
       ),
       CashStatCard(
-        title: context.t('stats_net'),
-        value: _money(provider, summary.net, signed: true),
-        icon: summary.net >= 0
-            ? Icons.savings_rounded
-            : Icons.trending_down_rounded,
-        iconColor: summary.net >= 0 ? AppColors.income : AppColors.expense,
-        trend: netTrend?.label,
-        trendPositive: netTrend?.increased,
+        title: context.t('stats_savings_rate'),
+        // Sin ingresos no se divide: se dice que no está disponible en lugar
+        // de mostrar un porcentaje inventado.
+        value: savingsRate == null
+            ? context.t('stats_savings_rate_unavailable')
+            : '${savingsRate.toFormattedString(1)}%',
+        icon: Icons.percent_rounded,
+        iconColor: savingsRate == null
+            ? StatsShared.secondaryText(context)
+            : savingsRate >= 0
+            ? AppColors.income
+            : AppColors.expense,
       ),
     ];
 
     return CashSection(
-      title: _scopeTitle(context, provider),
-      subtitle: _tpl(context, 'stats_movements', <String, String>{
-        '{n}': '${summary.count}',
-      }),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          const double spacing = AppSpacing.md;
-          // En pantallas muy estrechas una sola columna: dos tarjetas de 134 px
-          // obligan a recortar el importe, y el importe es el dato principal.
-          final int columns = constraints.maxWidth >= 420
-              ? 3
-              : constraints.maxWidth >= 300
-              ? 2
-              : 1;
-          final double itemWidth =
-              (constraints.maxWidth - spacing * (columns - 1)) / columns;
-          return Wrap(
-            spacing: spacing,
-            runSpacing: spacing,
-            children: <Widget>[
-              for (final Widget card in cards)
-                SizedBox(width: itemWidth, child: card),
-            ],
-          );
-        },
+      title: context.t('stats_month_summary'),
+      subtitle: _periodRangeLabel(context, period, totals.count),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          StatsShared.statGrid(context, cards, maxColumns: 2),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            context.t('stats_savings_rate_hint'),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: StatsShared.secondaryText(context),
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  /// Rango real de fechas del período, explícito, más el número de movimientos.
+  String _periodRangeLabel(BuildContext context, _Period period, int count) {
+    final String locale = Localizations.localeOf(context).toString();
+    final DateFormat format = DateFormat.MMMd(locale);
+    final String start = format.format(period.start);
+    final String end = format.format(period.end);
+    final String range = start == end ? start : '$start – $end';
+    return '$range · ${_tpl(context, 'stats_movements', <String, String>{
+      '{n}': '$count',
+    })}';
   }
 
   /// Variación entre dos importes. Sin base de comparación no se inventa nada.
@@ -828,71 +1077,10 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // GRÁFICO
+  // GRÁFICAS DE ANALÍTICA
   // ---------------------------------------------------------------------------
 
-  Widget _buildChart(
-    BuildContext context,
-    AppProvider provider,
-    List<InternalTransaction> transactions,
-    _StatsSummary summary,
-    _Period period,
-  ) {
-    final bool scopeEmpty = summary.isScopeEmpty(_showIncome);
-    final String chartType = provider.chartType;
-
-    return CashSection(
-      title: _scopeTitle(context, provider),
-      subtitle: scopeEmpty
-          ? context.t('no_data')
-          : _tpl(context, 'stats_movements', <String, String>{
-              '{n}': '${summary.count}',
-            }),
-      // Los dos selectores viven en filas propias con envoltura: juntos no caben
-      // en una sola línea a 320 px y una fila fija los dejaría fuera de pantalla.
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          _buildScopeToggle(context),
-          const SizedBox(height: AppSpacing.md),
-          LayoutBuilder(
-            builder: (context, constraints) => CashChartCard(
-              // El título de la tarjeta es la pregunta que responde el gráfico;
-              // el lado y la moneda ya están en el título de la sección.
-              title: _chartTitle(context, chartType),
-              subtitle: scopeEmpty
-                  ? context.t('no_data')
-                  : _chartSubtitle(context, summary, chartType),
-              height: CashChartCard.heightFor(constraints.maxWidth),
-              chart: scopeEmpty
-                  ? _buildNoChartData(context)
-                  : AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 220),
-                      child: KeyedSubtree(
-                        key: ValueKey<String>(
-                          '$chartType|${_timeRange.name}|$_showIncome'
-                          '|$_currencyCode',
-                        ),
-                        child: _buildChartBody(
-                          context,
-                          provider,
-                          transactions,
-                          summary,
-                          period,
-                          chartType,
-                        ),
-                      ),
-                    ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _buildChartTypeSelector(context, provider),
-        ],
-      ),
-    );
-  }
-
-  /// Pregunta concreta que responde el gráfico seleccionado.
+  /// Pregunta concreta que responde la gráfica seleccionada.
   String _chartTitle(BuildContext context, String chartType) {
     switch (chartType) {
       case 'Bar':
@@ -904,18 +1092,13 @@ class _StatsScreenState extends State<StatsScreen> {
     }
   }
 
-  /// Segunda línea de la tarjeta: el detalle que hace legible el gráfico.
+  /// Segunda línea de la tarjeta: el detalle que hace legible la gráfica.
   String _chartSubtitle(
     BuildContext context,
     _StatsSummary summary,
     String chartType,
   ) {
     switch (chartType) {
-      case 'Bar':
-      case 'Pie':
-        return _tpl(context, 'stats_categories', <String, String>{
-          '{n}': '${summary.byCategory.length}',
-        });
       case 'Line':
         return switch (_timeRange) {
           TimeRange.day => context.t('stats_by_hour'),
@@ -923,10 +1106,881 @@ class _StatsScreenState extends State<StatsScreen> {
           _ => context.t('stats_by_day'),
         };
       default:
-        return context.t('no_data');
+        return _tpl(context, 'stats_categories', <String, String>{
+          '{n}': '${summary.byCategory.length}',
+        });
     }
   }
 
+  /// Selector del tipo de gráfica: circular, barras o línea.
+  ///
+  /// Vive en la propia pantalla y escribe el mismo ajuste que Ajustes
+  /// (`provider.chartType`), de modo que ambos quedan sincronizados y el cambio
+  /// se refleja aquí de inmediato.
+  Widget _buildChartTypeSelector(BuildContext context, AppProvider provider) {
+    // Circular está abierto para todos; barras y línea son de pago.
+    const List<String> types = <String>['Pie', 'Bar', 'Line'];
+    const Map<String, IconData> icons = <String, IconData>{
+      'Pie': Icons.pie_chart_rounded,
+      'Bar': Icons.bar_chart_rounded,
+      'Line': Icons.show_chart_rounded,
+    };
+
+    return Wrap(
+      spacing: AppSpacing.xs,
+      runSpacing: AppSpacing.xs,
+      children: <Widget>[
+        for (final String type in types)
+          CashChip(
+            label: switch (type) {
+              'Bar' => context.t('stats_chart_bar'),
+              'Line' => context.t('stats_chart_line'),
+              _ => context.t('stats_chart_pie'),
+            },
+            icon: icons[type],
+            selected: provider.chartType == type,
+            color: AppColors.primary,
+            onTap: () => _guard(
+              context,
+              provider.canCustomizeCharts || type == 'Pie',
+              () => provider.setChartType(type),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Gráfica principal de Analítica: una sola, del tipo elegido en la pantalla
+  /// y del lado elegido con el selector gastos/ingresos.
+  ///
+  /// Los importes van siempre impresos sobre cada punto o barra, sin necesidad
+  /// de tocar la gráfica.
+  Widget _buildChart(
+    BuildContext context,
+    AppProvider provider,
+    _StatsSummary summary,
+    List<InternalTransaction> transactions,
+    _Period period,
+  ) {
+    final String chartType = provider.chartType;
+
+    // La evolución diaria sólo se calcula para la línea, que es la única que la
+    // necesita; así el resto de tipos no paga ese coste.
+    List<_Bucket> buckets = const <_Bucket>[];
+    List<double> values = const <double>[];
+    if (chartType == 'Line') {
+      buckets = _buckets(context, period);
+      values = _valuesPerBucket(
+        transactions,
+        buckets,
+        period,
+        showIncome: _showIncome,
+      );
+    }
+    final bool lineHasData = values.any((double value) => value > 0);
+    final bool empty = chartType == 'Line'
+        ? !lineHasData
+        : _sortedCategories(summary).isEmpty;
+
+    return CashSection(
+      title: _chartTitle(context, chartType),
+      subtitle: empty
+          ? context.t('no_data')
+          : _chartSubtitle(context, summary, chartType),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          // Lado de la gráfica. Comparte estado con el desglose de categorías.
+          _buildScopeToggle(context),
+          const SizedBox(height: AppSpacing.md),
+          // Tipo de gráfica, en la propia pantalla.
+          _buildChartTypeSelector(context, provider),
+          const SizedBox(height: AppSpacing.md),
+          LayoutBuilder(
+            builder: (context, constraints) => CashChartCard(
+              title: _chartTitle(context, chartType),
+              subtitle: empty
+                  ? context.t('stats_chart_empty_hint')
+                  : _chartSubtitle(context, summary, chartType),
+              height: CashChartCard.heightFor(constraints.maxWidth),
+              chart: empty
+                  ? _buildNoChartData(context)
+                  : AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 320),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      // Sólo el tipo va en la clave: cambiar de período o de
+                      // lado no recrea la gráfica, la transforma (fl_chart
+                      // interpola entre los datos viejos y los nuevos).
+                      transitionBuilder:
+                          (Widget child, Animation<double> animation) =>
+                              FadeTransition(
+                                opacity: animation,
+                                child: ScaleTransition(
+                                  scale: Tween<double>(
+                                    begin: 0.94,
+                                    end: 1,
+                                  ).animate(animation),
+                                  child: child,
+                                ),
+                              ),
+                      child: KeyedSubtree(
+                        key: ValueKey<String>(chartType),
+                        child: _buildChartBody(
+                          context,
+                          provider,
+                          summary,
+                          transactions,
+                          period,
+                          chartType,
+                        ),
+                      ),
+                    ),
+            ),
+          ),
+          if (chartType == 'Line' && lineHasData)
+            ..._buildLineCaptions(context, provider, buckets, values),
+        ],
+      ),
+    );
+  }
+
+  /// Promedio y día de mayor movimiento bajo la gráfica de evolución.
+  List<Widget> _buildLineCaptions(
+    BuildContext context,
+    AppProvider provider,
+    List<_Bucket> buckets,
+    List<double> values,
+  ) {
+    final double total = values.fold<double>(
+      0,
+      (double sum, double value) => sum + value,
+    );
+    final double average = buckets.isEmpty ? 0 : total / buckets.length;
+
+    int peakIndex = 0;
+    for (int i = 1; i < values.length; i++) {
+      if (values[i] > values[peakIndex]) peakIndex = i;
+    }
+    final double peak = values.isEmpty ? 0 : values[peakIndex];
+    final String peakLabel = buckets.isEmpty ? '' : buckets[peakIndex].label;
+
+    return <Widget>[
+      const SizedBox(height: AppSpacing.sm),
+      // En columna, a todo el ancho: cada métrica recorta su valor si no cabe,
+      // en vez de desbordar la fila.
+      _metricCaption(
+        context,
+        icon: Icons.functions_rounded,
+        label: context.t('stats_daily_average'),
+        value: _money(provider, average),
+      ),
+      const SizedBox(height: AppSpacing.xxs),
+      _metricCaption(
+        context,
+        icon: Icons.vertical_align_top_rounded,
+        label: context.t('stats_peak_day'),
+        value: '$peakLabel · ${_money(provider, peak)}',
+      ),
+    ];
+  }
+
+  /// Cuerpo de la gráfica según el tipo elegido.
+  ///
+  /// Las tres entran animadas: las barras y la línea crecen desde el eje (sus
+  /// importes van contando hasta el valor real) y el círculo se abre desde el
+  /// centro. Si el sistema pide reducir movimiento, se dibujan ya terminadas.
+  Widget _buildChartBody(
+    BuildContext context,
+    AppProvider provider,
+    _StatsSummary summary,
+    List<InternalTransaction> transactions,
+    _Period period,
+    String chartType,
+  ) {
+    final bool animate = !MediaQuery.disableAnimationsOf(context);
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: animate ? 0 : 1, end: 1),
+      duration: animate
+          ? const Duration(milliseconds: 850)
+          : Duration.zero,
+      curve: Curves.easeOutCubic,
+      builder: (BuildContext context, double progress, Widget? child) {
+        switch (chartType) {
+          case 'Bar':
+            return _buildBarChart(
+              context,
+              provider,
+              summary,
+              progress: progress,
+            );
+          case 'Line':
+            return _buildLineChart(
+              context,
+              provider,
+              transactions,
+              period,
+              showIncome: _showIncome,
+              progress: progress,
+            );
+          default:
+            return _buildPieChart(
+              context,
+              provider,
+              summary,
+              progress: progress,
+            );
+        }
+      },
+    );
+  }
+
+  /// Gráfica de presupuestos: lo previsto frente a lo gastado.
+  ///
+  /// Sólo tiene sentido con un período de un mes, porque los presupuestos son
+  /// mensuales: comparar un presupuesto de mes con el gasto de un año mezclaría
+  /// dos bases de tiempo distintas. Tampoco se inventa un límite para las
+  /// categorías que no lo tienen.
+  Widget _buildBudgetChart(
+    BuildContext context,
+    AppProvider provider,
+    _StatsSummary expenseSummary,
+  ) {
+    if (_timeRange != TimeRange.month) {
+      return CashSection(
+        title: context.t('stats_budget_chart_title'),
+        child: CashCard(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+          child: CashEmptyState(
+            icon: Icons.event_repeat_rounded,
+            title: context.t('stats_budget_chart_title'),
+            message: context.t('stats_budget_month_only'),
+          ),
+        ),
+      );
+    }
+
+    final List<Category> budgeted = provider.categories
+        .where((Category c) => (c.monthlyBudget ?? 0) > 0)
+        .toList();
+
+    if (budgeted.isEmpty) {
+      return CashSection(
+        title: context.t('stats_budget_chart_title'),
+        child: CashCard(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+          child: CashEmptyState(
+            icon: Icons.savings_outlined,
+            title: context.t('stats_budget_empty_title'),
+            message: context.t('stats_budget_empty_hint'),
+          ),
+        ),
+      );
+    }
+
+    // Primero las categorías con más gasto del período; el empate se resuelve
+    // por nombre para que el orden no baile entre reconstrucciones.
+    final List<Category> sorted = budgeted.toList()
+      ..sort((Category a, Category b) {
+        final double spentA = expenseSummary.byCategory[a.id] ?? 0;
+        final double spentB = expenseSummary.byCategory[b.id] ?? 0;
+        final int bySpent = spentB.compareTo(spentA);
+        return bySpent != 0 ? bySpent : a.name.compareTo(b.name);
+      });
+    final List<Category> visible = sorted.take(_maxBudgetBars).toList();
+
+    final double peak = visible.fold<double>(0, (double max, Category c) {
+      final double spent = expenseSummary.byCategory[c.id] ?? 0;
+      final double budget = c.monthlyBudget ?? 0;
+      final double top = spent > budget ? spent : budget;
+      return top > max ? top : max;
+    });
+    final double maxY = peak <= 0 ? 100 : peak * 1.2;
+
+    return CashSection(
+      title: context.t('stats_budget_chart_title'),
+      subtitle: _tpl(context, 'stats_budget_count', <String, String>{
+        '{n}': '${budgeted.length}',
+      }),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          LayoutBuilder(
+            builder: (context, constraints) => CashChartCard(
+              title: context.t('stats_budget_chart_title'),
+              subtitle: _tpl(
+                context,
+                'stats_budget_chart_subtitle',
+                <String, String>{'{period}': _dateLabel(context)},
+              ),
+              height: CashChartCard.heightFor(constraints.maxWidth),
+              chart: TweenAnimationBuilder<double>(
+                // Las barras suben desde el eje al entrar; una vez
+                // asentadas, fl_chart interpola los cambios de datos
+                // (mes, moneda, presupuestos).
+                tween: Tween<double>(
+                  begin: MediaQuery.disableAnimationsOf(context) ? 1 : 0,
+                  end: 1,
+                ),
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 850),
+                curve: Curves.easeOutCubic,
+                builder: (BuildContext context, double progress, Widget? child) {
+                  return BarChart(
+                    // Las barras crecen con nuestra animación; ya asentadas,
+                    // fl_chart interpola los cambios de datos. Con movimiento
+                    // reducido no se anima ninguno de los dos.
+                    duration:
+                        !MediaQuery.disableAnimationsOf(context) &&
+                            progress >= 1
+                        ? const Duration(milliseconds: 450)
+                        : Duration.zero,
+                    curve: Curves.easeOutCubic,
+                    BarChartData(
+                      maxY: maxY,
+                      alignment: BarChartAlignment.spaceAround,
+                      borderData: FlBorderData(show: false),
+                      gridData: FlGridData(
+                        show: true,
+                        drawVerticalLine: false,
+                        horizontalInterval: maxY / 3,
+                        getDrawingHorizontalLine: (double value) => FlLine(
+                          color: CashChartCard.gridColor(context),
+                          strokeWidth: 1,
+                        ),
+                      ),
+                      titlesData: FlTitlesData(
+                        topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 48,
+                            interval: maxY / 3,
+                            getTitlesWidget: (double value, TitleMeta meta) {
+                              if (value < 0 || value > maxY) {
+                                return const SizedBox.shrink();
+                              }
+                              return Padding(
+                                padding: const EdgeInsets.only(
+                                  right: AppSpacing.xs,
+                                ),
+                                child: Text(
+                                  _axisMoney(provider, value),
+                                  textAlign: TextAlign.right,
+                                  maxLines: 1,
+                                  style: Theme.of(context).textTheme.labelSmall
+                                      ?.copyWith(
+                                        color: CashChartCard.axisColor(context),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 30,
+                            getTitlesWidget: (double value, TitleMeta meta) {
+                              final int index = value.round();
+                              if (index < 0 || index >= visible.length) {
+                                return const SizedBox.shrink();
+                              }
+                              // Icono en lugar de nombre: los nombres largos se
+                              // solaparían en un eje de seis columnas.
+                              final Category category = visible[index];
+                              return Padding(
+                                padding: const EdgeInsets.only(top: AppSpacing.xs),
+                                child: Icon(
+                                  IconConstants.getCategoryIcon(category.iconCode),
+                                  size: 16,
+                                  color: Color(category.colorValue),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      barTouchData: BarTouchData(
+                        touchTooltipData: BarTouchTooltipData(
+                          getTooltipColor: (_) =>
+                              CashChartCard.tooltipColor(context),
+                          tooltipBorderRadius: BorderRadius.circular(AppRadius.sm),
+                          getTooltipItem:
+                              (
+                                BarChartGroupData group,
+                                int groupIndex,
+                                BarChartRodData rod,
+                                int rodIndex,
+                              ) {
+                                final Category category = visible[group.x];
+                                final double spent =
+                                    expenseSummary.byCategory[category.id] ?? 0;
+                                final double budget = category.monthlyBudget ?? 0;
+                                final double difference = budget - spent;
+                                return BarTooltipItem(
+                                  category.name,
+                                  TextStyle(
+                                    color: CashChartCard.tooltipTextColor(context),
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                  children: <TextSpan>[
+                                    TextSpan(
+                                      text:
+                                          '\n${context.t('stats_budget_label')}: '
+                                          '${_money(provider, budget)}',
+                                    ),
+                                    TextSpan(
+                                      text:
+                                          '\n${context.t('stats_budget_spent')}: '
+                                          '${_money(provider, spent)}',
+                                    ),
+                                    TextSpan(
+                                      text:
+                                          '\n${difference >= 0 ? context.t('stats_budget_remaining') : context.t('stats_budget_exceeded')}: '
+                                          '${_money(provider, difference.abs())}',
+                                    ),
+                                  ],
+                                );
+                              },
+                        ),
+                      ),
+                      barGroups: <BarChartGroupData>[
+                        for (int i = 0; i < visible.length; i++)
+                          BarChartGroupData(
+                            x: i,
+                            barsSpace: 4,
+                            barRods: <BarChartRodData>[
+                              // Presupuesto: barra tenue, es la referencia.
+                              BarChartRodData(
+                                toY: (visible[i].monthlyBudget ?? 0) * progress,
+                                width: 12,
+                                color: AppColors.primary.withValues(alpha: 0.32),
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(AppRadius.xs),
+                                ),
+                              ),
+                              // Gasto real: barra sólida con el color de la
+                              // categoría; si supera la tenue, se ve de inmediato.
+                              BarChartRodData(
+                                toY:
+                                    (expenseSummary.byCategory[visible[i].id] ?? 0) *
+                                    progress,
+                                width: 12,
+                                color: Color(visible[i].colorValue),
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(AppRadius.xs),
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          // Leyenda explícita: el orden y el color no bastan por sí solos.
+          Wrap(
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.xs,
+            children: <Widget>[
+              _chartLegend(
+                context,
+                color: AppColors.primary.withValues(alpha: 0.32),
+                label: context.t('stats_budget_label'),
+              ),
+              _chartLegend(
+                context,
+                color: AppColors.expense,
+                label: context.t('stats_budget_spent'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Gráfica circular: reparto del lado elegido por categorías.
+  ///
+  /// El porcentaje de cada porción va impreso sobre el propio sector, así que la
+  /// gráfica se lee sin tocarla. Las categorías que no entran se agrupan y el
+  /// desglose de abajo sigue enumerando cada una: no se pierde ningún dato.
+  ///
+  /// [progress] va de 0 a 1 y sólo se usa al entrar: el anillo se abre desde el
+  /// centro y gira un poco, y los porcentajes aparecen al final del recorrido
+  /// para que no se amontonen mientras el círculo aún es pequeño.
+  Widget _buildPieChart(
+    BuildContext context,
+    AppProvider provider,
+    _StatsSummary summary, {
+    required double progress,
+  }) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+    final bool animate = !MediaQuery.disableAnimationsOf(context);
+    final List<MapEntry<String, double>> sorted = _sortedCategories(summary);
+    final List<MapEntry<String, double>> visible = sorted
+        .take(_maxChartSections)
+        .toList();
+    final double grouped = sorted.skip(_maxChartSections).fold<double>(
+      0,
+      (double sum, MapEntry<String, double> e) => sum + e.value,
+    );
+    final double total = _showIncome ? summary.income : summary.expense;
+
+    // El radio del sector y el barrido inicial dependen del avance de entrada.
+    final double radius = 52 * progress;
+    final double startAngle = -90 - (1 - progress) * 60;
+    // Los porcentajes se leen a partir de media entrada.
+    final double labelAlpha = progress <= 0.5
+        ? 0
+        : ((progress - 0.5) / 0.5).clamp(0.0, 1.0);
+
+    final List<PieChartSectionData> sections = <PieChartSectionData>[
+      for (final MapEntry<String, double> entry in visible)
+        _pieSection(
+          context,
+          color: Color(_categoryFor(entry.key).colorValue),
+          share: summary.shareOf(entry.value, _showIncome),
+          isDark: isDark,
+          radius: radius,
+          labelAlpha: labelAlpha,
+        ),
+    ];
+    if (grouped > 0) {
+      sections.add(
+        _pieSection(
+          context,
+          color: isDark
+              ? AppColors.surfaceDark3
+              : AppColors.surfaceVariantLight,
+          share: summary.shareOf(grouped, _showIncome),
+          isDark: isDark,
+          textColor: isDark
+              ? AppColors.textSecondaryDark
+              : AppColors.textSecondary,
+          radius: radius,
+          labelAlpha: labelAlpha,
+        ),
+      );
+    }
+
+    return Stack(
+      alignment: Alignment.center,
+      children: <Widget>[
+        PieChart(
+          PieChartData(
+            sectionsSpace: 2,
+            centerSpaceRadius: 52,
+            startDegreeOffset: startAngle,
+            borderData: FlBorderData(show: false),
+            sections: sections,
+          ),
+          // Durante la entrada manda nuestra animación; al terminar, fl_chart
+          // interpola los cambios de datos (período, lado, moneda).
+          duration: animate && progress >= 1
+              ? const Duration(milliseconds: 450)
+              : Duration.zero,
+          curve: Curves.easeOutCubic,
+        ),
+        // El centro del gráfico no admite hijos: se superpone y no intercepta
+        // el toque.
+        IgnorePointer(
+          child: Opacity(
+            opacity: labelAlpha,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  _showIncome ? context.t('income') : context.t('expense'),
+                  maxLines: 1,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xxs),
+                Text(
+                  _money(provider, total),
+                  maxLines: 1,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  PieChartSectionData _pieSection(
+    BuildContext context, {
+    required Color color,
+    required double share,
+    required bool isDark,
+    required double radius,
+    required double labelAlpha,
+    Color? textColor,
+  }) {
+    // El porcentaje se pinta sobre el color de la categoría, así que el texto
+    // necesita su propio contraste en lugar de asumir uno.
+    final Color foreground =
+        textColor ??
+        (ThemeData.estimateBrightnessForColor(color) == Brightness.dark
+            ? AppColors.backgroundLight
+            : AppColors.textPrimary);
+
+    return PieChartSectionData(
+      color: color,
+      value: share <= 0 ? 1 : share,
+      radius: radius,
+      // Sólo las porciones con peso propio llevan etiqueta: en las franjas
+      // estrechas el texto se solaparía.
+      title: share >= 5 ? '${share.toFormattedString(0)}%' : '',
+      titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
+        color: foreground.withValues(alpha: labelAlpha),
+        fontWeight: FontWeight.w700,
+      ),
+      borderSide: BorderSide(
+        color: (isDark ? AppColors.backgroundDark : AppColors.backgroundLight)
+            .withValues(alpha: labelAlpha),
+        width: 2,
+      ),
+    );
+  }
+
+  /// Gráfica de barras: las categorías con más peso del lado elegido.
+  ///
+  /// El importe de cada barra va impreso encima, siempre visible; por eso se
+  /// desactiva el tooltip al tocar, que ya no aporta nada.
+  ///
+  /// [progress] va de 0 a 1 y hace que las barras suban desde el eje: como la
+  /// etiqueta muestra el valor actual de la barra, los importes cuentan hacia
+  /// arriba hasta su cifra real.
+  Widget _buildBarChart(
+    BuildContext context,
+    AppProvider provider,
+    _StatsSummary summary, {
+    required double progress,
+  }) {
+    final ThemeData theme = Theme.of(context);
+    final bool animate = !MediaQuery.disableAnimationsOf(context);
+    final List<MapEntry<String, double>> top = _sortedCategories(summary)
+        .take(_maxChartSections)
+        .toList();
+    if (top.isEmpty) return _buildNoChartData(context);
+
+    final double maxValue = top.first.value;
+    final double maxY = maxValue <= 0 ? 100 : maxValue * 1.25;
+
+    return BarChart(
+      BarChartData(
+        maxY: maxY,
+        alignment: BarChartAlignment.spaceAround,
+        borderData: FlBorderData(show: false),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: maxY / 3,
+          getDrawingHorizontalLine: (double value) =>
+              FlLine(color: CashChartCard.gridColor(context), strokeWidth: 1),
+        ),
+        titlesData: FlTitlesData(
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 48,
+              interval: maxY / 3,
+              getTitlesWidget: (double value, TitleMeta meta) {
+                if (value < 0 || value > maxY) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.xs),
+                  child: Text(
+                    _axisMoney(provider, value),
+                    textAlign: TextAlign.right,
+                    maxLines: 1,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: CashChartCard.axisColor(context),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 30,
+              getTitlesWidget: (double value, TitleMeta meta) {
+                final int index = value.round();
+                if (index < 0 || index >= top.length) {
+                  return const SizedBox.shrink();
+                }
+                // Icono en lugar de nombre: los nombres largos se solaparían en
+                // un eje de seis columnas.
+                final Category category = _categoryFor(top[index].key);
+                return Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.xs),
+                  child: Icon(
+                    IconConstants.getCategoryIcon(category.iconCode),
+                    size: 16,
+                    color: Color(category.colorValue),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        barTouchData: BarTouchData(
+          // El importe va siempre encima: no hace falta tocarla.
+          handleBuiltInTouches: false,
+          touchTooltipData: BarTouchTooltipData(
+            getTooltipColor: (_) => CashChartCard.tooltipColor(context),
+            tooltipBorderRadius: BorderRadius.circular(AppRadius.sm),
+            getTooltipItem:
+                (
+                  BarChartGroupData group,
+                  int groupIndex,
+                  BarChartRodData rod,
+                  int rodIndex,
+                ) => BarTooltipItem(
+                  _axisMoney(provider, rod.toY),
+                  TextStyle(
+                    color: CashChartCard.tooltipTextColor(context),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+          ),
+        ),
+        barGroups: <BarChartGroupData>[
+          for (int i = 0; i < top.length; i++)
+            BarChartGroupData(
+              x: i,
+              showingTooltipIndicators: const <int>[0],
+              barRods: <BarChartRodData>[
+                BarChartRodData(
+                  toY: top[i].value * progress,
+                  width: 16,
+                  color: Color(_categoryFor(top[i].key).colorValue),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.xs),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+      // Durante la entrada manda nuestra animación; al terminar, fl_chart
+      // interpola los cambios de datos (período, lado, moneda).
+      duration: animate && progress >= 1
+          ? const Duration(milliseconds: 450)
+          : Duration.zero,
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  /// Cuadro de color + etiqueta para leer una gráfica con más de una serie.
+  Widget _chartLegend(
+    BuildContext context, {
+    required Color color,
+    required String label,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.xs),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: StatsShared.secondaryText(context),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Dato numérico de apoyo bajo una gráfica, con icono y etiqueta.
+  ///
+  /// Icono a la izquierda y, a su lado, las dos líneas del dato. Tanto la
+  /// etiqueta como el valor recortan con elipsis: los rótulos son largos
+  /// ("Día de mayor movimiento") y a 280 px de una pantalla de 320 no caben en
+  /// una sola fila, así que la fila no puede medir por su contenido.
+  Widget _metricCaption(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    final ThemeData theme = Theme.of(context);
+    return Row(
+      children: <Widget>[
+        Icon(icon, size: 14, color: StatsShared.secondaryText(context)),
+        const SizedBox(width: AppSpacing.xs),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: StatsShared.secondaryText(context),
+                ),
+              ),
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Alterna el lado de la gráfica principal y del desglose de categorías.
+  ///
+  /// Un mismo estado para las dos secciones: la gráfica y la lista tienen que
+  /// mirar el mismo lado, si no dirían cosas distintas a la vez.
   Widget _buildScopeToggle(BuildContext context) {
     return Wrap(
       spacing: AppSpacing.xs,
@@ -951,59 +2005,8 @@ class _StatsScreenState extends State<StatsScreen> {
     if (_showIncome == showIncome) return;
     setState(() {
       _showIncome = showIncome;
-      _touchedIndex = -1;
       _showAllCategories = false;
     });
-  }
-
-  Widget _buildChartTypeSelector(BuildContext context, AppProvider provider) {
-    // Solo el sector está abierto para los niveles basic; el resto es de pago.
-    const List<String> types = <String>['Pie', 'Bar', 'Line'];
-    const Map<String, IconData> icons = <String, IconData>{
-      'Pie': Icons.pie_chart_rounded,
-      'Bar': Icons.bar_chart_rounded,
-      'Line': Icons.show_chart_rounded,
-    };
-
-    return Wrap(
-      spacing: AppSpacing.xs,
-      children: <Widget>[
-        for (final String type in types)
-          CashChip(
-            label: switch (type) {
-              'Bar' => context.t('stats_chart_bar'),
-              'Line' => context.t('stats_chart_line'),
-              _ => context.t('stats_chart_pie'),
-            },
-            icon: icons[type],
-            selected: provider.chartType == type,
-            color: AppColors.primary,
-            onTap: () => _guard(
-              context,
-              provider.canCustomizeCharts || type == 'Pie',
-              () => provider.setChartType(type),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildChartBody(
-    BuildContext context,
-    AppProvider provider,
-    List<InternalTransaction> transactions,
-    _StatsSummary summary,
-    _Period period,
-    String chartType,
-  ) {
-    switch (chartType) {
-      case 'Bar':
-        return _buildBarChart(context, provider, summary);
-      case 'Line':
-        return _buildLineChart(context, provider, transactions, period);
-      default:
-        return _buildPieChart(context, provider, summary);
-    }
   }
 
   Widget _buildNoChartData(BuildContext context) {
@@ -1036,317 +2039,91 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // GRÁFICO CIRCULAR
-  // ---------------------------------------------------------------------------
-
-  Widget _buildPieChart(
-    BuildContext context,
-    AppProvider provider,
-    _StatsSummary summary,
-  ) {
-    final ThemeData theme = Theme.of(context);
-    final bool isDark = theme.brightness == Brightness.dark;
-    final List<MapEntry<String, double>> sorted = _sortedCategories(summary);
-
-    // Pasado cierto número de porciones el círculo deja de leerse: el resto se
-    // agrupa y la lista de texto sigue enumerando cada categoría, así que no
-    // se pierde ningún dato.
-    final List<MapEntry<String, double>> visible = sorted
-        .take(_maxPieSections)
-        .toList();
-    final double grouped = sorted
-        .skip(_maxPieSections)
-        .fold<double>(
-          0,
-          (double sum, MapEntry<String, double> e) => sum + e.value,
-        );
-    final double total = _scopeTotal(summary);
-
-    final List<PieChartSectionData> sections = <PieChartSectionData>[];
-    for (int i = 0; i < visible.length; i++) {
-      final Category category = _categoryFor(visible[i].key);
-      sections.add(
-        _pieSection(
-          context,
-          color: Color(category.colorValue),
-          share: summary.shareOf(visible[i].value, _showIncome),
-          touched: _touchedIndex == i,
-          isDark: isDark,
-        ),
-      );
-    }
-
-    if (grouped > 0) {
-      sections.add(
-        _pieSection(
-          context,
-          color: isDark
-              ? AppColors.surfaceDark3
-              : AppColors.surfaceVariantLight,
-          share: summary.shareOf(grouped, _showIncome),
-          touched: _touchedIndex == visible.length,
-          isDark: isDark,
-          textColor: isDark
-              ? AppColors.textSecondaryDark
-              : AppColors.textSecondary,
-        ),
-      );
-    }
-
-    return Stack(
-      alignment: Alignment.center,
-      children: <Widget>[
-        PieChart(
-          PieChartData(
-            sectionsSpace: 2,
-            centerSpaceRadius: 52,
-            startDegreeOffset: -90,
-            pieTouchData: PieTouchData(
-              touchCallback: (FlTouchEvent event, PieTouchResponse? response) {
-                if (!event.isInterestedForInteractions ||
-                    response?.touchedSection == null) {
-                  if (_touchedIndex == -1) return;
-                  setState(() => _touchedIndex = -1);
-                  return;
-                }
-                final int index = response!.touchedSection!.touchedSectionIndex;
-                if (index == _touchedIndex) return;
-                setState(() => _touchedIndex = index);
-              },
-            ),
-            borderData: FlBorderData(show: false),
-            sections: sections,
-          ),
-        ),
-        // El centro del gráfico no admite hijos: se superpone y no intercepta
-        // el toque, para que el círculo siga siendo interactivo.
-        IgnorePointer(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(
-                _showIncome ? context.t('income') : context.t('expense'),
-                maxLines: 1,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: isDark
-                      ? AppColors.textSecondaryDark
-                      : AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xxs),
-              Text(
-                _money(provider, total),
-                maxLines: 1,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  PieChartSectionData _pieSection(
-    BuildContext context, {
-    required Color color,
-    required double share,
-    required bool touched,
-    required bool isDark,
-    Color? textColor,
-  }) {
-    // El porcentaje se pinta sobre el color de la categoría, así que el texto
-    // necesita su propio contraste en lugar de asumir uno.
-    final Color foreground =
-        textColor ??
-        (ThemeData.estimateBrightnessForColor(color) == Brightness.dark
-            ? AppColors.backgroundLight
-            : AppColors.textPrimary);
-
-    return PieChartSectionData(
-      color: color,
-      value: share <= 0 ? 1 : share,
-      radius: touched ? 62 : 52,
-      // Solo las porciones con peso propio llevan etiqueta: en las slivers
-      // estrechas el texto se solaparía.
-      title: share >= 5 ? '${share.toFormattedString(0)}%' : '',
-      titleStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
-        color: foreground,
-        fontWeight: FontWeight.w700,
-      ),
-      borderSide: BorderSide(
-        color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
-        width: 2,
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // GRÁFICO DE BARRAS
-  // ---------------------------------------------------------------------------
-
-  Widget _buildBarChart(
-    BuildContext context,
-    AppProvider provider,
-    _StatsSummary summary,
-  ) {
-    final ThemeData theme = Theme.of(context);
-    final bool isDark = theme.brightness == Brightness.dark;
-    final List<MapEntry<String, double>> top = _sortedCategories(
-      summary,
-    ).take(_maxPieSections).toList();
-
-    if (top.isEmpty) return _buildNoChartData(context);
-
-    final double maxValue = top.first.value;
-    final double maxY = maxValue <= 0 ? 100 : maxValue * 1.2;
-
-    return BarChart(
-      BarChartData(
-        maxY: maxY,
-        alignment: BarChartAlignment.spaceAround,
-        barTouchData: BarTouchData(
-          touchTooltipData: BarTouchTooltipData(
-            getTooltipColor: (_) => CashChartCard.tooltipColor(context),
-            tooltipBorderRadius: BorderRadius.circular(AppRadius.sm),
-            getTooltipItem:
-                (
-                  BarChartGroupData group,
-                  int groupIndex,
-                  BarChartRodData rod,
-                  int rodIndex,
-                ) {
-                  final Category category = _categoryFor(top[group.x].key);
-                  final Color foreground = CashChartCard.tooltipTextColor(
-                    context,
-                  );
-                  return BarTooltipItem(
-                    category.name,
-                    TextStyle(color: foreground, fontWeight: FontWeight.w700),
-                    children: <TextSpan>[
-                      TextSpan(
-                        text:
-                            '\n${_money(provider, rod.toY)}'
-                            ' · ${summary.shareOf(top[group.x].value, _showIncome).toFormattedString(0)}%',
-                        style: TextStyle(
-                          color: foreground,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-          ),
-        ),
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: false,
-          horizontalInterval: maxY / 3,
-          getDrawingHorizontalLine: (double value) =>
-              FlLine(color: CashChartCard.gridColor(context), strokeWidth: 1),
-        ),
-        borderData: FlBorderData(show: false),
-        titlesData: FlTitlesData(
-          topTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          leftTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 28,
-              getTitlesWidget: (double value, TitleMeta meta) {
-                if (value != value.roundToDouble()) {
-                  return const SizedBox.shrink();
-                }
-                final int index = value.toInt();
-                if (index < 0 || index >= top.length) {
-                  return const SizedBox.shrink();
-                }
-                final Category category = _categoryFor(top[index].key);
-                return Padding(
-                  padding: const EdgeInsets.only(top: AppSpacing.xs),
-                  child: Icon(
-                    IconConstants.getCategoryIcon(category.iconCode),
-                    size: 18,
-                    color: Color(category.colorValue),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-        barGroups: <BarChartGroupData>[
-          for (int i = 0; i < top.length; i++)
-            BarChartGroupData(
-              x: i,
-              barRods: <BarChartRodData>[
-                BarChartRodData(
-                  toY: top[i].value,
-                  width: 18,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(AppRadius.xs),
-                  ),
-                  color: Color(_categoryFor(top[i].key).colorValue),
-                  // La pista de fondo da contexto de cuánto queda por llegar
-                  // al valor mayor sin añadir otra rejilla.
-                  backDrawRodData: BackgroundBarChartRodData(
-                    show: true,
-                    toY: maxY,
-                    color: isDark
-                        ? AppColors.surfaceDark2
-                        : AppColors.surfaceVariantLight,
-                  ),
-                ),
-              ],
-            ),
-        ],
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
   // GRÁFICO DE EVOLUCIÓN
   // ---------------------------------------------------------------------------
 
-  /// Una sola línea: la evolución del lado seleccionado a lo largo del período.
+  /// Una sola línea: la evolución de un lado a lo largo del período.
   ///
   /// No se apilan ingresos y gastos porque mezclarlos en un mismo eje obliga a
-  /// elegir una escala y la comparación deja de ser honesta. El resumen de
-  /// arriba ya muestra las tres cifras a la vez.
+  /// elegir una escala y la comparación deja de ser honesta. Analítica dibuja
+  /// una gráfica por lado, así que el lado llega por parámetro.
+  ///
+  /// El propio `fl_chart` interpola entre series al cambiar el período
+  /// (`duration` + `curve`); respetando la preferencia de movimiento reducido
+  /// del sistema la transición se desactiva.
+  ///
+  /// [progress] va de 0 a 1 y hace que la línea suba desde el eje al entrar; el
+  /// importe impreso sobre cada punto es el valor actual, así que también cuenta
+  /// hacia arriba hasta su cifra real.
   Widget _buildLineChart(
     BuildContext context,
     AppProvider provider,
     List<InternalTransaction> transactions,
-    _Period period,
-  ) {
+    _Period period, {
+    required bool showIncome,
+    required double progress,
+  }) {
     final ThemeData theme = Theme.of(context);
     final bool isDark = theme.brightness == Brightness.dark;
     final List<_Bucket> buckets = _buckets(context, period);
-    final Color lineColor = _showIncome ? AppColors.income : AppColors.expense;
-    final List<double> values = _valuesPerBucket(transactions, buckets, period);
+    final Color lineColor = showIncome ? AppColors.income : AppColors.expense;
+    final List<double> values = _valuesPerBucket(
+      transactions,
+      buckets,
+      period,
+      showIncome: showIncome,
+    );
+    final bool animate = !MediaQuery.disableAnimationsOf(context);
 
     final List<FlSpot> spots = <FlSpot>[
       for (int i = 0; i < buckets.length; i++)
-        FlSpot(buckets[i].index.toDouble(), values[i]),
+        FlSpot(buckets[i].index.toDouble(), values[i] * progress),
     ];
 
     final double peak = values.fold<double>(
       0,
       (double max, double value) => value > max ? value : max,
     );
-    final double maxY = peak <= 0 ? 100 : peak * 1.2;
+    final double maxY = peak <= 0 ? 100 : peak * 1.3;
 
     // Una marca por cada seis cubos como máximo: nunca se solapan.
     final int labelStep = (buckets.length / 6).ceil().clamp(1, 999);
 
+    // Serie de la línea. Se guarda la referencia para poder pedir a fl_chart
+    // que imprima la etiqueta de cada punto con datos sin tocar la gráfica.
+    final LineChartBarData bar = LineChartBarData(
+      spots: spots,
+      isCurved: true,
+      curveSmoothness: 0.24,
+      // La línea puede ser recta cuando solo hay un cubo con datos.
+      preventCurveOverShooting: true,
+      color: lineColor,
+      barWidth: 3,
+      isStrokeCapRound: true,
+      dotData: FlDotData(
+        show: true,
+        // Punto visible sólo donde hay importe; en los cubos a cero, nada.
+        getDotPainter:
+            (FlSpot spot, double percent, LineChartBarData barData, int index) =>
+                FlDotCirclePainter(
+                  radius: values[index] > 0 ? 3 * progress : 0,
+                  color: lineColor,
+                  strokeWidth: 0,
+                ),
+      ),
+      belowBarData: BarAreaData(
+        show: true,
+        color: lineColor.withValues(
+          alpha: (isDark ? 0.22 : 0.12) * progress,
+        ),
+      ),
+    );
+
     return LineChart(
+      duration: !animate || progress < 1
+          ? Duration.zero
+          : const Duration(milliseconds: 450),
+      curve: Curves.easeOutCubic,
       LineChartData(
         minX: buckets.first.index.toDouble(),
         maxX: buckets.last.index.toDouble(),
@@ -1360,6 +2137,15 @@ class _StatsScreenState extends State<StatsScreen> {
               FlLine(color: CashChartCard.gridColor(context), strokeWidth: 1),
         ),
         borderData: FlBorderData(show: false),
+        // Importe impreso sobre cada punto con datos: la gráfica se lee sin
+        // tocarla. Se abrevia para que las etiquetas no se pisen entre sí.
+        showingTooltipIndicators: <ShowingTooltipIndicators>[
+          for (int i = 0; i < spots.length; i++)
+            if (values[i] > 0)
+              ShowingTooltipIndicators(<LineBarSpot>[
+                LineBarSpot(bar, 0, spots[i]),
+              ]),
+        ],
         titlesData: FlTitlesData(
           topTitles: const AxisTitles(
             sideTitles: SideTitles(showTitles: false),
@@ -1367,8 +2153,29 @@ class _StatsScreenState extends State<StatsScreen> {
           rightTitles: const AxisTitles(
             sideTitles: SideTitles(showTitles: false),
           ),
-          leftTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
+          // Números del eje vertical siempre visibles: la gráfica dice su
+          // escala sin necesidad de tocar el gráfico.
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 48,
+              interval: maxY / 3,
+              getTitlesWidget: (double value, TitleMeta meta) {
+                if (value < 0 || value > maxY) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.xs),
+                  child: Text(
+                    _axisMoney(provider, value),
+                    textAlign: TextAlign.right,
+                    maxLines: 1,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: CashChartCard.axisColor(context),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
@@ -1382,8 +2189,8 @@ class _StatsScreenState extends State<StatsScreen> {
                     index >= buckets.length) {
                   return const SizedBox.shrink();
                 }
-                // Sin espacio para la etiqueta no se dibuja: el tooltip sigue
-                // dando el dato exacto.
+                // Sin espacio para la etiqueta no se dibuja: la gráfica sigue
+                // diciendo el importe de cada punto.
                 if (meta.parentAxisSize / buckets.length < 30) {
                   return const SizedBox.shrink();
                 }
@@ -1403,44 +2210,30 @@ class _StatsScreenState extends State<StatsScreen> {
           ),
         ),
         lineTouchData: LineTouchData(
+          // El importe ya va impreso sobre cada punto: no hace falta tocar.
+          handleBuiltInTouches: false,
           touchTooltipData: LineTouchTooltipData(
             getTooltipColor: (_) => CashChartCard.tooltipColor(context),
             tooltipBorderRadius: BorderRadius.circular(AppRadius.sm),
-            getTooltipItems: (List<LineBarSpot> touched) =>
-                touched.map((LineBarSpot spot) {
-                  final int index = spot.x.round().clamp(0, buckets.length - 1);
-                  return LineTooltipItem(
-                    '${buckets[index].label}\n${_money(provider, spot.y)}',
+            getTooltipItems: (List<LineBarSpot> touched) => touched
+                .map(
+                  (LineBarSpot spot) => LineTooltipItem(
+                    _axisMoney(provider, spot.y),
                     TextStyle(
                       color: CashChartCard.tooltipTextColor(context),
                       fontWeight: FontWeight.w700,
                     ),
-                  );
-                }).toList(),
+                  ),
+                )
+                .toList(),
           ),
         ),
-        lineBarsData: <LineChartBarData>[
-          LineChartBarData(
-            spots: spots,
-            isCurved: true,
-            curveSmoothness: 0.24,
-            // La línea puede ser recta cuando solo hay un cubo con datos.
-            preventCurveOverShooting: true,
-            color: lineColor,
-            barWidth: 3,
-            isStrokeCapRound: true,
-            dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(
-              show: true,
-              color: lineColor.withValues(alpha: isDark ? 0.22 : 0.12),
-            ),
-          ),
-        ],
+        lineBarsData: <LineChartBarData>[bar],
       ),
     );
   }
 
-  /// Reparte el total del lado seleccionado entre los cubos del eje.
+  /// Reparte el total de un lado entre los cubos del eje.
   ///
   /// Los importes se suman tal cual llegan del movimiento, solo cambia el
   /// agrupamiento: antes el eje siempre era el día del mes, incluso al mirar un
@@ -1448,12 +2241,13 @@ class _StatsScreenState extends State<StatsScreen> {
   List<double> _valuesPerBucket(
     List<InternalTransaction> transactions,
     List<_Bucket> buckets,
-    _Period period,
-  ) {
+    _Period period, {
+    required bool showIncome,
+  }) {
     final List<double> values = List<double>.filled(buckets.length, 0);
 
     for (final InternalTransaction transaction in transactions) {
-      if (_showIncome ? transaction.amount <= 0 : transaction.amount >= 0) {
+      if (showIncome ? transaction.amount <= 0 : transaction.amount >= 0) {
         continue;
       }
       final int index = _bucketIndexOf(
@@ -1584,7 +2378,10 @@ class _StatsScreenState extends State<StatsScreen> {
             )
           : null,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          // El lado no se repite aquí: lo decide el selector gastos/ingresos de
+          // la gráfica, de arriba; el título de la sección dice cuál es.
           for (final MapEntry<String, double> entry in shown)
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -1788,9 +2585,12 @@ class _StatsScreenState extends State<StatsScreen> {
     }
 
     // 3) Comparación con el período anterior, solo si hay base de comparación.
-    if (previous.expense > 0 || previous.income > 0) {
+    // La base es el lado que se está mirando: si ese lado no tuvo nada el
+    // período anterior no hay porcentaje que calcular, y dividir entre cero
+    // mostraría un dato infinito.
+    final double before = _showIncome ? previous.income : previous.expense;
+    if (before > 0) {
       final double current = _showIncome ? summary.income : summary.expense;
-      final double before = _showIncome ? previous.income : previous.expense;
       final double difference = (current - before) / before * 100;
       final bool equal = difference.abs() < 0.05;
 
@@ -2020,56 +2820,93 @@ class _StatsScreenState extends State<StatsScreen> {
   /// nada, así que cada estadística se calcula para una sola y el selector de
   /// arriba dice cuál es.
   List<InternalTransaction> _filter(AppProvider provider, _Period period) {
-    return provider.transactions.where((InternalTransaction t) {
-      final DateTime date = _day(t.date);
-      if (date.isBefore(period.start) || date.isAfter(period.end)) {
-        return false;
-      }
-      if (t.currency != _currencyCode) return false;
-      if (_accountTypeFilter == 'all') return true;
-
-      final String? cardId = t.cardId;
-      if (cardId == null) return false;
-
-      for (final AccountCard card in provider.cards) {
-        if (card.id != cardId) continue;
-        if (_accountTypeFilter == 'cash') return card.isCash;
-        if (_accountTypeFilter == 'card') return !card.isCash;
-        return _accountTypeFilter == card.id;
-      }
-      // Cuenta borrada o desconocida: no se inventa a qué grupo pertenecía.
-      return false;
-    }).toList();
+    return provider.transactions
+        .where(
+          (InternalTransaction t) =>
+              !_day(t.date).isBefore(period.start) &&
+              !_day(t.date).isAfter(period.end) &&
+              _matchesScope(provider, t),
+        )
+        .toList();
   }
 
+  /// Movimientos dentro del alcance (moneda y cuenta) sin límite de fecha.
+  ///
+  /// Lo usa el calendario, que necesita poder navegar por cualquier mes del
+  /// historial sin recalcular con un período fijo.
+  List<InternalTransaction> _filterAll(AppProvider provider) {
+    return provider.transactions
+        .where((InternalTransaction t) => _matchesScope(provider, t))
+        .toList();
+  }
+
+  /// Condiciones de moneda y cuenta, comunes a todos los filtros.
+  bool _matchesScope(AppProvider provider, InternalTransaction t) {
+    if (t.currency != _currencyCode) return false;
+    if (_accountTypeFilter == 'all') return true;
+
+    final String? cardId = t.cardId;
+    if (cardId == null) return false;
+
+    for (final AccountCard card in provider.cards) {
+      if (card.id != cardId) continue;
+      if (_accountTypeFilter == 'cash') return card.isCash;
+      if (_accountTypeFilter == 'card') return !card.isCash;
+      return _accountTypeFilter == card.id;
+    }
+    // Cuenta borrada o desconocida: no se inventa a qué grupo pertenecía.
+    return false;
+  }
+
+  /// Título legible de un movimiento.
+  ///
+  /// Reutiliza las mismas traducciones que la lista de Movimientos: los
+  /// movimientos técnicos (transferencia, recarga, solicitud) y las categorías
+  /// sembradas se muestran en la lengua activa, y el resto conserva el título
+  /// real que se guardó.
+  String _transactionTitle(BuildContext context, InternalTransaction tx) {
+    if (tx.categoryId == 'transfer_out') return context.t('transfer_sent');
+    if (tx.categoryId == 'recharge') return context.t('recharge_success');
+    if (tx.categoryId == 'income_request') return context.t('request_received');
+    if (tx.categoryId == 'general') return context.t('cat_general');
+    if (tx.categoryId.startsWith('cat_')) return context.t(tx.categoryId);
+    return tx.title;
+  }
+
+  /// Etiqueta de la cuenta de un movimiento, o `null` si no tiene.
+  String? _cardLabelFor(
+    BuildContext context,
+    AppProvider provider,
+    InternalTransaction tx,
+  ) {
+    final String? cardId = tx.cardId;
+    if (cardId == null) return null;
+    for (final AccountCard card in provider.cards) {
+      if (card.id == cardId) return _cardFilterLabel(context, card);
+    }
+    return null;
+  }
+
+  /// Resumen de una sola cara del período.
+  ///
+  /// Delega en [StatsAggregator.totals] con el lado pedido, de modo que la
+  /// regla de clasificación (signo del importe) vive en un único sitio y no se
+  /// repite aquí. Conserva el contrato anterior: `count` es el total de
+  /// registros recibidos, no los del lado seleccionado.
   _StatsSummary _summarize(
     List<InternalTransaction> transactions, {
     required bool showIncome,
   }) {
-    double income = 0;
-    double expense = 0;
-    final Map<String, double> byCategory = <String, double>{};
-
-    for (final InternalTransaction transaction in transactions) {
-      final double amount = transaction.amount;
-      final bool isExpense = amount < 0;
-      if (showIncome ? amount <= 0 : amount >= 0) continue;
-
-      final double value = amount.abs();
-      byCategory[transaction.categoryId] =
-          (byCategory[transaction.categoryId] ?? 0) + value;
-      if (isExpense) {
-        expense += value;
-      } else {
-        income += value;
-      }
-    }
+    final StatsTotals totals = StatsAggregator.totals(
+      transactions,
+      side: showIncome ? StatsSide.income : StatsSide.expense,
+    );
 
     return _StatsSummary(
-      income: income,
-      expense: expense,
-      byCategory: byCategory,
-      count: transactions.length,
+      income: totals.income,
+      expense: totals.expense,
+      byCategory: totals.byCategory,
+      count: totals.count,
     );
   }
 
@@ -2086,9 +2923,6 @@ class _StatsScreenState extends State<StatsScreen> {
           });
     return entries;
   }
-
-  double _scopeTotal(_StatsSummary summary) =>
-      _showIncome ? summary.income : summary.expense;
 
   // ---------------------------------------------------------------------------
   // MONEDAS Y FORMATO
@@ -2154,6 +2988,27 @@ class _StatsScreenState extends State<StatsScreen> {
       return '${value < 0 ? '-' : '+'}${currency.symbol}$amount';
     }
     return '${currency.symbol}$amount';
+  }
+
+  /// Importe abreviado para las etiquetas del eje vertical.
+  ///
+  /// El eje no tiene ancho para dos decimales ni para cifras largas, así que se
+  /// abrevia con `k`/`M` manteniendo el símbolo de la moneda. Es una etiqueta de
+  /// escala: la cifra exacta se sigue viendo al tocar el punto.
+  String _axisMoney(AppProvider provider, double value) {
+    final Currency currency = _currency(provider);
+    final double magnitude = value.abs();
+    if (magnitude >= 1000000) {
+      return '${currency.symbol}${(value / 1000000).toFormattedString(1)}M';
+    }
+    if (magnitude >= 1000) {
+      final double thousands = value / 1000;
+      final String text = thousands.abs() >= 10
+          ? thousands.toFormattedString(0)
+          : thousands.toFormattedString(1);
+      return '${currency.symbol}${text}k';
+    }
+    return '${currency.symbol}${value.toFormattedString(0)}';
   }
 
   // ---------------------------------------------------------------------------
@@ -2229,15 +3084,6 @@ class _StatsScreenState extends State<StatsScreen> {
   // TEXTOS AUXILIARES
   // ---------------------------------------------------------------------------
 
-  /// Nombre del lado seleccionado, con la moneda para que la cifra nunca sea
-  /// ambigua.
-  String _scopeTitle(BuildContext context, AppProvider provider) {
-    final String side = _showIncome
-        ? context.t('income')
-        : context.t('expense');
-    return '$side · ${_currency(provider).code}';
-  }
-
   /// Recorta un texto largo para que no se convierta en un chip infinito.
   static String _shorten(String value, int maxLength) {
     if (value.length <= maxLength) return value;
@@ -2246,14 +3092,164 @@ class _StatsScreenState extends State<StatsScreen> {
 
   /// Plantilla localizada con sustituciones.
   ///
-  /// El servicio de traducción no admite parámetros, así que la sustitución se
-  /// hace aquí en lugar de tocar el servicio para una sola pantalla.
-  String _tpl(BuildContext context, String key, Map<String, String> values) {
-    String result = context.t(key);
-    for (final MapEntry<String, String> entry in values.entries) {
-      result = result.replaceAll(entry.key, entry.value);
+  /// Delega en [StatsShared.text] para que las tres vistas del módulo
+  /// sustituyan igual; el servicio de traducción no admite parámetros, así que
+  /// la sustitución vive en un único sitio.
+  String _tpl(BuildContext context, String key, Map<String, String> values) =>
+      StatsShared.text(context, key, values);
+
+  // ---------------------------------------------------------------------------
+  // COMPARTIR
+  // ---------------------------------------------------------------------------
+
+  /// Comparte un resumen de la vista activa con la hoja nativa del sistema.
+  ///
+  /// No envía nada por su cuenta: abre el selector del sistema y es el usuario
+  /// quien decide si comparte y con qué aplicación. El texto sólo lleva cifras
+  /// agregadas del período visible; no incluye identificadores, cuentas ni
+  /// ningún otro dato sensible. El mensaje de confirmación aparece únicamente
+  /// cuando la API indica que el contenido se compartió.
+  Future<void> _shareStats(BuildContext context, AppProvider provider) async {
+    final ShareParams params = ShareParams(
+      text: _shareText(context, provider),
+      subject: _tpl(context, 'stats_share_subject', <String, String>{
+        '{title}': context.t('statistics'),
+      }),
+    );
+
+    try {
+      final ShareResult result = await SharePlus.instance.share(params);
+      if (!context.mounted) return;
+      if (result.status == ShareResultStatus.success) {
+        CashSnack.success(context, context.t('stats_share_ok'));
+      }
+    } catch (_) {
+      if (!context.mounted) return;
+      CashSnack.error(context, context.t('stats_share_error'));
     }
-    return result;
+  }
+
+  /// Texto del resumen según el apartado activo.
+  String _shareText(BuildContext context, AppProvider provider) {
+    switch (_view) {
+      case StatsView.analytics:
+        return _shareAnalytics(context, provider);
+      case StatsView.projection:
+        return _shareProjection(context, provider);
+      case StatsView.calendar:
+        return _shareCalendar(context, provider);
+    }
+  }
+
+  String _shareAnalytics(BuildContext context, AppProvider provider) {
+    final _Period period = _currentPeriod();
+    final StatsTotals totals = StatsAggregator.totals(
+      _filter(provider, period),
+    );
+    final double? rate = totals.savingsRate;
+
+    return <String>[
+      '${context.t('statistics')} · ${context.t('stats_view_analytics')}',
+      '${context.t('stats_share_period')}: '
+          '${_periodRangeLabel(context, period, totals.count)}',
+      '${context.t('stats_balance_month')}: '
+          '${_money(provider, totals.net, signed: true)}',
+      '${context.t('income')}: ${_money(provider, totals.income)}',
+      '${context.t('expense')}: ${_money(provider, totals.expense)}',
+      '${context.t('stats_savings_rate')}: '
+          '${rate == null ? context.t('stats_savings_rate_unavailable') : '${rate.toFormattedString(1)}%'}',
+    ].join('\n');
+  }
+
+  String _shareProjection(BuildContext context, AppProvider provider) {
+    final DateTime today = DateTime.now();
+    final DateTime month = StatsAggregator.firstDayOfMonth(today);
+    final StatsTotals accumulated = StatsAggregator.totals(
+      _filter(
+        provider,
+        _Period(month, StatsAggregator.lastDayOfMonth(today)),
+      ),
+    );
+    final MonthlyProjection projection = StatsAggregator.projection(
+      today: today,
+      month: month,
+      accumulated: accumulated,
+    );
+
+    final List<String> lines = <String>[
+      '${context.t('statistics')} · ${context.t('stats_view_projection')}',
+      StatsShared.monthLabel(context, month),
+    ];
+
+    if (projection.isEmpty) {
+      lines.add(context.t('stats_projection_unavailable_title'));
+      return lines.join('\n');
+    }
+
+    // Al compartir se aplican las mismas reglas que en pantalla: lo estimado se
+    // etiqueta como estimado y lo que no se puede afirmar no se muestra.
+    final bool monthComplete =
+        projection.isMonthComplete && projection.isCurrentMonth;
+    final bool incomeShown =
+        projection.incomeProjectionReliable || monthComplete;
+    final bool expenseShown =
+        projection.expenseProjectionReliable || monthComplete;
+    final double projectedIncome = monthComplete
+        ? projection.accumulatedIncome
+        : projection.projectedIncome;
+    final double projectedExpense = monthComplete
+        ? projection.accumulatedExpense
+        : projection.projectedExpense;
+
+    lines
+      ..add(
+        '${context.t('stats_accumulated')}: '
+        '${_money(provider, projection.accumulatedNet, signed: true)}',
+      )
+      ..add(
+        '${context.t('stats_projection_income')}: '
+        '${incomeShown ? '≈ ${_money(provider, projectedIncome)}' : context.t('stats_projection_income_unavailable')}',
+      )
+      ..add(
+        '${context.t('stats_projection_expense')}: '
+        '${expenseShown ? '≈ ${_money(provider, projectedExpense)}' : context.t('stats_projection_unavailable_title')}',
+      )
+      ..add(
+        '${context.t('stats_share_method')}: '
+        '${_tpl(context, 'stats_projection_method', <String, String>{
+          '{elapsed}': '${projection.elapsedDays}',
+          '{total}': '${projection.totalDays}',
+        })}',
+      )
+      ..add(context.t('stats_projection_disclaimer'));
+
+    return lines.join('\n');
+  }
+
+  String _shareCalendar(BuildContext context, AppProvider provider) {
+    final DateTime day = StatsAggregator.dayOf(_calendarDay.value);
+    final List<DayTotals> days = StatsAggregator.dailyTotals(
+      _filterAll(provider),
+      start: day,
+      end: day,
+    );
+    final DayTotals totals = days.isEmpty
+        ? DayTotals(day: day, income: 0, expense: 0, count: 0)
+        : days.first;
+
+    return <String>[
+      '${context.t('statistics')} · ${context.t('stats_view_calendar')}',
+      StatsShared.fullDate(context, day),
+      '${context.t('stats_calendar_day_income')}: '
+          '${_money(provider, totals.income)}',
+      '${context.t('stats_calendar_day_expense')}: '
+          '${_money(provider, totals.expense)}',
+      '${context.t('stats_calendar_day_balance')}: '
+          '${_money(provider, totals.net, signed: true)}',
+      _tpl(context, 'stats_movements', <String, String>{
+        '{n}': '${totals.count}',
+      }),
+    ].join('\n');
   }
 
   // ---------------------------------------------------------------------------
@@ -2318,7 +3314,6 @@ class _StatsScreenState extends State<StatsScreen> {
     if (picked == null || !mounted) return;
     setState(() {
       _selectedDate = picked;
-      _touchedIndex = -1;
     });
   }
 

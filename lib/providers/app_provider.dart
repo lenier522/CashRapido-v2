@@ -652,7 +652,7 @@ class AppProvider with ChangeNotifier {
       if (themeString != null) {
         _themeMode = ThemeMode.values.firstWhere(
           (e) => e.toString() == themeString,
-          orElse: () => ThemeMode.system,
+          orElse: () => ThemeMode.dark,
         );
       }
 
@@ -796,6 +796,9 @@ class AppProvider with ChangeNotifier {
           print('WidgetService init error: $e');
         }
       }
+
+      // Reconecta Google Drive en segundo plano si ya estaba autorizado.
+      _restoreDriveSession();
     }
   }
 
@@ -1955,7 +1958,12 @@ class AppProvider with ChangeNotifier {
   }
 
   // --- Theme ---
-  ThemeMode _themeMode = ThemeMode.system;
+  /// Tema por defecto de la aplicación: oscuro.
+  ///
+  /// Sólo se respeta otro valor si el usuario lo ha elegido explícitamente
+  /// (se guarda en `theme_mode`). En una instalación nueva la app arranca en
+  /// oscuro.
+  ThemeMode _themeMode = ThemeMode.dark;
   ThemeMode get themeMode => _themeMode;
 
   Future<void> setThemeMode(ThemeMode mode) async {
@@ -2036,13 +2044,13 @@ class AppProvider with ChangeNotifier {
 
   // --- Notifications ---
 
-  Future<void> setNotificationsEnabled(bool enabled) async {
+  Future<bool> setNotificationsEnabled(bool enabled) async {
     // Request permissions if enabling
     if (enabled) {
       final granted = await _notificationService.requestPermissions();
       if (!granted) {
         // Permission denied, don't enable
-        return;
+        return false;
       }
       await _notificationService.scheduleAllNotifications(
         _currentLocale?.languageCode ?? 'es',
@@ -2059,7 +2067,13 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('notifications_enabled', enabled);
+    return _notificationsEnabled;
   }
+
+  /// Consulta (sin solicitar) si el sistema operativo permite publicar
+  /// notificaciones. Devuelve `null` si no se puede determinar.
+  Future<bool?> systemNotificationsEnabled() =>
+      _notificationService.areNotificationsEnabled();
 
   // --- Export ---
 
@@ -2134,6 +2148,28 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Restaura la sesión de Google Drive al abrir la app.
+  ///
+  /// Sin esta llamada la sesión se "perdía" en cada arranque: `currentUser`
+  /// queda en `null` hasta que el usuario vuelve a conectarse a mano, aunque
+  /// ya hubiera autorizado el acceso. Es silenciosa (no muestra UI) y no
+  /// bloquea el arranque.
+  Future<void> _restoreDriveSession() async {
+    if (kIsWeb) return;
+    try {
+      final account = await _driveService.restoreSession();
+      if (account != null) {
+        await _checkLastBackup();
+      } else {
+        _lastBackupDate = null;
+      }
+    } catch (e) {
+      if (kDebugMode) print('Drive session restore error: $e');
+    } finally {
+      notifyListeners();
+    }
+  }
+
   Future<void> _checkLastBackup() async {
     _lastBackupDate = await _driveService.getLastBackupDate();
     notifyListeners();
@@ -2192,7 +2228,12 @@ class AppProvider with ChangeNotifier {
     }
   }
 
-  Future<void> restoreFromLocal() async {
+  /// Restaura una copia local seleccionada por el usuario.
+  ///
+  /// Devuelve `true` solo si se restauró una copia; `false` si el usuario
+  /// canceló el selector de archivos. Antes devolvía `void` y la pantalla de
+  /// Ajustes mostraba "restauración correcta" incluso al cancelar.
+  Future<bool> restoreFromLocal() async {
     try {
       // Pick file
       FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -2200,24 +2241,27 @@ class AppProvider with ChangeNotifier {
         allowedExtensions: ['zip'],
       );
 
-      if (result != null && result.files.single.path != null) {
-        _isSyncing = true;
-        notifyListeners();
-
-        try {
-          final file = File(result.files.single.path!);
-
-          await _closeBoxes();
-          await _backupService.restoreBackup(file);
-          await _openBoxes();
-        } catch (e) {
-          if (!_transactionBox.isOpen) await _openBoxes();
-          rethrow;
-        }
-
-        _isSyncing = false;
-        notifyListeners();
+      if (result == null || result.files.single.path == null) {
+        return false;
       }
+
+      _isSyncing = true;
+      notifyListeners();
+
+      try {
+        final file = File(result.files.single.path!);
+
+        await _closeBoxes();
+        await _backupService.restoreBackup(file);
+        await _openBoxes();
+      } catch (e) {
+        if (!_transactionBox.isOpen) await _openBoxes();
+        rethrow;
+      }
+
+      _isSyncing = false;
+      notifyListeners();
+      return true;
     } catch (e) {
       _isSyncing = false;
       notifyListeners();
@@ -2237,6 +2281,40 @@ class AppProvider with ChangeNotifier {
     _categoryBox = await Hive.openBox<Category>('categories');
     _cardBox = await Hive.openBox<AccountCard>('cards');
     _fetchData();
+  }
+
+  /// Restablece los datos financieros del usuario en este dispositivo.
+  ///
+  /// Borra movimientos, cuentas, categorías y transacciones recurrentes, junto
+  /// con las notificaciones y las conversaciones del asistente IA, y vuelve a
+  /// crear las categorías y la cuenta por defecto.
+  ///
+  /// NO modifica la licencia, las preferencias, las credenciales ni las copias
+  /// de seguridad en la nube: todo eso queda fuera del alcance de este
+  /// restablecimiento y se conserva intacto.
+  Future<void> resetAllData() async {
+    await _transactionBox.clear();
+    await _categoryBox.clear();
+    await _cardBox.clear();
+    await _recurringBox.clear();
+    await _notificationBox.clear();
+
+    // El asistente IA guarda sus conversaciones en su propio box, que se abre
+    // de forma perezosa desde su pantalla.
+    if (Hive.isBoxOpen('ai_chats')) {
+      await Hive.box<ChatConversation>('ai_chats').clear();
+    } else {
+      final Box<ChatConversation> chatBox = await Hive.openBox<ChatConversation>(
+        'ai_chats',
+      );
+      await chatBox.clear();
+    }
+
+    await _seedDefaultCategories();
+    await _seedDefaultCards();
+
+    _fetchData();
+    notifyListeners();
   }
 
   Future<void> setLanguage(String languageCode) async {

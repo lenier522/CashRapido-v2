@@ -13,6 +13,7 @@ import '../../widgets/design/cash_bottom_sheet.dart';
 import '../../widgets/design/cash_button.dart';
 import '../../widgets/design/cash_card.dart';
 import '../../widgets/design/cash_chip.dart';
+import '../../widgets/design/cash_dialog.dart';
 import '../../widgets/design/cash_empty_state.dart';
 import '../../widgets/design/cash_floating_button.dart';
 import '../../widgets/design/cash_icon_button.dart';
@@ -738,50 +739,15 @@ class _ProductsTabState extends State<ProductsTab> {
     Product product,
     BusinessProvider provider,
   ) async {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusXl),
-        backgroundColor: isDark
-            ? AppColors.surfaceDark
-            : AppColors.surfaceLight,
-        title: Row(
-          children: [
-            const Icon(Icons.delete_outline, color: AppColors.error, size: 22),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Text(
-                context.t('delete_product'),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          context
-              .t('product_form_delete_confirm')
-              .replaceAll('{name}', product.name),
-        ),
-        actions: [
-          CashButton(
-            label: context.t('cancel'),
-            type: CashButtonType.outlined,
-            fullWidth: false,
-            height: 44,
-            onPressed: () => Navigator.pop(dialogContext, false),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          CashButton(
-            label: context.t('delete'),
-            type: CashButtonType.danger,
-            fullWidth: false,
-            height: 44,
-            onPressed: () => Navigator.pop(dialogContext, true),
-          ),
-        ],
-      ),
+    final confirmed = await showCashConfirmDialog(
+      context,
+      title: context.t('delete_product'),
+      message: context
+          .t('product_form_delete_confirm')
+          .replaceAll('{name}', product.name),
+      confirmLabel: context.t('delete'),
+      cancelLabel: context.t('cancel'),
+      icon: Icons.delete_outline_rounded,
     );
 
     if (confirmed == true) {

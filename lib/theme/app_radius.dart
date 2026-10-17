@@ -40,4 +40,9 @@ abstract final class AppRadius {
   static const BorderRadius radiusXxxl = BorderRadius.all(
     Radius.circular(xxxl),
   );
+
+  /// Forma completamente redondeada (píldoras, chips, avatares).
+  static const BorderRadius radiusFull = BorderRadius.all(
+    Radius.circular(full),
+  );
 }

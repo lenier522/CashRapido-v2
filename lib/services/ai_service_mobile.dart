@@ -53,16 +53,14 @@ class AIService {
       }
     }
 
-    try {
-      final stream = _chatSession!.sendMessageStream(Content.text(message));
-      await for (final chunk in stream) {
-        if (chunk.text != null) {
-          yield chunk.text!;
-        }
+    // Los errores se propagan al consumidor para que la interfaz pueda
+    // distinguir un fallo real de una respuesta del modelo (antes se emitían
+    // como texto y terminaban guardándose como si fuese una respuesta válida).
+    final stream = _chatSession!.sendMessageStream(Content.text(message));
+    await for (final chunk in stream) {
+      if (chunk.text != null) {
+        yield chunk.text!;
       }
-    } catch (e) {
-      print("Error with Key $_currentKeyIndex: $e");
-      yield "Error de conexión: $e";
     }
   }
 

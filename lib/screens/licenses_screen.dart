@@ -7,6 +7,7 @@ import 'package:cashrapido/providers/app_provider.dart';
 import 'package:cashrapido/licences/license_type.dart';
 import 'package:cashrapido/licences/art_pay.dart';
 import 'package:cashrapido/licences/payment_config.dart';
+import 'package:cashrapido/theme/app_colors.dart';
 
 class LicensesScreen extends StatefulWidget {
   const LicensesScreen({super.key});
@@ -784,9 +785,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
                     const CircularProgressIndicator(),
                     const SizedBox(height: 16),
                     Text(
-                      Localizations.localeOf(context).languageCode == 'es'
-                          ? 'Simulando pago de prueba...'
-                          : 'Simulating test payment...',
+                      context.t('simulating_test_payment'),
                       style: GoogleFonts.outfit(fontSize: 16),
                       textAlign: TextAlign.center,
                     ),
@@ -811,12 +810,12 @@ class _LicensesScreenState extends State<LicensesScreen> {
             content: Text(
               '${context.t('payment_test_success')} (${licenseType.name.toUpperCase()})',
             ),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.income,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
+          SnackBar(content: Text(errorMsg), backgroundColor: AppColors.error),
         );
       }
       return;
@@ -839,7 +838,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
                     const CircularProgressIndicator(),
                     const SizedBox(height: 16),
                     Text(
-                      'Procesando pago con Apklis...',
+                      context.t('processing_payment_apklis'),
                       style: GoogleFonts.outfit(fontSize: 16),
                       textAlign: TextAlign.center,
                     ),
@@ -862,12 +861,12 @@ class _LicensesScreenState extends State<LicensesScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(context.t('license_active_success')),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.income,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
+          SnackBar(content: Text(errorMsg), backgroundColor: AppColors.error),
         );
       }
     }
@@ -897,7 +896,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
                             ArtPayService.getLicenseName(licenseType),
                           ),
                     ),
-                    backgroundColor: Colors.green,
+                    backgroundColor: AppColors.income,
                   ),
                 );
               }
@@ -1060,7 +1059,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
       messenger.showSnackBar(
         SnackBar(
           content: Text(context.t('license_restored')),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.income,
           duration: const Duration(seconds: 3),
         ),
       );
@@ -1072,7 +1071,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
       messenger.showSnackBar(
         SnackBar(
           content: Text(isNoLicense ? context.t('no_license_found') : errorMsg),
-          backgroundColor: isNoLicense ? Colors.orange : Colors.red,
+          backgroundColor: isNoLicense ? AppColors.warning : AppColors.error,
           duration: const Duration(seconds: 4),
         ),
       );

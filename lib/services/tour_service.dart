@@ -1,14 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'localization_service.dart';
 import '../utils/tour_keys.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_shadows.dart';
 
+/// Recorrido guiado de primer uso de la pantalla principal.
+///
+/// Destaca la tarjeta de balance, las acciones rápidas, la acción principal
+/// (IA) y la barra de navegación, y va cambiando de pestaña para explicar cada
+/// sección. La preferencia `seenFeatureTour` que decide si debe mostrarse se
+/// gestiona en [MainScreen], no aquí.
 class FeatureTour {
   final BuildContext context;
   final GlobalKey fabKey;
   final GlobalKey navBarKey;
   final Function(int) onNavigate;
+
+  /// Evita programar la navegación automática más de una vez por paso cuando
+  /// el contenido del objetivo se reconstruye durante el tour.
+  final Set<String> _navigatedSteps = <String>{};
 
   FeatureTour({
     required this.context,
@@ -22,8 +35,8 @@ class FeatureTour {
 
     tutorialCoachMark = TutorialCoachMark(
       targets: _createTargets(),
-      colorShadow: Theme.of(context).colorScheme.primary.withOpacity(0.8),
-      textSkip: "SKIP", // Fallback, we use custom widget
+      colorShadow: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+      textSkip: context.t('skip'), // Fallback, usamos nuestro propio widget
       paddingFocus: 10,
       opacityShadow: 0.8,
       hideSkip: true, // We strictly use our own skip widget
@@ -31,51 +44,54 @@ class FeatureTour {
         child: Align(
           alignment: Alignment.topRight,
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: TextButton(
               onPressed: () {
                 tutorialCoachMark.skip();
               },
               style: TextButton.styleFrom(
-                backgroundColor: Colors.black54,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+                backgroundColor: AppColors.surfaceDark2,
+                foregroundColor: AppColors.textPrimaryDark,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: AppRadius.radiusLg,
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.sm,
                 ),
               ),
               child: Text(
                 context.t('skip'),
-                style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  fontSize: 14,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimaryDark,
                 ),
               ),
             ),
           ),
         ),
       ),
-      onFinish: () {
-        print("Tour finished");
-      },
       onClickTarget: (target) {
-        print('Clicked target: $target');
         tutorialCoachMark.next();
       },
       onClickOverlay: (target) {
-        print('Clicked overlay: $target');
         tutorialCoachMark.next();
-      },
-      onSkip: () {
-        print("Tour skipped");
-        return true;
       },
     );
 
     tutorialCoachMark.show(context: context);
   }
+
+  /// Programa la navegación automática de un paso una sola vez.
+  void _navigateOnce(String identify, int index) {
+    if (!_navigatedSteps.add(identify)) return;
+    Future.delayed(const Duration(milliseconds: 300), () {
+      onNavigate(index);
+    });
+  }
+
   List<TargetFocus> _createTargets() {
     List<TargetFocus> targets = [];
-
 
     // 0.1 Balance Card
     targets.add(
@@ -91,8 +107,9 @@ class FeatureTour {
             align: ContentAlign.bottom,
             builder: (context, controller) {
               return _buildTourContent(
-                "Tu Dinero Consolidado",
-                "Aquí verás el resumen global de todas tus tarjetas y cuentas en diferentes monedas.",
+                context,
+                context.t('tour_balance_title'),
+                context.t('tour_balance_desc'),
               );
             },
           ),
@@ -112,8 +129,9 @@ class FeatureTour {
             align: ContentAlign.bottom,
             builder: (context, controller) {
               return _buildTourContent(
-                "Acciones Mágicas",
-                "Usa esta zona para transferir y realizar acciones sobre tu dinero al instante.",
+                context,
+                context.t('tour_quick_actions_title'),
+                context.t('tour_quick_actions_desc'),
               );
             },
           ),
@@ -133,6 +151,7 @@ class FeatureTour {
             align: ContentAlign.top,
             builder: (context, controller) {
               return _buildTourContent(
+                context,
                 context.t('tour_fab_title'),
                 context.t('tour_fab_desc'),
               );
@@ -156,6 +175,7 @@ class FeatureTour {
             align: ContentAlign.top,
             builder: (context, controller) {
               return _buildTourContent(
+                context,
                 context.t('tour_navbar_title'),
                 context.t('tour_navbar_desc'),
               );
@@ -165,10 +185,10 @@ class FeatureTour {
       ),
     );
 
-    // 3. Navigate to Wallet tab
+    // 3. Navigate to Home tab
     targets.add(
       TargetFocus(
-        identify: "walletTab",
+        identify: "homeTab",
         keyTarget: navBarKey,
         enableOverlayTab: true,
         enableTargetTab: false,
@@ -177,13 +197,11 @@ class FeatureTour {
           TargetContent(
             align: ContentAlign.top,
             builder: (context, controller) {
-              // Auto-navigate to Wallet
-              Future.delayed(const Duration(milliseconds: 300), () {
-                onNavigate(1);
-              });
+              _navigateOnce("homeTab", 0);
               return _buildTourContent(
-                context.t('tour_wallet_nav_title'),
-                context.t('tour_wallet_nav_desc'),
+                context,
+                context.t('tour_home_nav_title'),
+                context.t('tour_home_nav_desc'),
               );
             },
           ),
@@ -191,7 +209,31 @@ class FeatureTour {
       ),
     );
 
-    // 4. Navigate to Stats tab
+    // 4. Navigate to Movements tab
+    targets.add(
+      TargetFocus(
+        identify: "movementsTab",
+        keyTarget: navBarKey,
+        enableOverlayTab: true,
+        enableTargetTab: false,
+        shape: ShapeLightFocus.RRect,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder: (context, controller) {
+              _navigateOnce("movementsTab", 1);
+              return _buildTourContent(
+                context,
+                context.t('tour_movements_nav_title'),
+                context.t('tour_movements_nav_desc'),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+
+    // 5. Navigate to Stats tab
     targets.add(
       TargetFocus(
         identify: "statsTab",
@@ -203,11 +245,9 @@ class FeatureTour {
           TargetContent(
             align: ContentAlign.top,
             builder: (context, controller) {
-              // Auto-navigate to Stats
-              Future.delayed(const Duration(milliseconds: 300), () {
-                onNavigate(2);
-              });
+              _navigateOnce("statsTab", 2);
               return _buildTourContent(
+                context,
                 context.t('tour_stats_nav_title'),
                 context.t('tour_stats_nav_desc'),
               );
@@ -217,7 +257,7 @@ class FeatureTour {
       ),
     );
 
-    // 5. Navigate to Settings tab
+    // 6. Navigate to Profile tab
     targets.add(
       TargetFocus(
         identify: "settingsTab",
@@ -229,13 +269,11 @@ class FeatureTour {
           TargetContent(
             align: ContentAlign.top,
             builder: (context, controller) {
-              // Auto-navigate to Settings
-              Future.delayed(const Duration(milliseconds: 300), () {
-                onNavigate(3);
-              });
+              _navigateOnce("settingsTab", 3);
               return _buildTourContent(
-                context.t('tour_settings_nav_title'),
-                context.t('tour_settings_nav_desc'),
+                context,
+                context.t('tour_profile_nav_title'),
+                context.t('tour_profile_nav_desc'),
               );
             },
           ),
@@ -243,7 +281,7 @@ class FeatureTour {
       ),
     );
 
-    // 6. Final step - Return to Home
+    // 7. Final step - Return to Home
     targets.add(
       TargetFocus(
         identify: "finalStep",
@@ -255,13 +293,11 @@ class FeatureTour {
           TargetContent(
             align: ContentAlign.top,
             builder: (context, controller) {
-              // Return to Home
-              Future.delayed(const Duration(milliseconds: 300), () {
-                onNavigate(0);
-              });
+              _navigateOnce("finalStep", 0);
               return _buildTourContent(
-                "¡Tour Completado!",
-                "Has explorado todas las funciones principales de CashRapido. ¡Comienza a gestionar tus finanzas!",
+                context,
+                context.t('tour_finish_title'),
+                context.t('tour_finish_desc'),
               );
             },
           ),
@@ -272,12 +308,20 @@ class FeatureTour {
     return targets;
   }
 
-  Widget _buildTourContent(String title, String description) {
+  Widget _buildTourContent(
+    BuildContext context,
+    String title,
+    String description,
+  ) {
+    final ThemeData theme = Theme.of(context);
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: Colors.black87,
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.surfaceDark2,
+        borderRadius: AppRadius.radiusLg,
+        border: Border.all(color: AppColors.borderDark),
+        boxShadow: AppShadows.darkCard,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -285,16 +329,18 @@ class FeatureTour {
         children: [
           Text(
             title,
-            style: GoogleFonts.outfit(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              fontSize: 20,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimaryDark,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             description,
-            style: GoogleFonts.outfit(color: Colors.white, fontSize: 14),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppColors.textSecondaryDark,
+              height: 1.4,
+            ),
           ),
         ],
       ),

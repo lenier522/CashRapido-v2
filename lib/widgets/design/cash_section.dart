@@ -57,7 +57,14 @@ class CashSection extends StatelessWidget {
                   ],
                 ),
               ),
-              ?action,
+              // `action` es un campo de instancia, así que Dart no lo promueve
+              // a `Widget` con la comprobación `!= null`: se añade el `!`.
+              // Se evita deliberadamente la forma `?action` (elemento
+              // null-aware) porque el analizador que ejecuta build_runner no la
+              // soporta y con ella la generación de los `.g.dart` fallaba
+              // por completo.
+              // ignore: use_null_aware_elements
+              if (action != null) action!,
             ],
           ),
           const SizedBox(height: AppSpacing.md),

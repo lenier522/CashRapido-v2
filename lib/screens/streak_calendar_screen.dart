@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
+import '../services/localization_service.dart';
 
 class StreakCalendarScreen extends StatelessWidget {
   const StreakCalendarScreen({super.key});
@@ -20,7 +21,7 @@ class StreakCalendarScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF0A0A14),
         elevation: 0,
         title: Text(
-          "Rachas Diarias",
+          context.t('streak_title'),
           style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         leading: IconButton(
@@ -47,12 +48,15 @@ class StreakCalendarScreen extends StatelessWidget {
                      const Text('🔥', style: TextStyle(fontSize: 48)),
                      const SizedBox(height: 10),
                      Text(
-                       "${provider.streakDays} Días Seguidos",
+                       context.t('streak_days').replaceAll(
+                         '{count}',
+                         '${provider.streakDays}',
+                       ),
                        style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.orange),
                      ),
                      const SizedBox(height: 5),
                      Text(
-                       "¡Gana un plan Premium cada 50 días!",
+                       context.t('streak_reward_hint'),
                        style: GoogleFonts.outfit(fontSize: 14, color: Colors.orangeAccent),
                        textAlign: TextAlign.center,
                      ),
@@ -66,7 +70,12 @@ class StreakCalendarScreen extends StatelessWidget {
                 ElevatedButton.icon(
                   onPressed: () => _showClaimDialog(context, provider),
                   icon: const Icon(Icons.card_giftcard),
-                  label: Text("Canjear Plan (${provider.availableRandomPlans} disp.)"),
+                  label: Text(
+                    context.t('streak_claim_button').replaceAll(
+                      '{count}',
+                      '${provider.availableRandomPlans}',
+                    ),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.amber,
                     foregroundColor: Colors.black,
@@ -78,11 +87,11 @@ class StreakCalendarScreen extends StatelessWidget {
               
               // Calendario del mes actual
               Text(
-                "Calendario - Este Mes",
+                context.t('streak_calendar_month'),
                 style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
               ),
               const SizedBox(height: 16),
-              _buildWeekDays(),
+              _buildWeekDays(context),
               const SizedBox(height: 8),
               Expanded(
                 child: GridView.builder(
@@ -127,8 +136,16 @@ class StreakCalendarScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildWeekDays() {
-    final days = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+  Widget _buildWeekDays(BuildContext context) {
+    final days = [
+      context.t('streak_weekday_mon'),
+      context.t('streak_weekday_tue'),
+      context.t('streak_weekday_wed'),
+      context.t('streak_weekday_thu'),
+      context.t('streak_weekday_fri'),
+      context.t('streak_weekday_sat'),
+      context.t('streak_weekday_sun'),
+    ];
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: days.map((d) => 
@@ -142,15 +159,18 @@ class StreakCalendarScreen extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF141428),
-        title: Text("🎁 Recompensa Premium", style: GoogleFonts.outfit(color: Colors.white)),
+        title: Text('🎁 ${context.t('streak_reward_title')}', style: GoogleFonts.outfit(color: Colors.white)),
         content: Text(
-          "¿Quieres usar 1 de tus ${provider.availableRandomPlans} recompensas para obtener un Plan de Licencia al azar ahora mismo?",
+          context.t('streak_reward_question').replaceAll(
+            '{count}',
+            '${provider.availableRandomPlans}',
+          ),
           style: GoogleFonts.outfit(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text("Cancelar", style: GoogleFonts.outfit(color: Colors.white54)),
+            child: Text(context.t('cancel'), style: GoogleFonts.outfit(color: Colors.white54)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -159,14 +179,14 @@ class StreakCalendarScreen extends StatelessWidget {
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('🎉 ¡Plan Premium Activado Exitosamente!', style: GoogleFonts.outfit()),
+                    content: Text('🎉 ${context.t('streak_reward_success')}', style: GoogleFonts.outfit()),
                     backgroundColor: Colors.green,
                   ),
                 );
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, foregroundColor: Colors.black),
-            child: Text("Canjear", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+            child: Text(context.t('streak_claim'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
           ),
         ],
       )

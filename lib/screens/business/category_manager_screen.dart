@@ -9,6 +9,7 @@ import '../../theme/app_radius.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/design/cash_button.dart';
 import '../../widgets/design/cash_card.dart';
+import '../../widgets/design/cash_dialog.dart';
 import '../../widgets/design/cash_empty_state.dart';
 import '../../widgets/design/cash_floating_button.dart';
 import '../../widgets/design/cash_icon_button.dart';
@@ -380,49 +381,15 @@ class _CategoryCardState extends State<_CategoryCard> {
   }
 
   void _confirmDelete(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-
-    showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusXl),
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        title: Row(
-          children: [
-            const Icon(Icons.delete_outline, color: AppColors.error, size: 22),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Text(
-                context.t('category_delete_title'),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          context
-              .t('category_confirm_delete')
-              .replaceAll('{name}', widget.category.name),
-        ),
-        actions: [
-          CashButton(
-            label: context.t('cancel'),
-            type: CashButtonType.outlined,
-            fullWidth: false,
-            height: 44,
-            onPressed: () => Navigator.pop(dialogContext, false),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          CashButton(
-            label: context.t('delete'),
-            type: CashButtonType.danger,
-            fullWidth: false,
-            height: 44,
-            onPressed: () => Navigator.pop(dialogContext, true),
-          ),
-        ],
-      ),
+    showCashConfirmDialog(
+      context,
+      title: context.t('category_delete_title'),
+      message: context
+          .t('category_confirm_delete')
+          .replaceAll('{name}', widget.category.name),
+      confirmLabel: context.t('delete'),
+      cancelLabel: context.t('cancel'),
+      icon: Icons.delete_outline_rounded,
     ).then((confirmed) async {
       if (confirmed == true) {
         await widget.provider.deleteProductCategory(widget.category.id);
@@ -497,49 +464,15 @@ class _SubcategoryTile extends StatelessWidget {
   }
 
   void _confirmDelete(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-
-    showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusXl),
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        title: Row(
-          children: [
-            const Icon(Icons.delete_outline, color: AppColors.error, size: 22),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Text(
-                context.t('category_delete_sub_title'),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          context
-              .t('category_confirm_delete_sub')
-              .replaceAll('{name}', subcategory.name),
-        ),
-        actions: [
-          CashButton(
-            label: context.t('cancel'),
-            type: CashButtonType.outlined,
-            fullWidth: false,
-            height: 44,
-            onPressed: () => Navigator.pop(dialogContext, false),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          CashButton(
-            label: context.t('delete'),
-            type: CashButtonType.danger,
-            fullWidth: false,
-            height: 44,
-            onPressed: () => Navigator.pop(dialogContext, true),
-          ),
-        ],
-      ),
+    showCashConfirmDialog(
+      context,
+      title: context.t('category_delete_sub_title'),
+      message: context
+          .t('category_confirm_delete_sub')
+          .replaceAll('{name}', subcategory.name),
+      confirmLabel: context.t('delete'),
+      cancelLabel: context.t('cancel'),
+      icon: Icons.delete_outline_rounded,
     ).then((confirmed) async {
       if (confirmed == true) {
         await provider.deleteProductCategory(subcategory.id);

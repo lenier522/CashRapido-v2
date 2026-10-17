@@ -20,6 +20,277 @@ class AppLocalizations {
 
   static final Map<String, Map<String, String>> _localizedValues = {
     'es': {
+      // ── Perfil ────────────────────────────────────────────────────────────
+      'nav_profile': 'Perfil',
+      'home_guest': 'Invitado',
+      'profile_drive_title': 'Google Drive',
+      'profile_drive_connected': 'Conectada',
+      'profile_drive_disconnected': 'No conectada',
+      'profile_drive_syncing': 'Sincronizando',
+      'profile_drive_not_connected_desc':
+          'Conecta tu cuenta para guardar copias en la nube',
+      'profile_drive_last_backup': 'Última copia: {date}',
+      'profile_drive_no_backup': 'Todavía no hay copias registradas',
+      'profile_drive_connect': 'Conectar Google Drive',
+      'profile_drive_connecting': 'Conectando…',
+      'profile_drive_manage': 'Gestionar Google Drive',
+      'profile_drive_connected_msg': 'Google Drive conectado',
+      'profile_drive_error': 'No se pudo conectar con Google Drive',
+      'profile_my_account': 'Mi Cuenta',
+      'profile_my_account_desc': 'Cuenta, licencias y tus datos',
+      'profile_community': 'Comunidad',
+      'profile_community_desc': 'Redes sociales y valoración',
+      'profile_features': 'Funciones Principales',
+      'profile_features_desc': 'Todo lo que puedes hacer en CashRapido',
+      'profile_settings': 'Configuración',
+      'profile_settings_desc': 'Notificaciones, moneda y preferencias',
+      'profile_invite': 'Invitar amigos',
+      'profile_invite_desc': 'Comparte CashRapido con otras personas',
+      'profile_help_privacy': 'Ayuda y privacidad',
+      'profile_help_privacy_desc': 'Soporte, privacidad y datos legales',
+
+      // ── Google Drive ──────────────────────────────────────────────────────
+      'drive_title': 'Google Drive',
+      'drive_backup_now': 'Hacer copia ahora',
+      'drive_restore': 'Restaurar desde la nube',
+      'drive_disconnect': 'Desconectar',
+      'drive_disconnect_confirm': '¿Desconectar Google Drive?',
+      'drive_disconnect_desc':
+          'Se cerrará la sesión de Google Drive en este dispositivo. Tus copias en la nube no se eliminan.',
+      'drive_disconnected': 'Google Drive desconectado',
+      'drive_disconnected_message':
+          'Conecta tu cuenta de Google para guardar y restaurar copias de seguridad.',
+      'drive_restore_confirm_title': 'Restaurar desde Google Drive',
+      'drive_restore_warning':
+          'Los datos actuales del dispositivo se reemplazarán por los de la copia en la nube. Esta acción no se puede deshacer.',
+      'drive_backup_success': 'Copia de seguridad completada',
+      'drive_backup_error': 'No se pudo completar la copia de seguridad',
+      'drive_restore_success': 'Datos restaurados desde Google Drive',
+      'drive_restore_error': 'No se pudieron restaurar los datos',
+      'drive_privacy_note':
+          'La copia se guarda en tu propia cuenta de Google Drive. CashRapido no accede a otros archivos.',
+
+      // ── Mi Cuenta ─────────────────────────────────────────────────────────
+      'account_title': 'Mi Cuenta',
+      'account_my_account': 'Tu Cuenta',
+      'account_my_account_desc': 'Información y estado de tu cuenta',
+      'account_licenses': 'Gestión de Licencias',
+      'account_licenses_desc': 'Consulta, activa o renueva tu licencia',
+      'account_redeem': 'Canjear código promocional',
+      'account_redeem_desc': 'Introduce un código para activar ventajas',
+      'account_export': 'Exportar datos',
+      'account_export_desc': 'Genera un archivo con tu información',
+      'account_import': 'Importar datos',
+      'account_import_desc': 'Restaura una copia de seguridad',
+      'account_reset': 'Restablecer todos los datos',
+      'account_reset_desc':
+          'Elimina tus datos financieros de este dispositivo',
+      'account_details_title': 'Tu Cuenta',
+      'account_type_label': 'Tipo de cuenta',
+      'account_type_local': 'Cuenta local',
+      'account_license_label': 'Licencia',
+      'account_expires_label': 'Vence',
+      'account_no_expiry': 'Sin caducidad',
+      'account_currency_label': 'Moneda principal',
+      'account_local_note':
+          'CashRapido guarda tus datos en este dispositivo. No existe una cuenta en la nube con usuario y contraseña propios.',
+
+      // ── Licencias (etiquetas) ─────────────────────────────────────────────
+      'license_free': 'Gratuita',
+      'license_period_weekly': 'Semanal',
+      'license_period_monthly': 'Mensual',
+      'license_period_annual': 'Anual',
+      'license_level_personal': 'Personal',
+      'license_level_pro': 'Pro',
+      'license_level_enterprise': 'Empresarial',
+
+      // ── Código promocional ────────────────────────────────────────────────
+      'promo_redeem_title': 'Canjear código',
+      'promo_redeem_intro':
+          'Introduce tu código promocional para activar sus ventajas.',
+      'promo_code_label': 'Código promocional',
+      'promo_code_hint': 'Escribe tu código',
+      'promo_redeem_action': 'Canjear',
+      'promo_code_empty': 'Introduce un código.',
+      'promo_not_available_title': 'Canje no disponible',
+      'promo_not_available_desc':
+          'El canje de códigos promocionales todavía no está disponible en CashRapido: necesita un servicio de validación que aún no está configurado. Si tienes un código, contacta con soporte.',
+      'promo_dependency_note':
+          'Esta función se activará cuando el servicio de validación de códigos esté configurado. Mientras tanto, no se aplicará ningún código.',
+      'promo_support_subject': 'Consulta sobre código promocional',
+
+      // ── Exportar / importar / restablecer ─────────────────────────────────
+      'export_choose_title': 'Exportar datos',
+      'export_error': 'No se pudieron exportar los datos',
+      'import_error': 'No se pudieron importar los datos',
+      'backup_error': 'No se pudo crear la copia de seguridad',
+      'reset_warning_title': '¿Restablecer todos los datos?',
+      'reset_warning_desc':
+          'Se eliminarán de este dispositivo tus movimientos, cuentas, categorías, transacciones recurrentes, notificaciones, conversaciones del asistente y los datos de negocio y préstamos. Se conservarán tu licencia, tus ajustes, tus credenciales y las copias en la nube.',
+      'reset_confirm_first': 'Continuar',
+      'reset_backup_title': 'Copia de seguridad antes de borrar',
+      'reset_backup_desc':
+          '¿Quieres guardar una copia de seguridad antes de restablecer?',
+      'reset_backup_and_reset': 'Copia y borrar',
+      'reset_confirm_final_action': 'Borrar todo',
+      'reset_success': 'Datos restablecidos correctamente',
+      'reset_error': 'No se pudieron restablecer los datos',
+
+      // ── Comunidad ─────────────────────────────────────────────────────────
+      'community_title': 'Comunidad',
+      'community_contribute': 'Contribuye y valora',
+      'community_group': 'Comunidad',
+      'community_group_desc': 'Únete a la comunidad oficial',
+      'community_news': 'Novedades',
+      'community_news_desc': 'Consulta la versión y las novedades',
+      'community_rate': 'Valora CashRapido',
+      'community_rate_desc': 'Valóranos en la tienda',
+      'community_social': 'Redes Sociales',
+      'social_discord': 'Únete a nuestro Discord',
+      'social_instagram': 'Síguenos en Instagram',
+      'social_facebook': 'Síguenos en Facebook',
+      'social_youtube': 'Síguenos en YouTube',
+      'social_tiktok': 'Síguenos en TikTok',
+      'social_contact': 'Contáctanos',
+      'social_contact_desc': 'Escríbenos un correo',
+      'link_pending_title': 'Enlace pendiente',
+      'link_pending_desc':
+          'Este enlace todavía no está configurado. Estará disponible próximamente.',
+      'link_pending_short': 'Pendiente de configurar',
+      'link_open_error': 'No se pudo abrir el enlace',
+
+      // ── Novedades ─────────────────────────────────────────────────────────
+      'news_version_label': 'Versión instalada',
+      'news_no_changelog':
+          'Las novedades se publican en la tienda. Abre la ficha de la aplicación para consultar la información más reciente.',
+      'news_open_store': 'Abrir la tienda',
+
+      // ── Funciones principales ─────────────────────────────────────────────
+      'features_title': 'Funciones Principales',
+      'features_intro':
+          'Explora todo lo que CashRapido puede hacer. Cada apartado abre la pantalla real.',
+      'features_group_personal': 'Finanzas personales',
+      'features_group_tools': 'Herramientas',
+      'features_group_modules': 'Módulos avanzados',
+      'features_group_data': 'Datos y cuenta',
+      'feat_home': 'Inicio',
+      'feat_home_desc': 'Resumen, saldo y accesos rápidos',
+      'feat_movements': 'Movimientos',
+      'feat_movements_desc': 'Historial completo con filtros por período',
+      'feat_add_income': 'Registrar ingreso',
+      'feat_add_income_desc': 'Añade un ingreso a una cuenta',
+      'feat_add_expense': 'Registrar gasto',
+      'feat_add_expense_desc': 'Añade un gasto a una cuenta',
+      'feat_categories': 'Categorías y presupuestos',
+      'feat_categories_desc': 'Crea categorías y define su límite mensual',
+      'feat_accounts': 'Cuentas y tarjetas',
+      'feat_accounts_desc': 'Gestiona tus cuentas, saldos y transferencias',
+      'feat_recurring': 'Transacciones recurrentes',
+      'feat_recurring_desc': 'Automatiza movimientos periódicos',
+      'feat_stats': 'Estadísticas',
+      'feat_stats_desc': 'Gráficos, proyección y calendario de gastos',
+      'feat_transfermovil_desc': 'Herramientas de pago y recargas para Cuba',
+      'feat_money_counter': 'Contador de dinero',
+      'feat_money_counter_desc': 'Cuenta billetes y monedas por denominación',
+      'feat_streak': 'Rachas diarias',
+      'feat_streak_desc': 'Consulta tu racha y desbloquea planes',
+      'feat_ai': 'Asistente IA',
+      'feat_ai_desc': 'Chat inteligente sobre tus finanzas',
+      'feat_ai_disabled_hint': 'Activa el asistente IA en Configuración',
+      'feat_scanner': 'Escáner de tarjetas',
+      'feat_scanner_desc': 'Escanea una tarjeta para añadirla',
+      'feat_notifications': 'Notificaciones',
+      'feat_notifications_desc': 'Recordatorios y avisos',
+      'feat_business': 'Negocio',
+      'feat_business_desc': 'Productos, ventas, cierres y vendedores',
+      'feat_loans': 'Préstamos',
+      'feat_loans_desc': 'Gestiona préstamos, deudores y pagos',
+      'feat_export_import': 'Exportar e importar datos',
+      'feat_export_import_desc': 'Genera respaldos o restaura una copia',
+      'feat_backup': 'Copia de seguridad en la nube',
+      'feat_backup_desc': 'Sincroniza con Google Drive',
+      'feat_licenses': 'Licencias',
+      'feat_licenses_desc': 'Consulta, activa o renueva tu licencia',
+
+      // ── Invitar amigos ────────────────────────────────────────────────────
+      'invite_title': 'Invitar amigos',
+      'invite_headline': 'Invita a tus amigos',
+      'invite_message':
+          'Comparte CashRapido con tus amigos y ayúdales a organizar sus finanzas.',
+      'invite_link_label': 'Enlace de descarga',
+      'invite_copy': 'Copiar enlace',
+      'invite_copied': 'Enlace copiado',
+      'invite_share': 'Compartir invitación',
+      'invite_share_text':
+          'Descubre CashRapido, la app para organizar tus finanzas: {link}',
+      'invite_share_error': 'No se pudo compartir la invitación',
+      'invite_open_link': 'Abrir enlace',
+
+      // ── Ayuda y privacidad ────────────────────────────────────────────────
+      'help_privacy_title': 'Ayuda y privacidad',
+      'help_support_group': 'Ayuda y soporte',
+      'help_faq': 'Preguntas frecuentes',
+      'help_center_subtitle': 'Respuestas a las dudas más comunes',
+      'help_contact': 'Contactar con soporte',
+      'help_contact_subject': 'Solicitud de soporte',
+      'help_report_bug': 'Reportar un error',
+      'help_report_bug_subject': 'Reporte de error',
+      'help_send_suggestion': 'Enviar una sugerencia',
+      'help_send_suggestion_subject': 'Sugerencia para CashRapido',
+      'privacy_group': 'Privacidad y datos',
+      'privacy_how_we_handle': 'Cómo tratamos tus datos',
+      'privacy_how_we_handle_desc': 'Qué guardamos y dónde',
+      'privacy_backup': 'Copias de seguridad',
+      'privacy_backup_desc': 'Gestiona tu respaldo en Google Drive',
+      'legal_group': 'Información legal y de la aplicación',
+      'app_version_label': 'Versión',
+      'about_developer_label': 'Desarrollador',
+
+      // ── Privacidad ────────────────────────────────────────────────────────
+      'privacy_title': 'Cómo tratamos tus datos',
+      'privacy_local_title': 'Almacenamiento local',
+      'privacy_local_body':
+          'Tus movimientos, cuentas, categorías y ajustes se guardan en este dispositivo. La aplicación no requiere registro ni crea una cuenta en la nube con usuario y contraseña.',
+      'privacy_security_title': 'Seguridad',
+      'privacy_security_body':
+          'Los datos del módulo de préstamos se almacenan cifrados en el dispositivo. El acceso a la aplicación puede protegerse con biometría, PIN o contraseña desde Configuración.',
+      'privacy_drive_title': 'Google Drive',
+      'privacy_drive_body':
+          'Solo si conectas tu cuenta, CashRapido guarda una copia en tu propio Google Drive para que puedas restaurarla. No accede a otros archivos y puedes desconectarla cuando quieras.',
+      'privacy_ai_title': 'Asistente IA',
+      'privacy_ai_body':
+          'Si activas el asistente, tus mensajes se procesan mediante el servicio de IA de Google para generar respuestas. Si no lo usas, no se envía nada.',
+      'privacy_export_title': 'Exportar e importar',
+      'privacy_export_body':
+          'Puedes exportar tus datos a Excel o PDF e importar una copia cuando lo necesites. Tú controlas esos archivos.',
+      'privacy_delete_title': 'Eliminar tus datos',
+      'privacy_delete_body':
+          'Desde Mi Cuenta puedes restablecer la aplicación y borrar tus datos de este dispositivo. Las copias en la nube se conservan hasta que las elimines tú.',
+      'privacy_contact_title': 'Contacto',
+      'privacy_contact_body':
+          'Si tienes dudas sobre el tratamiento de tus datos, escríbenos a {email}.',
+      'privacy_contact_subject': 'Consulta sobre privacidad y datos',
+      'categories': 'Categorías',
+
+      // ── Rachas ────────────────────────────────────────────────────────────
+      'streak_title': 'Rachas',
+      'streak_days': '{count} días seguidos',
+      'streak_calendar_month': 'Calendario - Este mes',
+      'streak_reward_title': 'Recompensa Premium',
+      'streak_reward_question':
+          '¿Quieres usar 1 de tus {count} recompensas para obtener un plan de licencia al azar ahora mismo?',
+      'streak_reward_success': '¡Plan Premium activado correctamente!',
+      'streak_reward_hint': '¡Gana un plan Premium cada 50 días!',
+      'streak_claim': 'Canjear',
+      'streak_claim_button': 'Canjear plan ({count} disp.)',
+      'streak_weekday_mon': 'L',
+      'streak_weekday_tue': 'M',
+      'streak_weekday_wed': 'X',
+      'streak_weekday_thu': 'J',
+      'streak_weekday_fri': 'V',
+      'streak_weekday_sat': 'S',
+      'streak_weekday_sun': 'D',
+
       'notif_settings_subtitle': 'Ajustes de alertas y recordatorios',
       'notif_general': 'General',
       'notif_general_desc': 'Activa o desactiva todas las notificaciones',
@@ -30,6 +301,16 @@ class AppLocalizations {
       'notif_tips_section': 'Consejos y Tips',
       'notif_tips': 'Tips Financieros',
       'notif_tips_desc': 'Recibe consejos aleatorios para mejorar tus finanzas',
+      'notif_permission_granted': 'Permiso del sistema concedido',
+      'notif_permission_denied_title': 'Notificaciones bloqueadas',
+      'notif_permission_denied_desc':
+          'El sistema tiene las notificaciones desactivadas para CashRapido. Actívalas para recibir recordatorios y avisos.',
+      'notif_permission_dialog_desc':
+          'No se pudieron activar porque el permiso de notificaciones está denegado. Actívalo en los ajustes del sistema.',
+      'open_system_settings': 'Abrir ajustes del sistema',
+      'notif_weekly_label': 'Resumen semanal',
+      'notif_weekly_label_desc': 'Se envía automáticamente los domingos',
+      'notif_auto': 'Automático',
       'numeric_format': 'Formato Numérico',
       'decimal_separator': 'Separador Decimal: ',
       'comma': 'Coma (,)',
@@ -884,11 +1165,24 @@ class AppLocalizations {
       'delete': 'Eliminar',
       'edit': 'Editar',
       'error': 'Error',
+      'operation_failed': 'No se pudo completar la operación.',
       'success': 'Éxito',
       'loading': 'Cargando...',
       'search': 'Buscar',
       'nav_home': 'Inicio',
-      'nav_wallet': 'Billetera',
+      'nav_movements': 'Movimientos',
+      'movements_count': 'Movimientos',
+      'movements_balance_period': 'Balance del período',
+      'movements_last_30_days': 'Últimos 30 días',
+      'movements_range_limit': 'El rango no puede superar 30 días naturales.',
+      'movements_empty_period': 'No hay movimientos en este período',
+      'movements_empty_period_hint':
+          'Selecciona otro rango de fechas para consultar otros movimientos.',
+      'movements_range_order':
+          'La fecha inicial no puede ser posterior a la final.',
+      'movements_change_range': 'Cambiar período',
+      'movements_summary_filtered':
+          'Resumen acorde a la búsqueda y filtros activos.',
       'category_label': 'Categoría',
       'import': 'Importar',
 
@@ -902,6 +1196,16 @@ class AppLocalizations {
       'onboarding_title_3': 'Asistente IA Experto',
       'onboarding_desc_3':
           'Tu asesor financiero personal. Pregunta sobre tus gastos y consejos las 24/7.',
+      'onboarding_get_started': 'Empezar',
+      'tour_balance_title': 'Tu dinero consolidado',
+      'tour_balance_desc':
+          'Aquí verás el resumen global de todas tus tarjetas y cuentas en distintas monedas.',
+      'tour_quick_actions_title': 'Acciones rápidas',
+      'tour_quick_actions_desc':
+          'Usa esta zona para transferir y realizar acciones sobre tu dinero al instante.',
+      'tour_finish_title': '¡Tour completado!',
+      'tour_finish_desc':
+          'Ya conoces las funciones principales de CashRapido. Empieza a gestionar tus finanzas.',
       'tour_wallet_title': 'Tu Billetera',
       'tour_wallet_desc': 'Aquí ves tu saldo. Toca para cambiar de tarjeta.',
       'tour_scan_title': 'Escáner Rápido',
@@ -915,22 +1219,25 @@ class AppLocalizations {
           'Tu asesor financiero personal. Toca para abrir el chat y recibir consejos, análisis y ayuda al instante.',
       'tour_navbar_title': 'Navegación Principal',
       'tour_navbar_desc':
-          'Accede a Inicio, Billetera, Estadísticas y Configuración desde aquí.',
+          'Accede a Inicio, Movimientos, Estadísticas y Perfil desde aquí.',
       'tour_card_selector_title': 'Selector de Tarjetas',
       'tour_card_selector_desc':
           'Toca el nombre de la tarjeta para cambiar entre tus cuentas.',
       'tour_transactions_title': 'Transacciones Recientes',
       'tour_transactions_desc':
           'Aquí verás tus últimos movimientos. Toca para ver detalles.',
-      'tour_wallet_nav_title': 'Pestaña Billetera',
-      'tour_wallet_nav_desc':
-          'Ve todas tus tarjetas, edítalas o agrega nuevas.',
+      'tour_home_nav_title': 'Pestaña Inicio',
+      'tour_home_nav_desc':
+          'Tu resumen diario: saldo, accesos rápidos y movimientos recientes.',
+      'tour_movements_nav_title': 'Pestaña Movimientos',
+      'tour_movements_nav_desc':
+          'Consulta tus movimientos por período, con resumen, búsqueda y filtros.',
       'tour_stats_nav_title': 'Pestaña Estadísticas',
       'tour_stats_nav_desc':
           'Analiza tus gastos e ingresos con gráficos detallados.',
-      'tour_settings_nav_title': 'Pestaña Configuración',
-      'tour_settings_nav_desc':
-          'Personaliza la app, gestiona seguridad y exporta datos.',
+      'tour_profile_nav_title': 'Pestaña Perfil',
+      'tour_profile_nav_desc':
+          'Gestiona tu cuenta, la seguridad, las licencias y los ajustes de la app.',
       // Scanner
       'scan_card_instruction': 'Encuadra la tarjeta',
       'align_card_instruction': 'Alinea la tarjeta con el marco',
@@ -943,8 +1250,8 @@ class AppLocalizations {
       'budget_alert_100': 'Has superado el 100% del presupuesto de',
 
       // Settings Extended
-      'sync_drive_title': 'Sincronizar con Google Drive',
-      'sync_drive_desc': 'Conectar cuenta para respaldos',
+      'sync_drive_title': 'Copia de seguridad en Google Drive',
+      'sync_drive_desc': 'Conecta tu cuenta para respaldar y restaurar',
       'error_connecting': 'Error al conectar',
       'user_default': 'Usuario',
       'backup_action': 'Respaldar',
@@ -1022,6 +1329,17 @@ class AppLocalizations {
       'request_received': 'Solicitud recibida',
       'success_action': 'exitoso',
       'select_destination_error': 'Selecciona destino',
+
+      // History (all_transactions_screen)
+      'all': 'Todos',
+      'search_transactions_hint': 'Buscar por descripción, categoría o cuenta',
+      'filter_date_range': 'Rango de fechas',
+      'clear_filters': 'Limpiar filtros',
+      'clear_search': 'Limpiar búsqueda',
+      'no_results_title': 'Sin resultados',
+      'no_results_message':
+          'No hay movimientos que coincidan con tu búsqueda o filtros.',
+      'history_hint': 'Toca un movimiento para editar o eliminar',
 
       // Stats
       'statistics': 'Estadísticas',
@@ -1112,6 +1430,83 @@ class AppLocalizations {
       'stats_by_hour': 'Por hora del día',
       'stats_by_day': 'Por día',
       'stats_by_month': 'Por mes',
+      // --- Centros de análisis: Analítica / Proyección / Calendario ---
+      'stats_view_analytics': 'Analítica',
+      'stats_view_projection': 'Proyección financiera',
+      'stats_view_calendar': 'Calendario financiero',
+      'stats_share': 'Compartir resumen',
+      'stats_balance_month': 'Balance del mes',
+      'stats_month_summary': 'Resumen del mes',
+      'stats_savings_rate': 'Tasa de ahorro',
+      'stats_savings_rate_unavailable': 'No disponible',
+      'stats_savings_rate_hint':
+          'Porcentaje de tus ingresos que queda después de tus gastos.',
+      // Presupuestos
+      'stats_budget_chart_title': 'Presupuestos del mes',
+      'stats_budget_chart_subtitle': 'Lo configurado frente a lo gastado en {period}',
+      'stats_budget_spent': 'Gastado',
+      'stats_budget_remaining': 'Restante',
+      'stats_budget_exceeded': 'Excedido',
+      'stats_budget_empty_title': 'Sin presupuestos configurados',
+      'stats_budget_empty_hint':
+          'Asigna un presupuesto mensual a tus categorías para compararlo con tus gastos reales.',
+      'stats_budget_count': '{n} categorías con presupuesto',
+      'stats_budget_month_only':
+          'El presupuesto es mensual: cambia el período a un mes para compararlo con tus gastos.',
+      // Evolución diaria de gastos e ingresos
+      'stats_expenses_chart_title': 'Gastos del período',
+      'stats_income_chart_title': 'Ingresos del período',
+      'stats_daily_average': 'Promedio diario',
+      'stats_peak_day': 'Día de mayor movimiento',
+      'stats_chart_empty_title': 'Sin movimientos en el período',
+      'stats_chart_empty_hint':
+          'Cuando registres movimientos verás aquí su evolución día a día.',
+      'stats_active_days': '{n} días con movimientos',
+      // Proyección financiera
+      'stats_projection_method_title': 'Cómo se calcula',
+      'stats_projection_method':
+          'Se parte del promedio diario acumulado durante {elapsed} de {total} días naturales y se extrapola al cierre del mes.',
+      'stats_projection_disclaimer':
+          'Es una estimación basada en lo ocurrido hasta hoy, no un resultado garantizado.',
+      'stats_accumulated': 'Acumulado real',
+      'stats_projected_close': 'Estimado al cierre',
+      'stats_projection_income': 'Ingresos proyectados',
+      'stats_projection_expense': 'Gastos proyectados',
+      'stats_projection_balance': 'Balance proyectado',
+      'stats_projection_unavailable_title': 'No hay datos suficientes',
+      'stats_projection_unavailable_hint':
+          'Todavía no hay movimientos este mes, así que no procede estimar el cierre.',
+      'stats_projection_income_unavailable': 'Sin ingresos registrados',
+      'stats_projection_no_income_hint':
+          'Sin ingresos no se estima cómo cerrarán: sólo se muestran los datos reales.',
+      'stats_projection_month_complete':
+          'El mes ya está completo, así que lo estimado coincide con lo real.',
+      'stats_projection_current_month': 'Mes en curso',
+      'stats_projection_progress': 'Día {day} de {total}',
+      // Calendario financiero
+      'stats_calendar_title': 'Calendario financiero',
+      'stats_calendar_subtitle': 'Tu actividad día a día en {month}',
+      'stats_calendar_pick_date': 'Elegir fecha',
+      'stats_calendar_selected_day': 'Día seleccionado',
+      'stats_calendar_day_income': 'Ingresos del día',
+      'stats_calendar_day_expense': 'Gastos del día',
+      'stats_calendar_day_balance': 'Balance del día',
+      'stats_calendar_movements': 'Movimientos del día',
+      'stats_calendar_day_count': 'Movimientos',
+      'stats_calendar_empty_day_title': 'Este día no tiene movimientos',
+      'stats_calendar_empty_day_hint':
+          'Toca otro día del calendario para ver su actividad.',
+      'stats_calendar_legend_income': 'Con ingresos',
+      'stats_calendar_legend_expense': 'Con gastos',
+      'stats_calendar_legend_both': 'Ingresos y gastos',
+      'stats_calendar_legend_none': 'Sin movimientos',
+      'stats_calendar_legend': 'Cómo leer el calendario',
+      // Compartir
+      'stats_share_subject': 'Resumen de {title} — CashRapido',
+      'stats_share_error': 'No se pudo abrir el menú de compartir',
+      'stats_share_ok': 'Resumen compartido',
+      'stats_share_period': 'Período',
+      'stats_share_method': 'Método de cálculo',
       'locked_badge': 'Bloqueada',
       'reorder_hint': 'Mantén pulsado para reordenar',
       'primary_account': 'Principal',
@@ -1147,7 +1542,7 @@ class AppLocalizations {
       'new_card': 'Nueva Tarjeta',
       'edit_card_title': 'Editar Tarjeta',
       'scan_card': 'Escanear Tarjeta',
-      'card_scanned': '¡Tarjeta escaneada con éxito! 📸',
+      'card_scanned': 'Datos detectados. Revísalos antes de guardar. 📸',
       'complete_data_error': 'Por favor completa los datos correctamente',
       'invalid_date_format': 'Formato de fecha inválido (MM/YY)',
       'bank_label': 'Banco',
@@ -1262,6 +1657,13 @@ class AppLocalizations {
       'enter_currency_details': 'Ingrese los detalles de la moneda',
       'custom_currency': 'Moneda Personalizada',
       'currency_exists': 'Esta moneda ya existe',
+      'exchange_rates_title': 'Tasas de Cambio',
+      'exchange_rates_sub': 'Tasas para conversiones',
+      'transfermovil_title': 'Integración Transfermóvil',
+      'transfermovil_sub': 'Detectar pagos automáticamente (Solo Cuba)',
+      'exchange_rate_for': '1 {currency} en {main}',
+      'rates_updated': 'Tasas de cambio actualizadas',
+      'example_label': 'Ejemplo',
 
       // Income/Expense Toggle
       'transaction_type': 'Tipo de Transacción',
@@ -1279,7 +1681,6 @@ class AppLocalizations {
 
       'cards': 'Tarjetas',
       // View All
-      'history_title': 'Historial de Transacciones',
       'all_cards': 'Todas las Tarjetas',
       // Currency Management
       'currency_in_use_error': 'Esta moneda está en uso por una tarjeta',
@@ -1309,6 +1710,14 @@ class AppLocalizations {
       'ai_chat_title': 'Asistente Financiero',
       'ask_ai_hint': 'Pide consejos, análisis...',
       'ai_welcome_message': '¡Hola! Soy tu asistente financiero personal.',
+      'ai_history_title': 'Historial de Chats',
+      'ai_new_chat': 'Nuevo Chat',
+      'ai_no_conversations': 'No hay conversaciones aún.',
+      'ai_error_message':
+          'No se pudo obtener la respuesta. Revisa tu conexión e inténtalo de nuevo.',
+      'today': 'Hoy',
+      'yesterday': 'Ayer',
+      'send': 'Enviar',
 
       // Licenses - Periods
       'period_weekly': 'Semanal',
@@ -1364,7 +1773,10 @@ class AppLocalizations {
       'connection_error': 'Error de conexión. Verifique su internet.',
       'verify_license': 'Verificar licencia',
       'verifying': 'Verificando...',
+      'simulating_test_payment': 'Simulando pago de prueba...',
+      'processing_payment_apklis': 'Procesando pago con Apklis...',
       'license_restored': 'Licencia restaurada correctamente',
+      'license_active_success': 'Licencia activada correctamente',
       'no_license_found': 'No se encontró licencia activa',
       'verify_error': 'Error al verificar la licencia',
       'already_paid': 'Ya tienes esta licencia activa.',
@@ -1490,6 +1902,23 @@ class AppLocalizations {
       'scan_frame_hint':
           'Mantén la tarjeta dentro del recuadro, con buena luz.',
       'btn_close': 'Cerrar',
+      'scan_retry': 'Reintentar',
+      'scan_allow_camera': 'Permitir cámara',
+      'scan_torch_on': 'Encender linterna',
+      'scan_torch_off': 'Apagar linterna',
+      'scan_capture_error': 'No se pudo capturar la imagen. Vuelve a intentarlo.',
+      'scan_reading_error': 'No se pudo leer la tarjeta. Vuelve a intentarlo.',
+      'scan_camera_permission_title': 'Activa la cámara',
+      'scan_camera_permission_desc':
+          'CashRapido necesita la cámara para leer la tarjeta. Concede el permiso para continuar.',
+      'scan_camera_permission_settings_desc':
+          'El permiso de cámara está bloqueado. Actívalo en los ajustes del sistema y vuelve a intentarlo.',
+      'scan_camera_unavailable_title': 'Cámara no disponible',
+      'scan_camera_unavailable_desc':
+          'No encontramos una cámara disponible en este dispositivo. Puedes introducir los datos manualmente.',
+      'scan_camera_error_title': 'No se pudo iniciar la cámara',
+      'scan_camera_error_desc':
+          'Ocurrió un problema al preparar la cámara. Vuelve a intentarlo.',
 
       // =====================================================================
       // FORMULARIOS Y FLUJOS FINANCIEROS (FASE 5)
@@ -1565,6 +1994,272 @@ class AppLocalizations {
       'rec_empty_accounts': 'No hay cuentas disponibles.',
     },
     'en': {
+      // ── Profile ───────────────────────────────────────────────────────────
+      'nav_profile': 'Profile',
+      'home_guest': 'Guest',
+      'profile_drive_title': 'Google Drive',
+      'profile_drive_connected': 'Connected',
+      'profile_drive_disconnected': 'Not connected',
+      'profile_drive_syncing': 'Syncing',
+      'profile_drive_not_connected_desc':
+          'Connect your account to save backups to the cloud',
+      'profile_drive_last_backup': 'Last backup: {date}',
+      'profile_drive_no_backup': 'No backups recorded yet',
+      'profile_drive_connect': 'Connect Google Drive',
+      'profile_drive_connecting': 'Connecting…',
+      'profile_drive_manage': 'Manage Google Drive',
+      'profile_drive_connected_msg': 'Google Drive connected',
+      'profile_drive_error': 'Could not connect to Google Drive',
+      'profile_my_account': 'My Account',
+      'profile_my_account_desc': 'Account, licenses and your data',
+      'profile_community': 'Community',
+      'profile_community_desc': 'Social networks and rating',
+      'profile_features': 'Main Features',
+      'profile_features_desc': 'Everything you can do in CashRapido',
+      'profile_settings': 'Settings',
+      'profile_settings_desc': 'Notifications, currency and preferences',
+      'profile_invite': 'Invite friends',
+      'profile_invite_desc': 'Share CashRapido with others',
+      'profile_help_privacy': 'Help and privacy',
+      'profile_help_privacy_desc': 'Support, privacy and legal data',
+
+      // ── Google Drive ──────────────────────────────────────────────────────
+      'drive_title': 'Google Drive',
+      'drive_backup_now': 'Back up now',
+      'drive_restore': 'Restore from cloud',
+      'drive_disconnect': 'Disconnect',
+      'drive_disconnect_confirm': 'Disconnect Google Drive?',
+      'drive_disconnect_desc':
+          'Google Drive will be signed out on this device. Your cloud backups are not deleted.',
+      'drive_disconnected': 'Google Drive disconnected',
+      'drive_disconnected_message':
+          'Connect your Google account to save and restore backups.',
+      'drive_restore_confirm_title': 'Restore from Google Drive',
+      'drive_restore_warning':
+          'The current data on this device will be replaced by the cloud backup. This action cannot be undone.',
+      'drive_backup_success': 'Backup completed',
+      'drive_backup_error': 'Could not complete the backup',
+      'drive_restore_success': 'Data restored from Google Drive',
+      'drive_restore_error': 'Could not restore the data',
+      'drive_privacy_note':
+          'The backup is stored in your own Google Drive account. CashRapido does not access other files.',
+
+      // ── My Account ────────────────────────────────────────────────────────
+      'account_title': 'My Account',
+      'account_my_account': 'Your Account',
+      'account_my_account_desc': 'Information and status of your account',
+      'account_licenses': 'License Management',
+      'account_licenses_desc': 'Check, activate or renew your license',
+      'account_redeem': 'Redeem promo code',
+      'account_redeem_desc': 'Enter a code to unlock benefits',
+      'account_export': 'Export data',
+      'account_export_desc': 'Generate a file with your information',
+      'account_import': 'Import data',
+      'account_import_desc': 'Restore a backup',
+      'account_reset': 'Reset all data',
+      'account_reset_desc': 'Delete your financial data from this device',
+      'account_details_title': 'Your Account',
+      'account_type_label': 'Account type',
+      'account_type_local': 'Local account',
+      'account_license_label': 'License',
+      'account_expires_label': 'Expires',
+      'account_no_expiry': 'No expiry',
+      'account_currency_label': 'Main currency',
+      'account_local_note':
+          'CashRapido keeps your data on this device. There is no cloud account with its own username and password.',
+
+      // ── Licenses (labels) ─────────────────────────────────────────────────
+      'license_free': 'Free',
+      'license_period_weekly': 'Weekly',
+      'license_period_monthly': 'Monthly',
+      'license_period_annual': 'Annual',
+      'license_level_personal': 'Personal',
+      'license_level_pro': 'Pro',
+      'license_level_enterprise': 'Enterprise',
+
+      // ── Promo code ────────────────────────────────────────────────────────
+      'promo_redeem_title': 'Redeem code',
+      'promo_redeem_intro': 'Enter your promo code to unlock its benefits.',
+      'promo_code_label': 'Promo code',
+      'promo_code_hint': 'Type your code',
+      'promo_redeem_action': 'Redeem',
+      'promo_code_empty': 'Enter a code.',
+      'promo_not_available_title': 'Redemption not available',
+      'promo_not_available_desc':
+          'Promo code redemption is not available in CashRapido yet: it needs a validation service that is not configured. If you have a code, contact support.',
+      'promo_dependency_note':
+          'This feature will be enabled once the code validation service is configured. Meanwhile, no code will be applied.',
+      'promo_support_subject': 'Promo code enquiry',
+
+      // ── Export / import / reset ───────────────────────────────────────────
+      'export_choose_title': 'Export data',
+      'export_error': 'Could not export the data',
+      'import_error': 'Could not import the data',
+      'backup_error': 'Could not create the backup',
+      'reset_warning_title': 'Reset all data?',
+      'reset_warning_desc':
+          'Your movements, accounts, categories, recurring transactions, notifications, assistant conversations and business and loan data will be deleted from this device. Your license, settings, credentials and cloud backups will be kept.',
+      'reset_confirm_first': 'Continue',
+      'reset_backup_title': 'Back up before deleting',
+      'reset_backup_desc': 'Do you want to save a backup before resetting?',
+      'reset_backup_and_reset': 'Back up and delete',
+      'reset_confirm_final_action': 'Delete all',
+      'reset_success': 'Data reset successfully',
+      'reset_error': 'Could not reset the data',
+
+      // ── Community ─────────────────────────────────────────────────────────
+      'community_title': 'Community',
+      'community_contribute': 'Contribute and rate',
+      'community_group': 'Community',
+      'community_group_desc': 'Join the official community',
+      'community_news': 'What\'s new',
+      'community_news_desc': 'Check the version and the news',
+      'community_rate': 'Rate CashRapido',
+      'community_rate_desc': 'Rate us in the store',
+      'community_social': 'Social Networks',
+      'social_discord': 'Join our Discord',
+      'social_instagram': 'Follow us on Instagram',
+      'social_facebook': 'Follow us on Facebook',
+      'social_youtube': 'Follow us on YouTube',
+      'social_tiktok': 'Follow us on TikTok',
+      'social_contact': 'Contact us',
+      'social_contact_desc': 'Send us an email',
+      'link_pending_title': 'Link pending',
+      'link_pending_desc':
+          'This link is not configured yet. It will be available soon.',
+      'link_pending_short': 'Pending configuration',
+      'link_open_error': 'Could not open the link',
+
+      // ── What's new ────────────────────────────────────────────────────────
+      'news_version_label': 'Installed version',
+      'news_no_changelog':
+          'News is published in the store. Open the app listing to see the latest information.',
+      'news_open_store': 'Open the store',
+
+      // ── Main features ─────────────────────────────────────────────────────
+      'features_title': 'Main Features',
+      'features_intro':
+          'Explore everything CashRapido can do. Each item opens the real screen.',
+      'features_group_personal': 'Personal finance',
+      'features_group_tools': 'Tools',
+      'features_group_modules': 'Advanced modules',
+      'features_group_data': 'Data and account',
+      'feat_home': 'Home',
+      'feat_home_desc': 'Overview, balance and quick actions',
+      'feat_movements': 'Movements',
+      'feat_movements_desc': 'Full history with period filters',
+      'feat_add_income': 'Add income',
+      'feat_add_income_desc': 'Add an income to an account',
+      'feat_add_expense': 'Add expense',
+      'feat_add_expense_desc': 'Add an expense to an account',
+      'feat_categories': 'Categories and budgets',
+      'feat_categories_desc': 'Create categories and set a monthly limit',
+      'feat_accounts': 'Accounts and cards',
+      'feat_accounts_desc': 'Manage your accounts, balances and transfers',
+      'feat_recurring': 'Recurring transactions',
+      'feat_recurring_desc': 'Automate periodic movements',
+      'feat_stats': 'Statistics',
+      'feat_stats_desc': 'Charts, projection and spending calendar',
+      'feat_transfermovil_desc': 'Payment and top-up tools for Cuba',
+      'feat_money_counter': 'Money counter',
+      'feat_money_counter_desc': 'Count banknotes and coins by denomination',
+      'feat_streak': 'Daily streaks',
+      'feat_streak_desc': 'Check your streak and unlock plans',
+      'feat_ai': 'AI Assistant',
+      'feat_ai_desc': 'Smart chat about your finances',
+      'feat_ai_disabled_hint': 'Enable the AI assistant in Settings',
+      'feat_scanner': 'Card scanner',
+      'feat_scanner_desc': 'Scan a card to add it',
+      'feat_notifications': 'Notifications',
+      'feat_notifications_desc': 'Reminders and alerts',
+      'feat_business': 'Business',
+      'feat_business_desc': 'Products, sales, closings and sellers',
+      'feat_loans': 'Loans',
+      'feat_loans_desc': 'Manage loans, borrowers and payments',
+      'feat_export_import': 'Export and import data',
+      'feat_export_import_desc': 'Generate backups or restore a copy',
+      'feat_backup': 'Cloud backup',
+      'feat_backup_desc': 'Sync with Google Drive',
+      'feat_licenses': 'Licenses',
+      'feat_licenses_desc': 'Check, activate or renew your license',
+
+      // ── Invite friends ────────────────────────────────────────────────────
+      'invite_title': 'Invite friends',
+      'invite_headline': 'Invite your friends',
+      'invite_message':
+          'Share CashRapido with your friends and help them organise their finances.',
+      'invite_link_label': 'Download link',
+      'invite_copy': 'Copy link',
+      'invite_copied': 'Link copied',
+      'invite_share': 'Share invitation',
+      'invite_share_text':
+          'Discover CashRapido, the app to organise your finances: {link}',
+      'invite_share_error': 'Could not share the invitation',
+      'invite_open_link': 'Open link',
+
+      // ── Help and privacy ──────────────────────────────────────────────────
+      'help_privacy_title': 'Help and privacy',
+      'help_support_group': 'Help and support',
+      'help_faq': 'Frequently asked questions',
+      'help_center_subtitle': 'Answers to the most common questions',
+      'help_contact': 'Contact support',
+      'help_contact_subject': 'Support request',
+      'help_report_bug': 'Report a bug',
+      'help_report_bug_subject': 'Bug report',
+      'help_send_suggestion': 'Send a suggestion',
+      'help_send_suggestion_subject': 'Suggestion for CashRapido',
+      'privacy_group': 'Privacy and data',
+      'privacy_how_we_handle': 'How we handle your data',
+      'privacy_how_we_handle_desc': 'What we store and where',
+      'privacy_backup': 'Backups',
+      'privacy_backup_desc': 'Manage your Google Drive backup',
+      'legal_group': 'Legal and app information',
+      'app_version_label': 'Version',
+      'about_developer_label': 'Developer',
+
+      // ── Privacy ───────────────────────────────────────────────────────────
+      'privacy_title': 'How we handle your data',
+      'privacy_local_title': 'Local storage',
+      'privacy_local_body':
+          'Your movements, accounts, categories and settings are stored on this device. The app does not require registration or create a cloud account with its own username and password.',
+      'privacy_security_title': 'Security',
+      'privacy_security_body':
+          'Loan module data is stored encrypted on the device. Access to the app can be protected with biometrics, PIN or password from Settings.',
+      'privacy_drive_title': 'Google Drive',
+      'privacy_drive_body':
+          'Only if you connect your account, CashRapido saves a backup to your own Google Drive so you can restore it. It does not access other files and you can disconnect it whenever you want.',
+      'privacy_ai_title': 'AI Assistant',
+      'privacy_ai_body':
+          'If you enable the assistant, your messages are processed through Google\'s AI service to generate answers. If you do not use it, nothing is sent.',
+      'privacy_export_title': 'Export and import',
+      'privacy_export_body':
+          'You can export your data to Excel or PDF and import a copy whenever you need to. You control those files.',
+      'privacy_delete_title': 'Delete your data',
+      'privacy_delete_body':
+          'From My Account you can reset the app and delete your data from this device. Cloud backups are kept until you delete them yourself.',
+      'privacy_contact_title': 'Contact',
+      'privacy_contact_body':
+          'If you have doubts about how your data is handled, write to us at {email}.',
+      'privacy_contact_subject': 'Privacy and data enquiry',
+      'categories': 'Categories',
+      'streak_title': 'Streaks',
+      'streak_days': '{count} days in a row',
+      'streak_calendar_month': 'Calendar - This month',
+      'streak_reward_title': 'Premium reward',
+      'streak_reward_question':
+          'Do you want to use 1 of your {count} rewards to get a random license plan right now?',
+      'streak_reward_success': 'Premium plan activated successfully!',
+      'streak_reward_hint': 'Earn a Premium plan every 50 days!',
+      'streak_claim': 'Redeem',
+      'streak_claim_button': 'Redeem plan ({count} left)',
+      'streak_weekday_mon': 'M',
+      'streak_weekday_tue': 'T',
+      'streak_weekday_wed': 'W',
+      'streak_weekday_thu': 'T',
+      'streak_weekday_fri': 'F',
+      'streak_weekday_sat': 'S',
+      'streak_weekday_sun': 'S',
+
       'notif_settings_subtitle': 'Alerts and reminders settings',
       'notif_general': 'General',
       'notif_general_desc': 'Enable or disable all notifications',
@@ -1575,6 +2270,16 @@ class AppLocalizations {
       'notif_tips_section': 'Advice & Tips',
       'notif_tips': 'Financial Tips',
       'notif_tips_desc': 'Receive random tips to improve your finances',
+      'notif_permission_granted': 'System permission granted',
+      'notif_permission_denied_title': 'Notifications blocked',
+      'notif_permission_denied_desc':
+          'System notifications are turned off for CashRapido. Turn them on to receive reminders and alerts.',
+      'notif_permission_dialog_desc':
+          'Could not enable them because the notification permission is denied. Enable it in system settings.',
+      'open_system_settings': 'Open system settings',
+      'notif_weekly_label': 'Weekly summary',
+      'notif_weekly_label_desc': 'Sent automatically on Sundays',
+      'notif_auto': 'Automatic',
       'numeric_format': 'Numeric Format',
       'decimal_separator': 'Decimal Separator: ',
       'comma': 'Comma (,)',
@@ -2420,11 +3125,23 @@ class AppLocalizations {
       'delete': 'Delete',
       'edit': 'Edit',
       'error': 'Error',
+      'operation_failed': 'The operation could not be completed.',
       'success': 'Success',
       'loading': 'Loading...',
       'search': 'Search',
       'nav_home': 'Home',
-      'nav_wallet': 'Wallet',
+      'nav_movements': 'Movements',
+      'movements_count': 'Movements',
+      'movements_balance_period': 'Period balance',
+      'movements_last_30_days': 'Last 30 days',
+      'movements_range_limit': 'The range cannot exceed 30 natural days.',
+      'movements_empty_period': 'No movements in this period',
+      'movements_empty_period_hint':
+          'Select another date range to view other movements.',
+      'movements_range_order': 'The start date cannot be after the end date.',
+      'movements_change_range': 'Change period',
+      'movements_summary_filtered':
+          'Summary matches the active search and filters.',
       'category_label': 'Category',
       'import': 'Import',
 
@@ -2438,6 +3155,16 @@ class AppLocalizations {
       'onboarding_title_3': 'Expert AI Assistant',
       'onboarding_desc_3':
           'Your personal financial advisor. Ask about your spending and get advice 24/7.',
+      'onboarding_get_started': 'Get Started',
+      'tour_balance_title': 'Your consolidated money',
+      'tour_balance_desc':
+          'Here you will see the global summary of all your cards and accounts in different currencies.',
+      'tour_quick_actions_title': 'Quick actions',
+      'tour_quick_actions_desc':
+          'Use this area to transfer and act on your money instantly.',
+      'tour_finish_title': 'Tour complete!',
+      'tour_finish_desc':
+          'You have seen the main features of CashRapido. Start managing your finances.',
       'tour_wallet_title': 'Your Wallet',
       'tour_wallet_desc': 'Here is your balance. Tap to switch cards.',
       'tour_scan_title': 'Quick Scanner',
@@ -2450,22 +3177,25 @@ class AppLocalizations {
       'tour_fab_desc': 'Your personal financial advisor. Tap to open the chat and get instant advice, analysis, and help.',
       'tour_navbar_title': 'Main Navigation',
       'tour_navbar_desc':
-          'Access Home, Wallet, Statistics, and Settings from here.',
+          'Access Home, Movements, Statistics, and Profile from here.',
       'tour_card_selector_title': 'Card Selector',
       'tour_card_selector_desc':
           'Tap the card name to switch between your accounts.',
       'tour_transactions_title': 'Recent Transactions',
       'tour_transactions_desc':
           'See your latest movements here. Tap for details.',
-      'tour_wallet_nav_title': 'Wallet Tab',
-      'tour_wallet_nav_desc':
-          'View all your cards, edit them, or add new ones.',
+      'tour_home_nav_title': 'Home Tab',
+      'tour_home_nav_desc':
+          'Your daily overview: balance, quick actions, and recent transactions.',
+      'tour_movements_nav_title': 'Movements Tab',
+      'tour_movements_nav_desc':
+          'Browse your transactions by period, with summary, search and filters.',
       'tour_stats_nav_title': 'Statistics Tab',
       'tour_stats_nav_desc':
           'Analyze your spending and income with detailed charts.',
-      'tour_settings_nav_title': 'Settings Tab',
-      'tour_settings_nav_desc':
-          'Customize the app, manage security, and export data.',
+      'tour_profile_nav_title': 'Profile Tab',
+      'tour_profile_nav_desc':
+          'Manage your account, security, licenses, and app settings.',
 
       // Scanner
       'scan_card_instruction': 'Frame the card',
@@ -2479,8 +3209,8 @@ class AppLocalizations {
       'budget_alert_100': 'You have exceeded 100% of the budget for',
 
       // Settings Extended
-      'sync_drive_title': 'Sync with Google Drive',
-      'sync_drive_desc': 'Connect account for backups',
+      'sync_drive_title': 'Google Drive backup',
+      'sync_drive_desc': 'Connect your account to back up and restore',
       'error_connecting': 'Error connecting',
       'user_default': 'User',
       'backup_action': 'Backup',
@@ -2559,6 +3289,16 @@ class AppLocalizations {
       'request_received': 'Request received',
       'success_action': 'successful',
       'select_destination_error': 'Select destination',
+
+      // History (all_transactions_screen)
+      'all': 'All',
+      'search_transactions_hint': 'Search by description, category or account',
+      'filter_date_range': 'Date range',
+      'clear_filters': 'Clear filters',
+      'clear_search': 'Clear search',
+      'no_results_title': 'No results',
+      'no_results_message': 'No transactions match your search or filters.',
+      'history_hint': 'Tap a transaction to edit or delete',
 
       // Stats
       'statistics': 'Statistics',
@@ -2648,6 +3388,83 @@ class AppLocalizations {
       'stats_by_hour': 'By hour of the day',
       'stats_by_day': 'By day',
       'stats_by_month': 'By month',
+      // --- Analysis centers: Analytics / Projection / Calendar ---
+      'stats_view_analytics': 'Analytics',
+      'stats_view_projection': 'Financial projection',
+      'stats_view_calendar': 'Financial calendar',
+      'stats_share': 'Share summary',
+      'stats_balance_month': 'Monthly balance',
+      'stats_month_summary': 'Monthly summary',
+      'stats_savings_rate': 'Savings rate',
+      'stats_savings_rate_unavailable': 'Not available',
+      'stats_savings_rate_hint':
+          'Percentage of your income left after your expenses.',
+      // Budgets
+      'stats_budget_chart_title': 'Monthly budgets',
+      'stats_budget_chart_subtitle': 'Planned versus actually spent in {period}',
+      'stats_budget_spent': 'Spent',
+      'stats_budget_remaining': 'Remaining',
+      'stats_budget_exceeded': 'Exceeded',
+      'stats_budget_empty_title': 'No budgets configured',
+      'stats_budget_empty_hint':
+          'Set a monthly budget on your categories to compare it with your real spending.',
+      'stats_budget_count': '{n} categories with a budget',
+      'stats_budget_month_only':
+          'Budgets are monthly: switch the period to a month to compare them with your spending.',
+      // Daily trends
+      'stats_expenses_chart_title': 'Expenses over the period',
+      'stats_income_chart_title': 'Income over the period',
+      'stats_daily_average': 'Daily average',
+      'stats_peak_day': 'Day with the most activity',
+      'stats_chart_empty_title': 'No movements in the period',
+      'stats_chart_empty_hint':
+          'Once you record movements you will see their daily trend here.',
+      'stats_active_days': '{n} days with movements',
+      // Financial projection
+      'stats_projection_method_title': 'How it is calculated',
+      'stats_projection_method':
+          'It starts from the daily average accumulated over {elapsed} of {total} natural days and extrapolates it to the end of the month.',
+      'stats_projection_disclaimer':
+          'It is an estimate based on what has happened so far, not a guaranteed result.',
+      'stats_accumulated': 'Real accumulated',
+      'stats_projected_close': 'Projected at close',
+      'stats_projection_income': 'Projected income',
+      'stats_projection_expense': 'Projected expenses',
+      'stats_projection_balance': 'Projected balance',
+      'stats_projection_unavailable_title': 'Not enough data',
+      'stats_projection_unavailable_hint':
+          'There are no movements yet this month, so there is nothing to project from.',
+      'stats_projection_income_unavailable': 'No income recorded',
+      'stats_projection_no_income_hint':
+          'With no income there is no estimate of how the month will close: only real data is shown.',
+      'stats_projection_month_complete':
+          'The month is already complete, so the projected values match the real ones.',
+      'stats_projection_current_month': 'Current month',
+      'stats_projection_progress': 'Day {day} of {total}',
+      // Financial calendar
+      'stats_calendar_title': 'Financial calendar',
+      'stats_calendar_subtitle': 'Your day-by-day activity in {month}',
+      'stats_calendar_pick_date': 'Pick a date',
+      'stats_calendar_selected_day': 'Selected day',
+      'stats_calendar_day_income': 'Day income',
+      'stats_calendar_day_expense': 'Day expenses',
+      'stats_calendar_day_balance': 'Day balance',
+      'stats_calendar_movements': 'Movements of the day',
+      'stats_calendar_day_count': 'Movements',
+      'stats_calendar_empty_day_title': 'This day has no movements',
+      'stats_calendar_empty_day_hint':
+          'Tap another day on the calendar to see its activity.',
+      'stats_calendar_legend_income': 'With income',
+      'stats_calendar_legend_expense': 'With expenses',
+      'stats_calendar_legend_both': 'Income and expenses',
+      'stats_calendar_legend_none': 'No movements',
+      'stats_calendar_legend': 'How to read the calendar',
+      // Sharing
+      'stats_share_subject': 'Summary of {title} — CashRapido',
+      'stats_share_error': 'Could not open the share menu',
+      'stats_share_ok': 'Summary shared',
+      'stats_share_period': 'Period',
+      'stats_share_method': 'Calculation method',
       'locked_badge': 'Locked',
       'reorder_hint': 'Press and hold to reorder',
       'primary_account': 'Primary',
@@ -2683,7 +3500,7 @@ class AppLocalizations {
       'new_card': 'New Card',
       'edit_card_title': 'Edit Card',
       'scan_card': 'Scan Card',
-      'card_scanned': 'Card scanned successfully! 📸',
+      'card_scanned': 'Card data detected. Review it before saving. 📸',
       'complete_data_error': 'Please complete the data correctly',
       'invalid_date_format': 'Invalid date format (MM/YY)',
       'bank_label': 'Bank',
@@ -2798,6 +3615,13 @@ class AppLocalizations {
       'enter_currency_details': 'Enter currency details',
       'custom_currency': 'Custom Currency',
       'currency_exists': 'This currency already exists',
+      'exchange_rates_title': 'Exchange Rates',
+      'exchange_rates_sub': 'Rates for conversions',
+      'transfermovil_title': 'Transfermóvil integration',
+      'transfermovil_sub': 'Automatically detect payments (Cuba only)',
+      'exchange_rate_for': '1 {currency} in {main}',
+      'rates_updated': 'Exchange rates updated',
+      'example_label': 'Example',
 
       // Income/Expense Toggle
       'transaction_type': 'Transaction Type',
@@ -2814,7 +3638,6 @@ class AppLocalizations {
       'cat_investment': 'Investment',
 
       'cards': 'Cards',
-      'history_title': 'Transaction History',
       'all_cards': 'All Cards',
       // Currency Management
       'currency_in_use_error': 'Currency is in use by a card',
@@ -2845,6 +3668,14 @@ class AppLocalizations {
       'ai_chat_title': 'Financial Assistant',
       'ask_ai_hint': 'Ask for advice, analysis...',
       'ai_welcome_message': 'Hello! I am your personal financial assistant.',
+      'ai_history_title': 'Chat History',
+      'ai_new_chat': 'New Chat',
+      'ai_no_conversations': 'No conversations yet.',
+      'ai_error_message':
+          'Couldn\'t get a response. Check your connection and try again.',
+      'today': 'Today',
+      'yesterday': 'Yesterday',
+      'send': 'Send',
 
       // Licenses - Periods
       'period_weekly': 'Weekly',
@@ -2901,7 +3732,10 @@ class AppLocalizations {
       'connection_error': 'Connection error. Check your internet.',
       'verify_license': 'Verify license',
       'verifying': 'Verifying...',
+      'simulating_test_payment': 'Simulating test payment...',
+      'processing_payment_apklis': 'Processing payment with Apklis...',
       'license_restored': 'License restored successfully',
+      'license_active_success': 'License activated successfully',
       'no_license_found': 'No active license found',
       'verify_error': 'Error verifying license',
       'already_paid': 'You already have this license active.',
@@ -3025,6 +3859,23 @@ class AppLocalizations {
       'scan_align_error': 'Try aligning the card better.',
       'scan_frame_hint': 'Keep the card inside the frame, with good lighting.',
       'btn_close': 'Close',
+      'scan_retry': 'Try again',
+      'scan_allow_camera': 'Allow camera',
+      'scan_torch_on': 'Turn on flashlight',
+      'scan_torch_off': 'Turn off flashlight',
+      'scan_capture_error': 'Could not capture the image. Please try again.',
+      'scan_reading_error': 'Could not read the card. Please try again.',
+      'scan_camera_permission_title': 'Enable the camera',
+      'scan_camera_permission_desc':
+          'CashRapido needs the camera to read the card. Grant the permission to continue.',
+      'scan_camera_permission_settings_desc':
+          'Camera permission is blocked. Enable it in the system settings and try again.',
+      'scan_camera_unavailable_title': 'Camera not available',
+      'scan_camera_unavailable_desc':
+          'No camera was found on this device. You can enter the data manually.',
+      'scan_camera_error_title': 'Could not start the camera',
+      'scan_camera_error_desc':
+          'Something went wrong while preparing the camera. Please try again.',
 
       // =====================================================================
       // FORMULARIOS Y FLUJOS FINANCIEROS (FASE 5)
@@ -3100,6 +3951,276 @@ class AppLocalizations {
       'rec_empty_accounts': 'No accounts available.',
     },
     'fr': {
+      // ── Profil ────────────────────────────────────────────────────────────
+      'nav_profile': 'Profil',
+      'home_guest': 'Invité',
+      'profile_drive_title': 'Google Drive',
+      'profile_drive_connected': 'Connecté',
+      'profile_drive_disconnected': 'Non connecté',
+      'profile_drive_syncing': 'Synchronisation',
+      'profile_drive_not_connected_desc':
+          'Connectez votre compte pour enregistrer des sauvegardes dans le cloud',
+      'profile_drive_last_backup': 'Dernière sauvegarde : {date}',
+      'profile_drive_no_backup': 'Aucune sauvegarde enregistrée',
+      'profile_drive_connect': 'Connecter Google Drive',
+      'profile_drive_connecting': 'Connexion…',
+      'profile_drive_manage': 'Gérer Google Drive',
+      'profile_drive_connected_msg': 'Google Drive connecté',
+      'profile_drive_error': 'Impossible de se connecter à Google Drive',
+      'profile_my_account': 'Mon compte',
+      'profile_my_account_desc': 'Compte, licences et vos données',
+      'profile_community': 'Communauté',
+      'profile_community_desc': 'Réseaux sociaux et évaluation',
+      'profile_features': 'Fonctions principales',
+      'profile_features_desc': 'Tout ce que vous pouvez faire dans CashRapido',
+      'profile_settings': 'Paramètres',
+      'profile_settings_desc': 'Notifications, devise et préférences',
+      'profile_invite': 'Inviter des amis',
+      'profile_invite_desc': 'Partagez CashRapido avec d\'autres personnes',
+      'profile_help_privacy': 'Aide et confidentialité',
+      'profile_help_privacy_desc': 'Support, confidentialité et données légales',
+
+      // ── Google Drive ──────────────────────────────────────────────────────
+      'drive_title': 'Google Drive',
+      'drive_backup_now': 'Sauvegarder maintenant',
+      'drive_restore': 'Restaurer depuis le cloud',
+      'drive_disconnect': 'Déconnecter',
+      'drive_disconnect_confirm': 'Déconnecter Google Drive ?',
+      'drive_disconnect_desc':
+          'La session Google Drive sera fermée sur cet appareil. Vos sauvegardes cloud ne sont pas supprimées.',
+      'drive_disconnected': 'Google Drive déconnecté',
+      'drive_disconnected_message':
+          'Connectez votre compte Google pour enregistrer et restaurer des sauvegardes.',
+      'drive_restore_confirm_title': 'Restaurer depuis Google Drive',
+      'drive_restore_warning':
+          'Les données actuelles de l\'appareil seront remplacées par la sauvegarde cloud. Cette action est irréversible.',
+      'drive_backup_success': 'Sauvegarde terminée',
+      'drive_backup_error': 'Impossible de terminer la sauvegarde',
+      'drive_restore_success': 'Données restaurées depuis Google Drive',
+      'drive_restore_error': 'Impossible de restaurer les données',
+      'drive_privacy_note':
+          'La sauvegarde est enregistrée dans votre propre compte Google Drive. CashRapido n\'accède pas à d\'autres fichiers.',
+
+      // ── Mon compte ────────────────────────────────────────────────────────
+      'account_title': 'Mon compte',
+      'account_my_account': 'Votre compte',
+      'account_my_account_desc': 'Informations et état de votre compte',
+      'account_licenses': 'Gestion des licences',
+      'account_licenses_desc': 'Consultez, activez ou renouvelez votre licence',
+      'account_redeem': 'Utiliser un code promo',
+      'account_redeem_desc': 'Saisissez un code pour activer des avantages',
+      'account_export': 'Exporter les données',
+      'account_export_desc': 'Générez un fichier avec vos informations',
+      'account_import': 'Importer les données',
+      'account_import_desc': 'Restaurez une sauvegarde',
+      'account_reset': 'Réinitialiser toutes les données',
+      'account_reset_desc':
+          'Supprimez vos données financières de cet appareil',
+      'account_details_title': 'Votre compte',
+      'account_type_label': 'Type de compte',
+      'account_type_local': 'Compte local',
+      'account_license_label': 'Licence',
+      'account_expires_label': 'Expire',
+      'account_no_expiry': 'Sans expiration',
+      'account_currency_label': 'Devise principale',
+      'account_local_note':
+          'CashRapido conserve vos données sur cet appareil. Il n\'existe pas de compte cloud avec un identifiant et un mot de passe propres.',
+
+      // ── Licences (libellés) ───────────────────────────────────────────────
+      'license_free': 'Gratuite',
+      'license_period_weekly': 'Hebdomadaire',
+      'license_period_monthly': 'Mensuelle',
+      'license_period_annual': 'Annuelle',
+      'license_level_personal': 'Personnelle',
+      'license_level_pro': 'Pro',
+      'license_level_enterprise': 'Entreprise',
+
+      // ── Code promo ────────────────────────────────────────────────────────
+      'promo_redeem_title': 'Utiliser un code',
+      'promo_redeem_intro':
+          'Saisissez votre code promo pour activer ses avantages.',
+      'promo_code_label': 'Code promo',
+      'promo_code_hint': 'Saisissez votre code',
+      'promo_redeem_action': 'Valider',
+      'promo_code_empty': 'Saisissez un code.',
+      'promo_not_available_title': 'Validation indisponible',
+      'promo_not_available_desc':
+          'L\'utilisation de codes promo n\'est pas encore disponible dans CashRapido : elle nécessite un service de validation qui n\'est pas encore configuré. Si vous avez un code, contactez le support.',
+      'promo_dependency_note':
+          'Cette fonction sera activée lorsque le service de validation des codes sera configuré. En attendant, aucun code ne sera appliqué.',
+      'promo_support_subject': 'Demande concernant un code promo',
+
+      // ── Exporter / importer / réinitialiser ───────────────────────────────
+      'export_choose_title': 'Exporter les données',
+      'export_error': 'Impossible d\'exporter les données',
+      'import_error': 'Impossible d\'importer les données',
+      'backup_error': 'Impossible de créer la sauvegarde',
+      'reset_warning_title': 'Réinitialiser toutes les données ?',
+      'reset_warning_desc':
+          'Vos mouvements, comptes, catégories, transactions récurrentes, notifications, conversations de l\'assistant et les données de commerce et de prêts seront supprimés de cet appareil. Votre licence, vos paramètres, vos identifiants et les sauvegardes cloud seront conservés.',
+      'reset_confirm_first': 'Continuer',
+      'reset_backup_title': 'Sauvegarder avant de supprimer',
+      'reset_backup_desc':
+          'Voulez-vous enregistrer une sauvegarde avant de réinitialiser ?',
+      'reset_backup_and_reset': 'Sauvegarder et supprimer',
+      'reset_confirm_final_action': 'Tout supprimer',
+      'reset_success': 'Données réinitialisées',
+      'reset_error': 'Impossible de réinitialiser les données',
+
+      // ── Communauté ────────────────────────────────────────────────────────
+      'community_title': 'Communauté',
+      'community_contribute': 'Contribuer et évaluer',
+      'community_group': 'Communauté',
+      'community_group_desc': 'Rejoignez la communauté officielle',
+      'community_news': 'Nouveautés',
+      'community_news_desc': 'Consultez la version et les nouveautés',
+      'community_rate': 'Évaluer CashRapido',
+      'community_rate_desc': 'Notez-nous dans le magasin',
+      'community_social': 'Réseaux sociaux',
+      'social_discord': 'Rejoignez notre Discord',
+      'social_instagram': 'Suivez-nous sur Instagram',
+      'social_facebook': 'Suivez-nous sur Facebook',
+      'social_youtube': 'Suivez-nous sur YouTube',
+      'social_tiktok': 'Suivez-nous sur TikTok',
+      'social_contact': 'Contactez-nous',
+      'social_contact_desc': 'Écrivez-nous un e-mail',
+      'link_pending_title': 'Lien en attente',
+      'link_pending_desc':
+          'Ce lien n\'est pas encore configuré. Il sera bientôt disponible.',
+      'link_pending_short': 'En attente de configuration',
+      'link_open_error': 'Impossible d\'ouvrir le lien',
+
+      // ── Nouveautés ────────────────────────────────────────────────────────
+      'news_version_label': 'Version installée',
+      'news_no_changelog':
+          'Les nouveautés sont publiées dans le magasin. Ouvrez la fiche de l\'application pour consulter les informations les plus récentes.',
+      'news_open_store': 'Ouvrir le magasin',
+
+      // ── Fonctions principales ─────────────────────────────────────────────
+      'features_title': 'Fonctions principales',
+      'features_intro':
+          'Découvrez tout ce que CashRapido peut faire. Chaque élément ouvre l\'écran réel.',
+      'features_group_personal': 'Finances personnelles',
+      'features_group_tools': 'Outils',
+      'features_group_modules': 'Modules avancés',
+      'features_group_data': 'Données et compte',
+      'feat_home': 'Accueil',
+      'feat_home_desc': 'Aperçu, solde et accès rapides',
+      'feat_movements': 'Mouvements',
+      'feat_movements_desc': 'Historique complet avec filtres par période',
+      'feat_add_income': 'Ajouter un revenu',
+      'feat_add_income_desc': 'Ajoutez un revenu à un compte',
+      'feat_add_expense': 'Ajouter une dépense',
+      'feat_add_expense_desc': 'Ajoutez une dépense à un compte',
+      'feat_categories': 'Catégories et budgets',
+      'feat_categories_desc':
+          'Créez des catégories et définissez une limite mensuelle',
+      'feat_accounts': 'Comptes et cartes',
+      'feat_accounts_desc': 'Gérez vos comptes, soldes et transferts',
+      'feat_recurring': 'Transactions récurrentes',
+      'feat_recurring_desc': 'Automatisez les mouvements périodiques',
+      'feat_stats': 'Statistiques',
+      'feat_stats_desc': 'Graphiques, projection et calendrier des dépenses',
+      'feat_transfermovil_desc': 'Outils de paiement et de recharge pour Cuba',
+      'feat_money_counter': 'Compteur d\'argent',
+      'feat_money_counter_desc': 'Comptez les billets et pièces par valeur',
+      'feat_streak': 'Séries quotidiennes',
+      'feat_streak_desc': 'Consultez votre série et débloquez des offres',
+      'feat_ai': 'Assistant IA',
+      'feat_ai_desc': 'Chat intelligent sur vos finances',
+      'feat_ai_disabled_hint': 'Activez l\'assistant IA dans les Paramètres',
+      'feat_scanner': 'Scanner de cartes',
+      'feat_scanner_desc': 'Scannez une carte pour l\'ajouter',
+      'feat_notifications': 'Notifications',
+      'feat_notifications_desc': 'Rappels et alertes',
+      'feat_business': 'Commerce',
+      'feat_business_desc': 'Produits, ventes, clôtures et vendeurs',
+      'feat_loans': 'Prêts',
+      'feat_loans_desc': 'Gérez les prêts, emprunteurs et paiements',
+      'feat_export_import': 'Exporter et importer des données',
+      'feat_export_import_desc': 'Générez des sauvegardes ou restaurez une copie',
+      'feat_backup': 'Sauvegarde cloud',
+      'feat_backup_desc': 'Synchroniser avec Google Drive',
+      'feat_licenses': 'Licences',
+      'feat_licenses_desc': 'Consultez, activez ou renouvelez votre licence',
+
+      // ── Inviter des amis ──────────────────────────────────────────────────
+      'invite_title': 'Inviter des amis',
+      'invite_headline': 'Invitez vos amis',
+      'invite_message':
+          'Partagez CashRapido avec vos amis et aidez-les à organiser leurs finances.',
+      'invite_link_label': 'Lien de téléchargement',
+      'invite_copy': 'Copier le lien',
+      'invite_copied': 'Lien copié',
+      'invite_share': 'Partager l\'invitation',
+      'invite_share_text':
+          'Découvrez CashRapido, l\'application pour organiser vos finances : {link}',
+      'invite_share_error': 'Impossible de partager l\'invitation',
+      'invite_open_link': 'Ouvrir le lien',
+
+      // ── Aide et confidentialité ───────────────────────────────────────────
+      'help_privacy_title': 'Aide et confidentialité',
+      'help_support_group': 'Aide et support',
+      'help_faq': 'Questions fréquentes',
+      'help_center_subtitle': 'Réponses aux questions les plus courantes',
+      'help_contact': 'Contacter le support',
+      'help_contact_subject': 'Demande de support',
+      'help_report_bug': 'Signaler un bug',
+      'help_report_bug_subject': 'Rapport de bug',
+      'help_send_suggestion': 'Envoyer une suggestion',
+      'help_send_suggestion_subject': 'Suggestion pour CashRapido',
+      'privacy_group': 'Confidentialité et données',
+      'privacy_how_we_handle': 'Comment nous traitons vos données',
+      'privacy_how_we_handle_desc': 'Ce que nous stockons et où',
+      'privacy_backup': 'Sauvegardes',
+      'privacy_backup_desc': 'Gérez votre sauvegarde Google Drive',
+      'legal_group': 'Informations légales et sur l\'application',
+      'app_version_label': 'Version',
+      'about_developer_label': 'Développeur',
+
+      // ── Confidentialité ───────────────────────────────────────────────────
+      'privacy_title': 'Comment nous traitons vos données',
+      'privacy_local_title': 'Stockage local',
+      'privacy_local_body':
+          'Vos mouvements, comptes, catégories et paramètres sont stockés sur cet appareil. L\'application ne nécessite pas d\'inscription et ne crée pas de compte cloud avec un identifiant et un mot de passe propres.',
+      'privacy_security_title': 'Sécurité',
+      'privacy_security_body':
+          'Les données du module de prêts sont stockées chiffrées sur l\'appareil. L\'accès à l\'application peut être protégé par la biométrie, un code PIN ou un mot de passe depuis les Paramètres.',
+      'privacy_drive_title': 'Google Drive',
+      'privacy_drive_body':
+          'Uniquement si vous connectez votre compte, CashRapido enregistre une sauvegarde dans votre propre Google Drive afin que vous puissiez la restaurer. Il n\'accède pas à d\'autres fichiers et vous pouvez le déconnecter quand vous voulez.',
+      'privacy_ai_title': 'Assistant IA',
+      'privacy_ai_body':
+          'Si vous activez l\'assistant, vos messages sont traités par le service d\'IA de Google pour générer des réponses. Si vous ne l\'utilisez pas, rien n\'est envoyé.',
+      'privacy_export_title': 'Exporter et importer',
+      'privacy_export_body':
+          'Vous pouvez exporter vos données en Excel ou PDF et importer une copie quand vous en avez besoin. Vous contrôlez ces fichiers.',
+      'privacy_delete_title': 'Supprimer vos données',
+      'privacy_delete_body':
+          'Depuis Mon compte, vous pouvez réinitialiser l\'application et supprimer vos données de cet appareil. Les sauvegardes cloud sont conservées jusqu\'à ce que vous les supprimiez.',
+      'privacy_contact_title': 'Contact',
+      'privacy_contact_body':
+          'Si vous avez des questions sur le traitement de vos données, écrivez-nous à {email}.',
+      'privacy_contact_subject': 'Demande sur la confidentialité et les données',
+      'categories': 'Catégories',
+      'streak_title': 'Séries',
+      'streak_days': '{count} jours d\'affilée',
+      'streak_calendar_month': 'Calendrier - Ce mois',
+      'streak_reward_title': 'Récompense Premium',
+      'streak_reward_question':
+          'Voulez-vous utiliser 1 de vos {count} récompenses pour obtenir un plan de licence aléatoire maintenant ?',
+      'streak_reward_success': 'Plan Premium activé avec succès !',
+      'streak_reward_hint': 'Gagnez un plan Premium tous les 50 jours !',
+      'streak_claim': 'Utiliser',
+      'streak_claim_button': 'Utiliser le plan ({count} restants)',
+      'streak_weekday_mon': 'L',
+      'streak_weekday_tue': 'M',
+      'streak_weekday_wed': 'M',
+      'streak_weekday_thu': 'J',
+      'streak_weekday_fri': 'V',
+      'streak_weekday_sat': 'S',
+      'streak_weekday_sun': 'D',
+
       'notif_settings_subtitle': 'Paramètres d\'alertes et de rappels',
       'notif_general': 'Général',
       'notif_general_desc': 'Activer ou désactiver toutes les notifications',
@@ -3111,6 +4232,16 @@ class AppLocalizations {
       'notif_tips': 'Astuces Financières',
       'notif_tips_desc':
           'Recevez des conseils aléatoires pour améliorer vos finances',
+      'notif_permission_granted': 'Autorisation système accordée',
+      'notif_permission_denied_title': 'Notifications bloquées',
+      'notif_permission_denied_desc':
+          'Les notifications système sont désactivées pour CashRapido. Activez-les pour recevoir des rappels et des alertes.',
+      'notif_permission_dialog_desc':
+          'Impossible de les activer car l\'autorisation de notification est refusée. Activez-la dans les paramètres système.',
+      'open_system_settings': 'Ouvrir les paramètres système',
+      'notif_weekly_label': 'Résumé hebdomadaire',
+      'notif_weekly_label_desc': 'Envoyé automatiquement le dimanche',
+      'notif_auto': 'Automatique',
       'numeric_format': 'Format Numérique',
       'decimal_separator': 'Séparateur Décimal: ',
       'comma': 'Virgule (,)',
@@ -3149,7 +4280,7 @@ class AppLocalizations {
       'help_a_license_types':
           'Personnel (Gratuit), Pro et Entreprise. Chacun débloque plus de fonctionnalités.',
       'help_a_artpay':
-          '1. Register at https://artpay.neti.cu\n2. Top up your balance on the web platform.\n3. When buying a license in CashRapido, choose "ArtPay" as payment method.\n4. Follow the instructions and confirm the payment from your account.',
+          '1. Inscrivez-vous sur https://artpay.neti.cu\n2. Rechargez votre solde sur la plateforme web.\n3. Lors de l\'achat d\'une licence CashRapido, choisissez "ArtPay" comme moyen de paiement.\n4. Suivez les instructions et confirmez le paiement depuis votre compte.',
       'help_q_restore_purchase': 'Comment restaurer mon achat ?',
       'help_a_restore_purchase':
           'Paramètres -> Licences -> Vérifier. L\'appli vérifiera votre achat Apklis.',
@@ -3974,11 +5105,23 @@ class AppLocalizations {
       'delete': 'Supprimer',
       'edit': 'Modifier',
       'error': 'Erreur',
+      'operation_failed': 'L\'opération n\'a pas pu être terminée.',
       'success': 'Succès',
       'loading': 'Chargement...',
       'search': 'Rechercher',
       'nav_home': 'Accueil',
-      'nav_wallet': 'Portefeuille',
+      'nav_movements': 'Mouvements',
+      'movements_count': 'Mouvements',
+      'movements_balance_period': 'Solde de la période',
+      'movements_last_30_days': '30 derniers jours',
+      'movements_range_limit': 'La plage ne peut pas dépasser 30 jours.',
+      'movements_empty_period': 'Aucun mouvement sur cette période',
+      'movements_empty_period_hint': 'Sélectionnez une autre plage de dates pour voir d\'autres mouvements.',
+      'movements_range_order':
+          'La date de début ne peut pas être postérieure à la date de fin.',
+      'movements_change_range': 'Changer la période',
+      'movements_summary_filtered':
+          'Résumé conforme à la recherche et aux filtres actifs.',
       'category_label': 'Catégorie',
       'import': 'Importer',
 
@@ -3992,6 +5135,16 @@ class AppLocalizations {
       'onboarding_title_3': 'Assistant IA Expert',
       'onboarding_desc_3':
           'Votre conseiller financier personnel. Posez des questions sur vos dépenses 24/7.',
+      'onboarding_get_started': 'Commencer',
+      'tour_balance_title': 'Votre argent consolidé',
+      'tour_balance_desc':
+          'Ici, vous verrez le résumé global de toutes vos cartes et comptes dans différentes devises.',
+      'tour_quick_actions_title': 'Actions rapides',
+      'tour_quick_actions_desc':
+          'Utilisez cette zone pour transférer et agir instantanément sur votre argent.',
+      'tour_finish_title': 'Visite terminée !',
+      'tour_finish_desc':
+          'Vous connaissez les principales fonctions de CashRapido. Commencez à gérer vos finances.',
       'tour_wallet_title': 'Votre Portefeuille',
       'tour_wallet_desc': 'Voici votre solde. Appuyez pour changer de carte.',
       'tour_scan_title': 'Scanner Rapide',
@@ -4007,22 +5160,25 @@ class AppLocalizations {
           'Votre conseiller financier personnel. Appuyez pour ouvrir le chat et obtenir des conseils, analyses et aide instantanés.',
       'tour_navbar_title': 'Navigation Principale',
       'tour_navbar_desc':
-          'Accédez à Accueil, Portefeuille, Statistiques et Paramètres d\'ici.',
+          'Accédez à Accueil, Mouvements, Statistiques et Profil d\'ici.',
       'tour_card_selector_title': 'Sélecteur de Cartes',
       'tour_card_selector_desc':
           'Appuyez sur le nom de la carte pour changer de compte.',
       'tour_transactions_title': 'Transactions Récentes',
       'tour_transactions_desc':
           'Voyez vos derniers mouvements ici. Appuyez pour les détails.',
-      'tour_wallet_nav_title': 'Onglet Portefeuille',
-      'tour_wallet_nav_desc':
-          'Consultez toutes vos cartes, modifiez-les ou ajoutez-en de nouvelles.',
+      'tour_home_nav_title': 'Onglet Accueil',
+      'tour_home_nav_desc':
+          'Votre résumé quotidien : solde, actions rapides et mouvements récents.',
+      'tour_movements_nav_title': 'Onglet Mouvements',
+      'tour_movements_nav_desc':
+          'Consultez vos mouvements par période, avec résumé, recherche et filtres.',
       'tour_stats_nav_title': 'Onglet Statistiques',
       'tour_stats_nav_desc':
           'Analysez vos dépenses et revenus avec des graphiques détaillés.',
-      'tour_settings_nav_title': 'Onglet Paramètres',
-      'tour_settings_nav_desc':
-          'Personnalisez l\'application, gérez la sécurité et exportez les données.',
+      'tour_profile_nav_title': 'Onglet Profil',
+      'tour_profile_nav_desc':
+          'Gérez votre compte, la sécurité, les licences et les réglages de l\'app.',
 
       // Scanner
       'scan_card_instruction': 'Encadrer la carte',
@@ -4032,8 +5188,8 @@ class AppLocalizations {
       'category_name_placeholder': 'Nom de la Catégorie',
 
       // Settings Extended
-      'sync_drive_title': 'Sync avec Google Drive',
-      'sync_drive_desc': 'Connecter compte pour sauvegardes',
+      'sync_drive_title': 'Sauvegarde Google Drive',
+      'sync_drive_desc': 'Connectez votre compte pour sauvegarder et restaurer',
       'error_connecting': 'Erreur de connexion',
       'user_default': 'Utilisateur',
       'backup_action': 'Sauvegarder',
@@ -4044,12 +5200,6 @@ class AppLocalizations {
       'restore_success_msg': 'Données restaurées avec succès',
       'backup_success_msg': 'Sauvegarde terminée',
 
-      // Rest of keys... I will assume similar structure for FR if I see the end of file, but I don't see the end of FR block in the previous view_file.
-      // Wait, I only saw up to line 800. I need to be careful. The chunk needs to be precise.
-      // I'll skip FR for this specific chunk call and do a separate view to find the end of the FR block or just append to where I know it is safe.
-      // Actually, looking at the previous file view, 'fr' starts at 723.
-      // I can't see the end of 'fr'. I should verify the file content for FR before writing.
-      // I will only write ES and EN for now and then read the rest to write FR.
       'developed_by': 'Développé par',
       'developer_name': 'Lenier Cruz Perez',
       'app_desc':
@@ -4120,6 +5270,19 @@ class AppLocalizations {
       'success_action': 'réussi',
       'select_destination_error': 'Sélectionner la destination',
 
+      // History (all_transactions_screen)
+      'all': 'Tous',
+      'search_transactions_hint':
+          'Rechercher par description, catégorie ou compte',
+      'filter_date_range': 'Plage de dates',
+      'clear_filters': 'Effacer les filtres',
+      'clear_search': 'Effacer la recherche',
+      'no_results_title': 'Aucun résultat',
+      'no_results_message':
+          'Aucune transaction ne correspond à votre recherche ou à vos filtres.',
+      'history_hint':
+          'Touchez une transaction pour la modifier ou la supprimer',
+
       // Stats
       'statistics': 'Statistiques',
       'income': 'Revenus',
@@ -4143,7 +5306,7 @@ class AppLocalizations {
       // Add Category
       'new_category': 'Nouvelle Catégorie',
       'cat_name_label': 'Nom',
-      'cat_name_hint': 'Ex. Gym, Freelance',
+      'cat_name_hint': 'Ex. : Gym, Freelance',
       'cat_icon_label': 'Icône',
       'cat_color_label': 'Couleur',
       'save_category': 'Enregistrer la catégorie',
@@ -4210,6 +5373,83 @@ class AppLocalizations {
       'stats_by_hour': 'Par heure de la journée',
       'stats_by_day': 'Par jour',
       'stats_by_month': 'Par mois',
+      // --- Centres d'analyse : Analytique / Projection / Calendrier ---
+      'stats_view_analytics': 'Analytique',
+      'stats_view_projection': 'Projection financière',
+      'stats_view_calendar': 'Calendrier financier',
+      'stats_share': 'Partager le résumé',
+      'stats_balance_month': 'Solde du mois',
+      'stats_month_summary': 'Résumé du mois',
+      'stats_savings_rate': "Taux d'épargne",
+      'stats_savings_rate_unavailable': 'Non disponible',
+      'stats_savings_rate_hint':
+          'Pourcentage de vos revenus qui reste après vos dépenses.',
+      // Budgets
+      'stats_budget_chart_title': 'Budgets du mois',
+      'stats_budget_chart_subtitle': 'Le prévu face au dépensé sur {period}',
+      'stats_budget_spent': 'Dépensé',
+      'stats_budget_remaining': 'Restant',
+      'stats_budget_exceeded': 'Dépassé',
+      'stats_budget_empty_title': 'Aucun budget configuré',
+      'stats_budget_empty_hint':
+          "Attribuez un budget mensuel à vos catégories pour le comparer à vos dépenses réelles.",
+      'stats_budget_count': '{n} catégories avec budget',
+      'stats_budget_month_only':
+          "Le budget est mensuel : passez à une période d'un mois pour le comparer à vos dépenses.",
+      // Évolution quotidienne
+      'stats_expenses_chart_title': 'Dépenses de la période',
+      'stats_income_chart_title': 'Revenus de la période',
+      'stats_daily_average': 'Moyenne quotidienne',
+      'stats_peak_day': "Jour d'activité maximale",
+      'stats_chart_empty_title': 'Aucun mouvement sur la période',
+      'stats_chart_empty_hint':
+          'Dès que vous enregistrerez des mouvements, leur évolution quotidienne apparaîtra ici.',
+      'stats_active_days': '{n} jours avec des mouvements',
+      // Projection financière
+      'stats_projection_method_title': 'Comment est-ce calculé',
+      'stats_projection_method':
+          "On part de la moyenne quotidienne accumulée sur {elapsed} des {total} jours calendaires et on l'extrapole à la fin du mois.",
+      'stats_projection_disclaimer':
+          "C'est une estimation basée sur ce qui s'est passé jusqu'à aujourd'hui, pas un résultat garanti.",
+      'stats_accumulated': 'Réel accumulé',
+      'stats_projected_close': 'Estimé à la clôture',
+      'stats_projection_income': 'Revenus projetés',
+      'stats_projection_expense': 'Dépenses projetées',
+      'stats_projection_balance': 'Solde projeté',
+      'stats_projection_unavailable_title': 'Données insuffisantes',
+      'stats_projection_unavailable_hint':
+          "Il n'y a pas encore de mouvements ce mois-ci, il n'y a donc rien à projeter.",
+      'stats_projection_income_unavailable': 'Aucun revenu enregistré',
+      'stats_projection_no_income_hint':
+          "Sans revenus, on n'estime pas la clôture : seules les données réelles sont affichées.",
+      'stats_projection_month_complete':
+          'Le mois est déjà complet, les valeurs estimées coïncident donc avec les réelles.',
+      'stats_projection_current_month': 'Mois en cours',
+      'stats_projection_progress': 'Jour {day} sur {total}',
+      // Calendrier financier
+      'stats_calendar_title': 'Calendrier financier',
+      'stats_calendar_subtitle': 'Votre activité jour par jour en {month}',
+      'stats_calendar_pick_date': 'Choisir une date',
+      'stats_calendar_selected_day': 'Jour sélectionné',
+      'stats_calendar_day_income': 'Revenus du jour',
+      'stats_calendar_day_expense': 'Dépenses du jour',
+      'stats_calendar_day_balance': 'Solde du jour',
+      'stats_calendar_movements': 'Mouvements du jour',
+      'stats_calendar_day_count': 'Mouvements',
+      'stats_calendar_empty_day_title': "Ce jour n'a aucun mouvement",
+      'stats_calendar_empty_day_hint':
+          'Touchez un autre jour du calendrier pour voir son activité.',
+      'stats_calendar_legend_income': 'Avec revenus',
+      'stats_calendar_legend_expense': 'Avec dépenses',
+      'stats_calendar_legend_both': 'Revenus et dépenses',
+      'stats_calendar_legend_none': 'Sans mouvements',
+      'stats_calendar_legend': 'Comment lire le calendrier',
+      // Partage
+      'stats_share_subject': 'Résumé de {title} — CashRapido',
+      'stats_share_error': "Impossible d'ouvrir le menu de partage",
+      'stats_share_ok': 'Résumé partagé',
+      'stats_share_period': 'Période',
+      'stats_share_method': 'Méthode de calcul',
       'locked_badge': 'Verrouillé',
       'reorder_hint': 'Maintenez appuyé pour réorganiser',
       'primary_account': 'Principale',
@@ -4245,7 +5485,7 @@ class AppLocalizations {
       'new_card': 'Nouvelle Carte',
       'edit_card_title': 'Modifier la Carte',
       'scan_card': 'Scanner la Carte',
-      'card_scanned': 'Carte scannée avec succès! 📸',
+      'card_scanned': 'Données détectées. Vérifiez-les avant d’enregistrer. 📸',
       'complete_data_error': 'Veuillez compléter les données correctement',
       'invalid_date_format': 'Format de date invalide (MM/AA)',
       'bank_label': 'Banque',
@@ -4333,7 +5573,6 @@ class AppLocalizations {
 
       'cards': 'Cartes',
       // View All
-      'history_title': 'Historique des transactions',
       'all_cards': 'Toutes les cartes',
       // Currency Management
       'currency_in_use_error': 'Cette devise est utilisée par une carte',
@@ -4397,6 +5636,14 @@ class AppLocalizations {
       'enter_currency_details': 'Entrez les détails de la devise',
       'custom_currency': 'Devise Personnalisée',
       'currency_exists': 'Cette devise existe déjà',
+      'exchange_rates_title': 'Taux de change',
+      'exchange_rates_sub': 'Taux pour les conversions',
+      'transfermovil_title': 'Intégration Transfermóvil',
+      'transfermovil_sub':
+          'Détecter les paiements automatiquement (Cuba uniquement)',
+      'exchange_rate_for': '1 {currency} en {main}',
+      'rates_updated': 'Taux de change mis à jour',
+      'example_label': 'Exemple',
       'all_accounts': 'Tous les Comptes',
       'bank_cards_only': 'Cartes Uniquement',
       'cash_only': 'Espèces Uniquement',
@@ -4411,6 +5658,14 @@ class AppLocalizations {
       'ask_ai_hint': 'Demandez des conseils...',
       'ai_welcome_message':
           'Bonjour ! Je suis votre assistant financier personnel.',
+      'ai_history_title': 'Historique des chats',
+      'ai_new_chat': 'Nouveau chat',
+      'ai_no_conversations': 'Aucune conversation pour l\'instant.',
+      'ai_error_message':
+          'Impossible d\'obtenir une réponse. Vérifiez votre connexion et réessayez.',
+      'today': 'Aujourd\'hui',
+      'yesterday': 'Hier',
+      'send': 'Envoyer',
 
       // Licenses Info
       'current_license': 'Licence Actuelle',
@@ -4464,7 +5719,10 @@ class AppLocalizations {
       'connection_error': 'Erreur de connexion. Vérifiez votre internet.',
       'verify_license': 'Vérifier la licence',
       'verifying': 'Vérification...',
+      'simulating_test_payment': 'Simulation du paiement test...',
+      'processing_payment_apklis': 'Traitement du paiement avec Apklis...',
       'license_restored': 'Licence restaurée avec succès',
+      'license_active_success': 'Licence activée avec succès',
       'no_license_found': 'Aucune licence active trouvée',
       'verify_error': 'Erreur lors de la vérification de la licence',
       'already_paid': 'Vous avez déjà cette licence active.',
@@ -4588,6 +5846,24 @@ class AppLocalizations {
       'scan_frame_hint':
           'Gardez la carte dans le cadre, avec un bon éclairage.',
       'btn_close': 'Fermer',
+      'scan_retry': 'Réessayer',
+      'scan_allow_camera': 'Autoriser la caméra',
+      'scan_torch_on': 'Allumer la lampe',
+      'scan_torch_off': 'Éteindre la lampe',
+      'scan_capture_error':
+          'Impossible de capturer l’image. Veuillez réessayer.',
+      'scan_reading_error': 'Impossible de lire la carte. Veuillez réessayer.',
+      'scan_camera_permission_title': 'Activez la caméra',
+      'scan_camera_permission_desc':
+          'CashRapido a besoin de la caméra pour lire la carte. Accordez l’autorisation pour continuer.',
+      'scan_camera_permission_settings_desc':
+          'L’autorisation de la caméra est bloquée. Activez-la dans les réglages du système puis réessayez.',
+      'scan_camera_unavailable_title': 'Caméra indisponible',
+      'scan_camera_unavailable_desc':
+          'Aucune caméra n’a été trouvée sur cet appareil. Vous pouvez saisir les données manuellement.',
+      'scan_camera_error_title': 'Impossible de démarrer la caméra',
+      'scan_camera_error_desc':
+          'Un problème est survenu lors de la préparation de la caméra. Réessayez.',
 
       // =====================================================================
       // FORMULARIOS Y FLUJOS FINANCIEROS (FASE 5)

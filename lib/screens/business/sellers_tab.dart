@@ -9,6 +9,7 @@ import '../../theme/app_radius.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/design/cash_card.dart';
 import '../../widgets/design/cash_chip.dart';
+import '../../widgets/design/cash_dialog.dart';
 import '../../widgets/design/cash_empty_state.dart';
 import '../../widgets/design/cash_floating_button.dart';
 import 'seller_assign_products_screen.dart';
@@ -343,40 +344,15 @@ class _SellerCard extends StatelessWidget {
   }
 
   Future<void> _confirmDelete(BuildContext context) async {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusXl),
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        title: Row(
-          children: [
-            const Icon(Icons.delete_outline, color: AppColors.error, size: 22),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Text(
-                context.t('seller_delete'),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          context.t('seller_delete_confirm').replaceAll('{name}', seller.fullName),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(context.t('cancel')),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-            child: Text(context.t('delete')),
-          ),
-        ],
-      ),
+    final confirmed = await showCashConfirmDialog(
+      context,
+      title: context.t('seller_delete'),
+      message: context
+          .t('seller_delete_confirm')
+          .replaceAll('{name}', seller.fullName),
+      confirmLabel: context.t('delete'),
+      cancelLabel: context.t('cancel'),
+      icon: Icons.delete_outline_rounded,
     );
 
     if (confirmed == true && context.mounted) {

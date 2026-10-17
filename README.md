@@ -137,7 +137,6 @@ cashrapido/
 │   ├── services/                     # Servicios de la aplicación
 │   │   ├── ad_service.dart           # Servicio de anuncios (Google Mobile Ads)
 │   │   ├── ai_service.dart           # Interfaz de servicio AI (abstracta)
-│   │   ├── ai_service_desktop.dart   # Implementación AI para Desktop
 │   │   ├── ai_service_mobile.dart    # Implementación AI para Mobile
 │   │   ├── backup_service.dart       # Servicio de respaldo local (.cashrapido)
 │   │   ├── drive_service.dart        # Servicio de respaldo en Google Drive
@@ -365,7 +364,6 @@ Gestiona el módulo de préstamos:
 |--------------------------|--------------------------------|--------------------------------------------------|
 | `AdService`              | `services/ad_service.dart`     | Gestión de anuncios Google Mobile Ads            |
 | `AiService` (abstracto)  | `services/ai_service.dart`     | Interfaz para servicio de AI                     |
-| `AiServiceDesktop`       | `services/ai_service_desktop.dart` | Implementación AI para Desktop usando HTTP   |
 | `AiServiceMobile`        | `services/ai_service_mobile.dart`  | Implementación AI para Mobile usando SDK     |
 | `BackupService`          | `services/backup_service.dart` | Respaldo local en formato `.cashrapido`          |
 | `DriveService`           | `services/drive_service.dart`  | Sincronización con Google Drive                  |

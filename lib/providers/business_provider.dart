@@ -153,6 +153,25 @@ class BusinessProvider with ChangeNotifier {
     }
   }
 
+  /// Elimina todos los datos del módulo de negocio de este dispositivo.
+  ///
+  /// Forma parte del restablecimiento general: borra negocios, productos,
+  /// ventas, gastos, cierres, categorías de producto, vendedores e inventario.
+  /// No toca preferencias, licencia ni copias de seguridad.
+  Future<void> clearAllData() async {
+    await _businessBox.clear();
+    await _productBox.clear();
+    await _saleBox.clear();
+    await _expenseBox.clear();
+    await _closingBox.clear();
+    await _productCategoryBox.clear();
+    await _sellerBox.clear();
+    await _sellerInventoryBox.clear();
+    _activeBusinessId = null;
+    _fetchData();
+    notifyListeners();
+  }
+
   void updateCurrencyConfig(String currency, Map<String, double> rates) {
     _mainCurrency = currency;
     _exchangeRates = rates;

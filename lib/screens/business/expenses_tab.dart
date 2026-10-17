@@ -13,6 +13,7 @@ import '../../theme/app_spacing.dart';
 import '../../utils/number_format_utils.dart';
 import '../../widgets/design/cash_card.dart';
 import '../../widgets/design/cash_chip.dart';
+import '../../widgets/design/cash_dialog.dart';
 import '../../widgets/design/cash_empty_state.dart';
 import '../../widgets/design/cash_floating_button.dart';
 import 'expense_form_screen.dart';
@@ -521,37 +522,14 @@ class _ExpenseTile extends StatelessWidget {
   const _ExpenseTile({required this.expense, required this.provider});
 
   Future<bool> _confirmDelete(BuildContext context) async {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusXl),
-        backgroundColor: isDark
-            ? AppColors.surfaceDark
-            : AppColors.surfaceLight,
-        title: const Row(
-          children: [
-            Icon(Icons.delete_outline, color: AppColors.error, size: 22),
-            SizedBox(width: AppSpacing.sm),
-            Expanded(child: Text('Eliminar gasto')),
-          ],
-        ),
-        content: Text(
-          '¿Eliminar "${expense.description}"?\n'
+    final confirmed = await showCashConfirmDialog(
+      context,
+      title: 'Eliminar gasto',
+      message: '¿Eliminar "${expense.description}"?\n'
           'Esta acción no se puede deshacer.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Eliminar'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Eliminar',
+      cancelLabel: 'Cancelar',
+      icon: Icons.delete_outline_rounded,
     );
     return confirmed ?? false;
   }

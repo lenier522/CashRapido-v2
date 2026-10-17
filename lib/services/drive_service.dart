@@ -26,6 +26,20 @@ class DriveService {
     }
   }
 
+  /// Restaura la sesión de Google sin mostrar ninguna interfaz.
+  ///
+  /// `google_sign_in` no conserva `currentUser` entre arranques de la app: hay
+  /// que pedir una reconexión silenciosa. Devuelve la cuenta si el usuario ya
+  /// había concedido el permiso, o `null` si no hay sesión previa.
+  Future<sign_in.GoogleSignInAccount?> restoreSession() async {
+    try {
+      return await _googleSignIn.signInSilently();
+    } catch (e) {
+      print('Silent sign in failed: $e');
+      return null;
+    }
+  }
+
   Future<void> signOut() async {
     await _googleSignIn.disconnect();
   }

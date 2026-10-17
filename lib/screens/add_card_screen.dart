@@ -29,9 +29,23 @@ import '../widgets/design/cash_selector_field.dart';
 /// datos del modelo `AccountCard` (nombre, tipo, banco, número, vencimiento,
 /// saldo, moneda, color), las mismas validaciones y las mismas llamadas
 /// `addCard` / `editCard`.
+///
+/// [initialHolder], [initialNumber] y [initialExpiry] sólo sirven para
+/// precargar el formulario (por ejemplo con lo leído por el escáner desde
+/// Inicio); no crean ni modifican ningún dato por sí mismos.
 class AddCardScreen extends StatefulWidget {
   final AccountCard? cardToEdit;
-  const AddCardScreen({super.key, this.cardToEdit});
+  final String? initialHolder;
+  final String? initialNumber;
+  final String? initialExpiry;
+
+  const AddCardScreen({
+    super.key,
+    this.cardToEdit,
+    this.initialHolder,
+    this.initialNumber,
+    this.initialExpiry,
+  });
 
   @override
   State<AddCardScreen> createState() => _AddCardScreenState();
@@ -61,9 +75,15 @@ class _AddCardScreenState extends State<AddCardScreen> {
     super.initState();
     final card = widget.cardToEdit;
 
-    _holderController = TextEditingController(text: card?.name ?? '');
-    _numberController = TextEditingController(text: card?.cardNumber ?? '');
-    _expiryController = TextEditingController(text: card?.expiryDate ?? '');
+    _holderController = TextEditingController(
+      text: card?.name ?? widget.initialHolder ?? '',
+    );
+    _numberController = TextEditingController(
+      text: card?.cardNumber ?? _groupCardNumber(widget.initialNumber),
+    );
+    _expiryController = TextEditingController(
+      text: card?.expiryDate ?? widget.initialExpiry ?? '',
+    );
     _balanceController = TextEditingController(
       text: card?.balance.toString() ?? '',
     );
@@ -817,16 +837,24 @@ class _AddCardScreenState extends State<AddCardScreen> {
     _formatExpiryDate(val);
   }
 
-  void _formatCardNumber(String val) {
-    // Remove all non-digits
-    String text = val.replaceAll(RegExp(r'\D'), '');
-    String formatted = '';
-    for (int i = 0; i < text.length; i++) {
+  /// Agrupa el número en bloques de cuatro dígitos, sin tocar el estado.
+  ///
+  /// Función pura para poder reutilizarse en `initState` (precarga del escáner),
+  /// donde `setState` no es válido.
+  static String _groupCardNumber(String? value) {
+    final String digits = (value ?? '').replaceAll(RegExp(r'\D'), '');
+    final StringBuffer formatted = StringBuffer();
+    for (int i = 0; i < digits.length; i++) {
       if (i > 0 && i % 4 == 0) {
-        formatted += '-';
+        formatted.write('-');
       }
-      formatted += text[i];
+      formatted.write(digits[i]);
     }
+    return formatted.toString();
+  }
+
+  void _formatCardNumber(String val) {
+    final String formatted = _groupCardNumber(val);
 
     // Update controller if changed to avoid infinite loop
     if (_numberController.text != formatted) {

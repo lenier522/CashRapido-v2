@@ -11,9 +11,9 @@ import '../theme/app_radius.dart';
 import '../theme/app_spacing.dart';
 import '../utils/icon_constants.dart';
 import '../utils/number_format_utils.dart';
-import '../widgets/design/cash_button.dart';
 import '../widgets/design/cash_card.dart';
 import '../widgets/design/cash_chip.dart';
+import '../widgets/design/cash_dialog.dart';
 import '../widgets/design/cash_empty_state.dart';
 import '../widgets/design/cash_floating_button.dart';
 import '../widgets/design/cash_icon_button.dart';
@@ -165,38 +165,17 @@ class RecurringTransactionsScreen extends StatelessWidget {
     AppProvider provider,
     bool isIncome,
   ) async {
-    final bool? result = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.radiusXl),
-        icon: const Icon(Icons.delete_outline, color: AppColors.error),
-        title: Text(
-          context.t('delete'),
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        content: Text(
-          context.t(
-            isIncome
-                ? 'rec_delete_question_income'
-                : 'rec_delete_question_expense',
-          ),
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(context.t('cancel')),
-          ),
-          CashButton(
-            label: context.t('delete'),
-            type: CashButtonType.danger,
-            height: 44,
-            fullWidth: false,
-            onPressed: () => Navigator.pop(dialogContext, true),
-          ),
-        ],
+    final bool? result = await showCashConfirmDialog(
+      context,
+      title: context.t('delete'),
+      message: context.t(
+        isIncome
+            ? 'rec_delete_question_income'
+            : 'rec_delete_question_expense',
       ),
+      confirmLabel: context.t('delete'),
+      cancelLabel: context.t('cancel'),
+      icon: Icons.delete_outline_rounded,
     );
 
     if (result == true) {

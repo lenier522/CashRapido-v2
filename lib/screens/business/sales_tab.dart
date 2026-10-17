@@ -11,6 +11,7 @@ import '../../theme/app_spacing.dart';
 import '../../widgets/design/cash_bottom_sheet.dart';
 import '../../widgets/design/cash_button.dart';
 import '../../widgets/design/cash_chip.dart';
+import '../../widgets/design/cash_dialog.dart';
 import '../../widgets/design/cash_empty_state.dart';
 import '../../widgets/design/cash_floating_button.dart';
 import 'pos_screen.dart';
@@ -582,28 +583,13 @@ class _SalesTabState extends State<SalesTab> {
                 icon: const Icon(Icons.delete_outline_rounded, size: 18),
                 type: CashButtonType.danger,
                 onPressed: () async {
-                  final confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: AppRadius.radiusXl,
-                      ),
-                      title: Text(context.t('delete_sale_confirm_title')),
-                      content: Text(context.t('delete_sale_confirm_msg')),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, false),
-                          child: Text(context.t('cancel')),
-                        ),
-                        CashButton(
-                          label: context.t('sale_delete_label'),
-                          fullWidth: false,
-                          height: 44,
-                          type: CashButtonType.danger,
-                          onPressed: () => Navigator.pop(ctx, true),
-                        ),
-                      ],
-                    ),
+                  final confirm = await showCashConfirmDialog(
+                    context,
+                    title: context.t('delete_sale_confirm_title'),
+                    message: context.t('delete_sale_confirm_msg'),
+                    confirmLabel: context.t('sale_delete_label'),
+                    cancelLabel: context.t('cancel'),
+                    icon: Icons.delete_outline_rounded,
                   );
                   if (confirm == true && context.mounted) {
                     final appProvider = Provider.of<AppProvider>(
