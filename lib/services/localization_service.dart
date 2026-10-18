@@ -1298,6 +1298,8 @@ class AppLocalizations {
       'tooltip_notifications': 'Notificaciones',
       'tooltip_ai': 'Asistente IA',
       'tooltip_streak': 'Racha',
+      'tooltip_hide_balance': 'Ocultar montos',
+      'tooltip_show_balance': 'Mostrar montos',
       'select_card': 'Seleccionar',
 
       // Quick Actions
@@ -3258,6 +3260,8 @@ class AppLocalizations {
       'tooltip_notifications': 'Notifications',
       'tooltip_ai': 'AI Assistant',
       'tooltip_streak': 'Streak',
+      'tooltip_hide_balance': 'Hide amounts',
+      'tooltip_show_balance': 'Show amounts',
       'select_card': 'Select Card',
 
       // Quick Actions
@@ -5238,6 +5242,8 @@ class AppLocalizations {
       'tooltip_notifications': 'Notifications',
       'tooltip_ai': 'Assistant IA',
       'tooltip_streak': 'Série',
+      'tooltip_hide_balance': 'Masquer les montants',
+      'tooltip_show_balance': 'Afficher les montants',
       'select_card': 'Sélectionner une carte',
 
       // Quick Actions

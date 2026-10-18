@@ -66,6 +66,12 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Ancho máximo del selector de cuenta dentro de la tarjeta de balance.
   static const double _cardSelectorMaxWidth = 190;
 
+  /// Marcador que sustituye a los montos cuando el usuario los oculta.
+  static const String _hiddenAmount = '\$ ••••••';
+
+  /// Si el usuario ocultó los montos de la tarjeta de balance.
+  bool _hideBalances = false;
+
   @override
   Widget build(BuildContext context) {
     return Consumer<AppProvider>(
@@ -396,15 +402,31 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Row(
                   children: [
-                    Expanded(
-                      child: Text(
-                        context.t('total_balance'),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.85),
-                          fontWeight: FontWeight.w600,
-                        ),
+                    // Rótulo «Balance total» con el ojo para ocultar o mostrar
+                    // los montos justo al lado del texto.
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 150),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              context.t('total_balance'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: Colors.white.withValues(alpha: 0.85),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          _BalanceVisibilityToggle(
+                            hidden: _hideBalances,
+                            onPressed: () =>
+                                setState(() => _hideBalances = !_hideBalances),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
@@ -420,7 +442,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: _BalanceMetric(
                         icon: Icons.south_west_rounded,
                         label: context.t('income_month'),
-                        value: '\$${income.toFormattedString(0)}',
+                        value: _hideBalances
+                            ? _hiddenAmount
+                            : '\$${income.toFormattedString(0)}',
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),
@@ -428,7 +452,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: _BalanceMetric(
                         icon: Icons.north_east_rounded,
                         label: context.t('expense_month'),
-                        value: '\$${expense.toFormattedString(0)}',
+                        value: _hideBalances
+                            ? _hiddenAmount
+                            : '\$${expense.toFormattedString(0)}',
                       ),
                     ),
                   ],
@@ -458,7 +484,9 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
-            '\$ ${balance.toFormattedString(2)}',
+            _hideBalances
+                ? _hiddenAmount
+                : '\$ ${balance.toFormattedString(2)}',
             maxLines: 1,
             style: theme.textTheme.displayMedium?.copyWith(
               color: Colors.white,
@@ -1500,6 +1528,54 @@ class _NotificationsButton extends StatelessWidget {
               ),
             )
           : null,
+    );
+  }
+}
+
+/// Botón de ojo que oculta o muestra los montos de la tarjeta de balance.
+///
+/// Es el único control de visibilidad de la tarjeta: al pulsarlo se ocultan (o
+/// muestran) el saldo, los ingresos y los gastos del mes a la vez.
+class _BalanceVisibilityToggle extends StatelessWidget {
+  const _BalanceVisibilityToggle({
+    required this.hidden,
+    required this.onPressed,
+  });
+
+  final bool hidden;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final String tooltip = hidden
+        ? context.t('tooltip_show_balance')
+        : context.t('tooltip_hide_balance');
+
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.white.withValues(alpha: 0.18),
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onPressed,
+          child: Semantics(
+            button: true,
+            label: tooltip,
+            child: SizedBox(
+              width: 28,
+              height: 28,
+              child: Icon(
+                hidden
+                    ? Icons.visibility_off_rounded
+                    : Icons.visibility_rounded,
+                size: 16,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
