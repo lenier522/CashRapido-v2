@@ -8,6 +8,7 @@ import 'dart:convert';
 import '../services/widget_service.dart';
 import 'package:crypto/crypto.dart';
 import '../models/models.dart';
+import 'dart:async';
 import '../models/payment_method.dart';
 import '../services/notification_service.dart';
 import '../services/export_service.dart';
@@ -22,6 +23,7 @@ import '../services/backup_service.dart';
 import '../licences/apklis.dart';
 import '../licences/art_pay.dart';
 import '../licences/license_type.dart';
+import '../services/app_icon_service.dart';
 import 'package:cashrapido/utils/number_format_utils.dart';
 import '../models/recurring_transaction.dart';
 import '../models/notification_item.dart';
@@ -155,6 +157,29 @@ class AppProvider with ChangeNotifier {
   DateTime? _licenseActivationDate;
   DateTime? get licenseActivationDate => _licenseActivationDate;
 
+  /// Indica si hay una licencia **Empresarial vigente** (no vencida).
+  ///
+  /// Requiere nivel `enterprise` y que la fecha de vencimiento
+  /// ([licenseActivationDate], que Art-Pay/Apklis siempre establece) no haya
+  /// pasado. Se usa, entre otras cosas, para autorizar el cambio de icono.
+  bool get isEnterpriseActive {
+    if (licenseType.level != LicenseLevel.enterprise) return false;
+    final DateTime? expires = licenseActivationDate;
+    if (expires == null) return true;
+    return !DateTime.now().isAfter(expires);
+  }
+
+  /// Sincroniza el icono de la app con la licencia actual y la elección
+  /// guardada del usuario (vuelve al icono por defecto al vencer el plan).
+  Future<void> _syncAppIcon() async {
+    final String? selected = await AppIconService.selectedKey();
+    if (!kIsWeb && Platform.isWindows) return; // Sin alias nativo en escritorio.
+    await AppIconService.applyForLicense(
+      isEnterpriseActive: isEnterpriseActive,
+      selectedKey: selected,
+    );
+  }
+
   void setLicenseType(LicenseType type, {DateTime? expirationDate}) {
     _licenseType = type;
     if (type != LicenseType.free) {
@@ -191,6 +216,9 @@ class AppProvider with ChangeNotifier {
         prefs.remove('license_expiration_date');
       }
     });
+    // El nivel/caducidad de la licencia dicta qué icono debe verse: si el
+    // plan venció, aquí se vuelve al icono por defecto.
+    unawaited(_syncAppIcon());
     notifyListeners();
   }
 
@@ -724,6 +752,11 @@ class AppProvider with ChangeNotifier {
 
       // Check Expiration
       _checkLicenseExpiration();
+
+      // Aplica el icono de la app según la licencia vigente y la elección
+      // guardada (el estacional y el restablecimiento por vencimiento viven
+      // en AppIconService.applyForLicense).
+      unawaited(_syncAppIcon());
 
       // Fallback locale logic if not set above
       if (_currentLocale == null) {

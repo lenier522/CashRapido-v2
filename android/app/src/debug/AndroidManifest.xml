@@ -1,7 +1,46 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- The INTERNET permission is required for development. Specifically,
          the Flutter tool needs it to communicate with the running application
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Lanzador de desarrollo.
+
+         `flutter run` elige el componente MAIN/LAUNCHER leyendo el manifest
+         del APK de forma **estática** (no lo consulta al sistema: comprobado,
+         aunque `resolve-activity` devolviera otro alias, Flutter lanzó
+         `.LauncherDefault`). Si el lanzador fuera un alias y otro icono
+         quedara activo —por una elección manual o una ventana estacional
+         heredada de una sesión de release—, ese alias estaría deshabilitado y
+         el arranque fallaría con "Activity class ... does not exist" antes de
+         que la app pudiera ejecutarse y autocurarse.
+
+         Por eso, en depuración el lanzador es la propia `MainActivity`: es el
+         único componente que nunca se deshabilita, con lo que `flutter run`
+         funciona siempre. Los aliases se eliminan por completo, lo que además
+         garantiza:
+
+           * el icono mostrado es siempre el por defecto (sin estados
+             heredados de release ni ventanas estacionales),
+           * no puede aparecer un icono duplicado en la pantalla de inicio.
+
+         La elección del usuario sigue persistiéndose en SharedPreferences y
+         se aplica íntegramente en los builds de release.
+    -->
+    <application>
+        <activity android:name=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+        <activity-alias android:name=".LauncherDefault" tools:node="remove"/>
+        <activity-alias android:name=".LauncherPlaya" tools:node="remove"/>
+        <activity-alias android:name=".LauncherMar" tools:node="remove"/>
+        <activity-alias android:name=".LauncherHalloween" tools:node="remove"/>
+        <activity-alias android:name=".LauncherNavidad" tools:node="remove"/>
+    </application>
 </manifest>

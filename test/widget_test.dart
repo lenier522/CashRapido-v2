@@ -26,8 +26,15 @@ void main() {
     // Verify that the OnboardingScreen is present
     expect(find.byType(OnboardingScreen), findsOneWidget);
 
-    // Verify that the first slide title is present
-    expect(find.text('Control Total'), findsOneWidget);
+    // The redesign moves the artwork, the title and the circular page
+    // indicator into a single bitmap per page, so there are no more Text
+    // widgets for the slide copy. Verify the images are rendered instead.
+    expect(find.byType(Image), findsWidgets);
+
+    // The bottom controls remain text-driven: continue on intermediate pages
+    // and the skip shortcut.
+    expect(find.text('Continuar'), findsOneWidget);
+    expect(find.text('Omitir'), findsOneWidget);
 
     // Verify that the counter '0' (from old template) is NOT present
     expect(find.text('0'), findsNothing);

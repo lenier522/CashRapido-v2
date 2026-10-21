@@ -51,6 +51,13 @@ android {
     }
 
  buildTypes {
+    getByName("debug") {
+        // Firma el debug con el MISMO keystore de release para poder alternar
+        // entre `flutter run` (debug) y builds de release sin desinstalar la
+        // app. Sin esto, instalar uno sobre el otro falla con
+        // INSTALL_FAILED_UPDATE_INCOMPATIBLE y obliga a borrar los datos.
+        signingConfig = signingConfigs.getByName("release")
+    }
     getByName("release") {
         signingConfig = signingConfigs.getByName("release")
         isMinifyEnabled = true

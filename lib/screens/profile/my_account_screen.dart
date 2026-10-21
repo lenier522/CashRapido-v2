@@ -14,6 +14,7 @@ import '../../widgets/design/cash_nav_group.dart';
 import '../../widgets/design/cash_snack.dart';
 import '../licenses_screen.dart';
 import 'account_details_screen.dart';
+import 'app_icon_screen.dart';
 import 'profile_helpers.dart';
 import 'promo_code_screen.dart';
 
@@ -246,6 +247,8 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
   @override
   Widget build(BuildContext context) {
     final bool busy = _busy != null;
+    final bool canChangeIcon =
+        context.watch<AppProvider>().isEnterpriseActive;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -276,6 +279,22 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                 subtitle: context.t('account_licenses_desc'),
                 onTap: () =>
                     pushProfileScreen(context, const LicensesScreen()),
+              ),
+              CashNavRow(
+                icon: Icons.image_rounded,
+                title: context.t('app_icon_title'),
+                subtitle: context.t('app_icon_desc'),
+                muted: !canChangeIcon,
+                trailing: canChangeIcon
+                    ? null
+                    : Icon(
+                        Icons.lock_rounded,
+                        size: 18,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? AppColors.textTertiaryDark
+                            : AppColors.textTertiary,
+                      ),
+                onTap: () => pushProfileScreen(context, const AppIconScreen()),
               ),
               CashNavRow(
                 icon: Icons.redeem_rounded,

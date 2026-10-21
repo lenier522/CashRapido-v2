@@ -1,7 +1,31 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- The INTERNET permission is required for development. Specifically,
          the Flutter tool needs it to communicate with the running application
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Mismo criterio que src/debug/AndroidManifest.xml: `flutter run
+         --profile` elige el componente MAIN/LAUNCHER de forma estática, así
+         que el lanzador es la propia `MainActivity` (único componente que
+         nunca se deshabilita) y los aliases de icono no existen en este build.
+         De otro modo el arranque fallaría con "Activity class ... does not
+         exist" si otro icono quedara activo de una sesión de release.
+
+         El icono elegido sigue persistiéndose y se aplica en release. -->
+    <application>
+        <activity android:name=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+        <activity-alias android:name=".LauncherDefault" tools:node="remove"/>
+        <activity-alias android:name=".LauncherPlaya" tools:node="remove"/>
+        <activity-alias android:name=".LauncherMar" tools:node="remove"/>
+        <activity-alias android:name=".LauncherHalloween" tools:node="remove"/>
+        <activity-alias android:name=".LauncherNavidad" tools:node="remove"/>
+    </application>
 </manifest>

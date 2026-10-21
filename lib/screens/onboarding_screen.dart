@@ -1,23 +1,42 @@
-import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../services/localization_service.dart';
-import 'default_license_screen.dart';
-import '../services/notification_service.dart';
-import 'package:flutter/foundation.dart';
 import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../services/localization_service.dart';
+import '../services/notification_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
-import '../theme/app_radius.dart';
-import '../theme/app_shadows.dart';
+import '../theme/app_theme.dart';
 import '../widgets/design/cash_button.dart';
+import 'default_license_screen.dart';
 
 /// Pantalla de bienvenida / introducción (onboarding).
 ///
 /// Se muestra una sola vez, antes de la licencia por defecto, a los usuarios
 /// que todavía no han completado la introducción. Al finalizar se guarda la
-/// preferencia `seenOnboarding` (misma clave que ya usaba la app) y se
-/// continúa hacia `DefaultLicenseScreen`, conservando la navegación original.
+/// preferencia `seenOnboarding` y se continúa hacia [DefaultLicenseScreen].
+///
+/// ## Diseño de las páginas
+///
+/// Cada página es **una única imagen** (`assets/onboarding/onb*.png`) que ya
+/// lleva horneados el título, la descripción y el indicador circular de
+/// páginas. Por eso esta pantalla **no** vuelve a dibujar esos elementos: hacer
+/// lo contrario los duplicaría.
+///
+/// Las medidas de layout se han tomado midiendo los propios PNG (ver
+/// [_imageBoxRatio] e [_indicatorFraction]) para que el indicador horneado
+/// quede siempre visible por encima del botón.
+///
+/// ## Apariencia
+///
+/// Las imágenes son opacas y su fondo horneado coincide con
+/// [AppColors.backgroundLight] (diferencia de 1 unidad de color). Por eso el
+/// onboarding se fuerza a apariencia clara mediante [AppTheme.light]: en tema
+/// oscuro, el fondo blanco horneado se dibujaría como un rectángulo claro con
+/// bordes duros sobre la superficie oscura.
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -26,11 +45,41 @@ class OnboardingScreen extends StatefulWidget {
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
+  /// Páginas del onboarding, en orden.
+  static const List<String> _pages = <String>[
+    'assets/onboarding/onb1.png',
+    'assets/onboarding/onb2.png',
+    'assets/onboarding/onb3.png',
+    'assets/onboarding/onb4.png',
+  ];
+
+  /// Relación alto/ancho de las imágenes (onb1 mide 308x621).
+  ///
+  /// Las cuatro varían menos de un 4 % entre sí, así que usar una caja de
+  /// relación fija mantiene el indicador circular horneado en la misma
+  /// posición al deslizar (se desplaza como mucho 2 px entre páginas).
+  static const double _imageBoxRatio = 621 / 308;
+
+  /// Fracción de la altura de la imagen en la que cae el indicador circular
+  /// horneado. Medido en los PNG: los puntos están en y≈581 de 621.
+  ///
+  /// Los controles se reservan por debajo de esta línea para no taparlos.
+  static const double _indicatorFraction = 0.936;
+
+  /// Altura reservada para el bloque inferior.
+  ///
+  /// Los controles van en **una sola fila** (omitir + botón principal), así
+  /// que la reserva es mínima: padding superior 12 + fila 54 + padding
+  /// inferior 16. Reservar lo justo es lo que permite que la imagen ocupe el
+  /// ancho completo: al compartir altura con los controles en vez de cederla,
+  /// las bandas laterales desaparecen en los móviles actuales.
+  ///
+  /// Una banda lateral, por pequeña que sea, cortaría la ilustración de
+  /// `onb4`, cuyo contenido verde llega al borde exacto del PNG.
+  static const double _controlsHeight = 82;
+
   final PageController _pageController = PageController();
   int _currentIndex = 0;
-
-  /// Ancho máximo del contenido para no estirar los textos en tablet.
-  static const double _maxContentWidth = 460;
 
   @override
   void initState() {
@@ -48,291 +97,151 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     super.dispose();
   }
 
-  List<OnboardingData> _buildPages(BuildContext context) {
-    return [
-      OnboardingData(
-        title: context.t('onboarding_title_1'),
-        description: context.t('onboarding_desc_1'),
-        animation: 'assets/animations/finance_1.json',
-      ),
-      OnboardingData(
-        title: context.t('onboarding_title_2'),
-        description: context.t('onboarding_desc_2'),
-        animation: 'assets/animations/finance_2.json',
-      ),
-      OnboardingData(
-        title: context.t('onboarding_title_3'),
-        description: context.t('onboarding_desc_3'),
-        animation: 'assets/animations/robot.json',
-      ),
-    ];
-  }
-
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final bool isDark = theme.brightness == Brightness.dark;
-    final List<OnboardingData> pages = _buildPages(context);
+    return Theme(
+      data: AppTheme.light,
+      child: Scaffold(
+        backgroundColor: AppColors.backgroundLight,
+        body: AnnotatedRegion<SystemUiOverlayStyle>(
+          // Iconos oscuros de barra de estado: el fondo es claro en ambos temas.
+          value: const SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.dark,
+            statusBarBrightness: Brightness.light,
+            systemNavigationBarColor: AppColors.backgroundLight,
+            systemNavigationBarIconBrightness: Brightness.dark,
+          ),
+          // La imagen va a sangre y se dibuja también por detrás de la barra
+          // de estado. La app corre edge-to-edge (targetSdk 36), así que ese
+          // inset superior restaba altura y obligaba a encoger la imagen,
+          // generando las bandas laterales que cortaban el contenido de `onb4`
+          // (su ilustración verde llega al borde exacto del PNG).
+          //
+          // Es seguro: la franja superior del PNG está vacía de contenido (el
+          // título empieza en y≈41 de 621 = 6,6 % de la altura ≈ 55 dp en un
+          // móvil actual), muy por encima de los ~28 dp de la barra de estado.
+          // Solo se respeta el inset inferior, para que los controles queden
+          // por encima de la barra de navegación por gestos.
+          child: SafeArea(
+            top: false,
+            child: LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final double width = constraints.maxWidth;
+                final double height = constraints.maxHeight;
 
-    return Scaffold(
-      backgroundColor: isDark
-          ? AppColors.backgroundDark
-          : AppColors.backgroundLight,
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final bool isCompact = constraints.maxHeight < 640;
-            final double horizontalPadding = constraints.maxWidth < 340
-                ? AppSpacing.lg
-                : AppSpacing.xl;
+                // La imagen ocupa toda la altura disponible salvo el espacio
+                // de los controles y una holgura. Repartir así el espacio
+                // permite que el fondo de la imagen llegue al borde de la
+                // pantalla (evita las bandas laterales), algo necesario en
+                // onb4, cuyo contenido llega al borde exacto del PNG.
+                final double maxHeightForImage =
+                    (height - _controlsHeight - AppSpacing.md) /
+                    _indicatorFraction;
 
-            return Column(
-              children: [
-                _buildBrandHeader(context, isCompact),
-                Expanded(
-                  child: PageView.builder(
-                    controller: _pageController,
-                    itemCount: pages.length,
-                    onPageChanged: (index) {
-                      setState(() {
-                        _currentIndex = index;
-                      });
-                    },
-                    itemBuilder: (context, index) {
-                      return _buildSlide(
-                        pages[index],
-                        constraints,
-                        horizontalPadding,
-                        isCompact,
-                      );
-                    },
-                  ),
-                ),
-                _buildBottomControls(context, pages.length, isCompact),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
+                double imageHeight = width * _imageBoxRatio;
+                if (imageHeight > maxHeightForImage) {
+                  imageHeight = maxHeightForImage;
+                }
+                if (imageHeight > height) imageHeight = height;
+                if (imageHeight < 1) imageHeight = 1;
 
-  /// Encabezado con la identidad de CashRapido (nombre + marca).
-  Widget _buildBrandHeader(BuildContext context, bool isCompact) {
-    final ThemeData theme = Theme.of(context);
+                // Anchura derivada de la altura: a lo sumo el ancho disponible.
+                final double imageWidth = imageHeight / _imageBoxRatio;
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.xl,
-        isCompact ? AppSpacing.md : AppSpacing.xl,
-        AppSpacing.xl,
-        0,
-      ),
-      child: Center(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                gradient: AppColors.primaryGradient,
-                borderRadius: AppRadius.radiusMd,
-                boxShadow: AppShadows.primaryButton,
-              ),
-              child: const Icon(
-                Icons.savings_rounded,
-                size: 22,
-                color: AppColors.white,
-              ),
+                return Stack(
+                  fit: StackFit.expand,
+                  children: <Widget>[
+                    Align(
+                      alignment: Alignment.topCenter,
+                      child: SizedBox(
+                        width: imageWidth,
+                        height: imageHeight,
+                        child: PageView.builder(
+                          controller: _pageController,
+                          itemCount: _pages.length,
+                          onPageChanged: (int index) {
+                            setState(() {
+                              _currentIndex = index;
+                            });
+                          },
+                          itemBuilder: (BuildContext context, int index) {
+                            // El texto va dentro de la imagen y para los
+                            // lectores de pantalla es invisible, así que se
+                            // expone con etiqueta propia.
+                            return Semantics(
+                              label:
+                                  'CashRapido — ${index + 1}/${_pages.length}',
+                              image: true,
+                              child: Image.asset(_pages[index]),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: _buildControls(context),
+                    ),
+                  ],
+                );
+              },
             ),
-            const SizedBox(width: AppSpacing.md),
-            // Flexible + elipsis: con escala de texto grande en pantallas
-            // estrechas la marca se recorta en vez de desbordar la fila.
-            Flexible(
-              child: Text(
-                'CashRapido',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.3,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSlide(
-    OnboardingData data,
-    BoxConstraints constraints,
-    double horizontalPadding,
-    bool isCompact,
-  ) {
-    final ThemeData theme = Theme.of(context);
-    final bool isDark = theme.brightness == Brightness.dark;
-    final Color textPrimary = isDark
-        ? AppColors.textPrimaryDark
-        : AppColors.textPrimary;
-    final Color textSecondary = isDark
-        ? AppColors.textSecondaryDark
-        : AppColors.textSecondary;
-
-    // Tamaño de la ilustración acotado por ancho y alto disponibles.
-    double illustrationSize = constraints.maxWidth * 0.62;
-    final double heightCap = isCompact
-        ? constraints.maxHeight * 0.32
-        : 264.0;
-    if (illustrationSize > heightCap) illustrationSize = heightCap;
-    if (illustrationSize > 264) illustrationSize = 264;
-    if (illustrationSize < 132) illustrationSize = 132;
-
-    final double contentWidth =
-        constraints.maxWidth > _maxContentWidth
-        ? _maxContentWidth
-        : constraints.maxWidth - horizontalPadding * 2;
-
-    return Center(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(
-          horizontal: horizontalPadding,
-          vertical: isCompact ? AppSpacing.md : AppSpacing.lg,
-        ),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: contentWidth),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildIllustration(data, illustrationSize, isDark),
-              SizedBox(height: isCompact ? AppSpacing.xl : AppSpacing.xxl),
-              Text(
-                data.title,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: textPrimary,
-                  height: 1.2,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                data.description,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: textSecondary,
-                  height: 1.45,
-                ),
-              ),
-            ],
           ),
         ),
       ),
     );
   }
 
-  /// Ilustración sobre un panel suave para que sea legible en ambos temas.
-  Widget _buildIllustration(
-    OnboardingData data,
-    double size,
-    bool isDark,
-  ) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceDark2 : AppColors.primarySurface,
-          borderRadius: AppRadius.radiusXxxl,
-          border: Border.all(
-            color: isDark ? AppColors.borderDark : AppColors.borderLight,
-          ),
-          boxShadow: isDark ? AppShadows.darkCard : AppShadows.card,
-        ),
-        padding: EdgeInsets.all(size * 0.12),
-        child: Lottie.asset(
-          data.animation,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) {
-            return Icon(
-              Icons.auto_awesome_rounded,
-              size: size * 0.35,
-              color: isDark
-                  ? AppColors.textTertiaryDark
-                  : AppColors.textTertiary,
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBottomControls(
-    BuildContext context,
-    int pageCount,
-    bool isCompact,
-  ) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final bool isLast = _currentIndex == pageCount - 1;
+  /// Controles inferiores en una única fila: omitir + avanzar (o entrar).
+  ///
+  /// No incluye indicador de páginas porque ese indicador circular ya va
+  /// horneado dentro de cada imagen.
+  ///
+  /// La fila mantiene una altura fija de 54 px en todas las páginas (el
+  /// botón de omitir se oculta en la última, pero la fila no cambia de
+  /// tamaño), de modo que el tamaño de la imagen no salta al deslizar.
+  Widget _buildControls(BuildContext context) {
+    final bool isLast = _currentIndex == _pages.length - 1;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(
+      padding: const EdgeInsets.fromLTRB(
         AppSpacing.xl,
         AppSpacing.md,
         AppSpacing.xl,
-        isCompact ? AppSpacing.lg : AppSpacing.xxl,
+        AppSpacing.lg,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Semantics(
-            label: '${_currentIndex + 1} / $pageCount',
-            container: true,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(pageCount, (index) {
-                final bool isActive = _currentIndex == index;
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeOut,
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  height: 8,
-                  width: isActive ? 22 : 8,
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? AppColors.primary
-                        : (isDark
-                              ? AppColors.surfaceDark3
-                              : AppColors.primaryLight),
-                    borderRadius: AppRadius.radiusXs,
-                  ),
-                );
-              }),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          CashButton(
-            label: isLast
-                ? context.t('onboarding_get_started')
-                : context.t('continue_btn'),
-            height: 54,
-            onPressed: isLast ? _completeOnboarding : _goToNextPage,
-          ),
-          // Salida directa a la app sin recorrer las tres páginas. No se
-          // muestra en la última, donde el botón principal ya entra a la app.
-          if (!isLast) ...[
-            const SizedBox(height: AppSpacing.xs),
+      child: Row(
+        // Altura de la fila = altura del botón principal (54). El botón de
+        // omitir usa el mismo mínimo, así que ambos quedan alineados y la
+        // reserva [_controlsHeight] se cumple en todas las páginas.
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          if (!isLast) ...<Widget>[
             TextButton(
               onPressed: _completeOnboarding,
               style: TextButton.styleFrom(
-                minimumSize: const Size(48, 40),
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                minimumSize: const Size(48, 54),
+                // Color fijo: el fondo del onboarding es claro en ambos temas,
+                // por lo que el color heredado del tema oscuro sería ilegible.
+                foregroundColor: AppColors.textSecondary,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               ),
               child: Text(context.t('skip')),
             ),
+            const SizedBox(width: AppSpacing.xs),
           ],
+          Expanded(
+            child: CashButton(
+              label: isLast
+                  ? context.t('onboarding_get_started')
+                  : context.t('continue_btn'),
+              height: 54,
+              onPressed: isLast ? _completeOnboarding : _goToNextPage,
+            ),
+          ),
         ],
       ),
     );
@@ -354,16 +263,4 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       MaterialPageRoute(builder: (_) => const DefaultLicenseScreen()),
     );
   }
-}
-
-class OnboardingData {
-  final String title;
-  final String description;
-  final String animation;
-
-  OnboardingData({
-    required this.title,
-    required this.description,
-    required this.animation,
-  });
 }
