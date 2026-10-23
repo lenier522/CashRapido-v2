@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -173,7 +173,8 @@ class AppProvider with ChangeNotifier {
   /// guardada del usuario (vuelve al icono por defecto al vencer el plan).
   Future<void> _syncAppIcon() async {
     final String? selected = await AppIconService.selectedKey();
-    if (!kIsWeb && Platform.isWindows) return; // Sin alias nativo en escritorio.
+    if (!kIsWeb && Platform.isWindows)
+      return; // Sin alias nativo en escritorio.
     await AppIconService.applyForLicense(
       isEnterpriseActive: isEnterpriseActive,
       selectedKey: selected,
@@ -241,7 +242,7 @@ class AppProvider with ChangeNotifier {
 
   // Payment System
   // Change this variable to build for different regions
-  final bool _isCuba = true;
+  final bool _isCuba = false;
   bool get isCuba => _isCuba;
 
   List<PaymentMethod> get paymentMethods {
@@ -311,8 +312,8 @@ class AppProvider with ChangeNotifier {
           id: 'paypal',
           name: 'PayPal',
           iconAsset: 'assets/icons/paypal.png',
-          isEnabled: false,
-          isVisible: false,
+          isEnabled: true,
+          isVisible: true,
         ),
         PaymentMethod(
           id: 'google_play',
@@ -363,6 +364,11 @@ class AppProvider with ChangeNotifier {
 
       // Return the specific error from Apklis
       return ApklisService.humanizeError(status.error);
+    }
+
+    // PayPal: delegado a la UI (licenses_screen abre el checkout)
+    if (methodId == 'paypal') {
+      return '__paypal__'; // Sentinel → la pantalla abre PayPalCheckoutView
     }
 
     // Default error for unknown methods
@@ -2337,9 +2343,8 @@ class AppProvider with ChangeNotifier {
     if (Hive.isBoxOpen('ai_chats')) {
       await Hive.box<ChatConversation>('ai_chats').clear();
     } else {
-      final Box<ChatConversation> chatBox = await Hive.openBox<ChatConversation>(
-        'ai_chats',
-      );
+      final Box<ChatConversation> chatBox =
+          await Hive.openBox<ChatConversation>('ai_chats');
       await chatBox.clear();
     }
 

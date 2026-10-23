@@ -1,5 +1,5 @@
 import 'dart:ui';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cashrapido/services/localization_service.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +8,8 @@ import 'package:cashrapido/licences/license_type.dart';
 import 'package:cashrapido/licences/art_pay.dart';
 import 'package:cashrapido/licences/payment_config.dart';
 import 'package:cashrapido/theme/app_colors.dart';
+import 'package:cashrapido/services/paypal_service.dart';
+import 'package:flutter_paypal_payment/flutter_paypal_payment.dart';
 
 class LicensesScreen extends StatefulWidget {
   const LicensesScreen({super.key});
@@ -870,6 +872,68 @@ class _LicensesScreenState extends State<LicensesScreen> {
         );
       }
     }
+
+    // ----------------------------------------------------------------
+    // PayPal
+    // ----------------------------------------------------------------
+    if (method.id == 'paypal') {
+      _handlePayPal(licenseType, provider);
+      return;
+    }
+  }
+
+  /// Abre el checkout de PayPal para la [licenseType] elegida.
+  ///
+  /// Usa [PayPalService] para obtener precio USD y construir las transacciones.
+  /// Cuando el pago se completa con éxito activa la licencia en el provider.
+  void _handlePayPal(LicenseType licenseType, AppProvider provider) {
+    final transactions = PayPalService.buildTransactions(licenseType);
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PaypalCheckoutView(
+          sandboxMode: PayPalService.sandboxMode,
+          clientId: PayPalService.clientId,
+          secretKey: PayPalService.secretKey,
+          transactions: transactions,
+          note: 'Gracias por tu compra en CashRapido.',
+          onSuccess: (Map params) async {
+            debugPrint('[PayPal] Pago exitoso: $params');
+            provider.setLicenseType(
+              licenseType,
+              expirationDate: DateTime.now().add(
+                Duration(days: licenseType.durationDays),
+              ),
+            );
+            if (!mounted) return;
+            Navigator.of(context).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '✅ Licencia ${PayPalService.planName(licenseType)} activada correctamente.',
+                ),
+                backgroundColor: AppColors.income,
+              ),
+            );
+          },
+          onError: (error) {
+            debugPrint('[PayPal] Error: $error');
+            if (!mounted) return;
+            Navigator.of(context).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error en el pago con PayPal: $error'),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          },
+          onCancel: () {
+            debugPrint('[PayPal] Pago cancelado por el usuario.');
+            if (mounted) Navigator.of(context).pop();
+          },
+        ),
+      ),
+    );
   }
 
   void _showAdsDialog(LicenseType licenseType, AppProvider provider) {

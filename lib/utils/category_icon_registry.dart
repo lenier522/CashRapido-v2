@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Claves de los grupos de iconos (localizables en cada idioma).
 class CategoryIconGroups {

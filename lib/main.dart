@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,7 +26,6 @@ import 'dart:io' show Platform, Process;
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'services/localization_service.dart';
 
 import 'providers/business_provider.dart';
@@ -135,11 +134,9 @@ class MyApp extends StatelessWidget {
 
           supportedLocales: const [Locale('es'), Locale('en'), Locale('fr')],
 
-          localizationsDelegates: const [
+          localizationsDelegates: [
             AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
           ],
 
           home: AuthWrapper(seenOnboarding: seenOnboarding),

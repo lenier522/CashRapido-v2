@@ -1,6 +1,6 @@
 import 'package:artpay_lib/artpay_lib.dart';
 import 'package:artpay_lib/artpay_lib.dart' as artpay_lib;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'license_type.dart';
 
 /// Servicio para gestionar las licencias y pagos mediante Art-Pay

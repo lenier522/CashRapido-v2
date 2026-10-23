@@ -16,6 +16,7 @@ class LicensePaymentConfig {
   static const String watchAds = 'watch_ads';
   static const String transferMovil = 'transfermovil';
   static const String enZona = 'enzona';
+  static const String paypal = 'paypal';
   static const String testCuba = 'test_cuba';
   static const String testIntl = 'test_intl';
 
@@ -41,15 +42,15 @@ class LicensePaymentConfig {
     // ========================================
     // LICENCIAS SEMANALES (7 días)
     // ========================================
-    // Configuración: Art-Pay y Anuncios (pagos bajos)
+    // Configuración: Art-Pay, Anuncios y PayPal (pagos bajos)
     LicenseType.weeklyPersonal: LicensePaymentConfig(
-      enabledMethods: [apklis, artPay, watchAds],
+      enabledMethods: [apklis, artPay, watchAds, paypal],
     ),
     LicenseType.weeklyPro: LicensePaymentConfig(
-      enabledMethods: [apklis, artPay, watchAds],
+      enabledMethods: [apklis, artPay, watchAds, paypal],
     ),
     LicenseType.weeklyEnterprise: LicensePaymentConfig(
-      enabledMethods: [apklis, artPay, watchAds],
+      enabledMethods: [apklis, artPay, watchAds, paypal],
     ),
 
     // ========================================
@@ -57,31 +58,29 @@ class LicensePaymentConfig {
     // ========================================
     // Configuración: Todos los métodos disponibles
     LicenseType.monthlyPersonal: LicensePaymentConfig(
-      enabledMethods: [apklis, artPay, watchAds],
+      enabledMethods: [apklis, artPay, watchAds, paypal],
     ),
     LicenseType.monthlyPro: LicensePaymentConfig(
-      enabledMethods: [apklis, artPay, watchAds],
+      enabledMethods: [apklis, artPay, watchAds, paypal],
     ),
     LicenseType.monthlyEnterprise: LicensePaymentConfig(
-      enabledMethods: [apklis, artPay, watchAds],
+      enabledMethods: [apklis, artPay, watchAds, paypal],
     ),
 
     // ========================================
     // LICENCIAS ANUALES (365 días)
     // ========================================
-    // Configuración: Solo Art-Pay (pagos de mayor monto, más seguro)
-    // Si quieres habilitar Apklis, agrégalo a enabledMethods
     LicenseType.annualPersonal: LicensePaymentConfig(
-      enabledMethods: [apklis, artPay],
-      isCubaOnly: true,
+      enabledMethods: [apklis, artPay, paypal],
+      isCubaOnly: false,
     ),
     LicenseType.annualPro: LicensePaymentConfig(
-      enabledMethods: [apklis, artPay],
-      isCubaOnly: true,
+      enabledMethods: [apklis, artPay, paypal],
+      isCubaOnly: false,
     ),
     LicenseType.annualEnterprise: LicensePaymentConfig(
-      enabledMethods: [apklis, artPay, testCuba],
-      isCubaOnly: true,
+      enabledMethods: [apklis, artPay, paypal, testCuba],
+      isCubaOnly: false,
     ),
   };
 

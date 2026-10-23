@@ -7,7 +7,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.26.60+34070185
 
 environment:
-  sdk: ^3.10.3
+  sdk: ^3.13.5
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -71,8 +71,11 @@ dependencies:
   artpay_lib: ^0.0.8
   flutter_markdown: ^0.7.7+1
   markdown: ^7.3.1
+  flutter_paypal_payment: ^1.0.2
+  material_ui: ^1.8.0
 
 
+  cupertino_ui: any
 dev_dependencies:
   flutter_test:
     sdk: flutter
