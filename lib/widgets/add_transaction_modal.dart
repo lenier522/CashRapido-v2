@@ -123,6 +123,21 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
   void _saveTransaction() {
     if (_isSaving) return;
 
+    final provider = Provider.of<AppProvider>(context, listen: false);
+
+    // No permitir crear gastos/ingresos si no hay cuentas
+    if (provider.cards.isEmpty) {
+      setState(() {
+        _hasAccountError = true;
+      });
+      _showFeedback(context.t('form_no_accounts'), isError: true);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const AddCardScreen()),
+      );
+      return;
+    }
+
     final amount = _parseAmount();
 
     // Mismas reglas que antes, pero el error se muestra junto a su campo y el
@@ -144,8 +159,6 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
 
     // Determine sign based on transaction type
     final finalAmount = _isExpense ? -amount : amount;
-
-    final provider = Provider.of<AppProvider>(context, listen: false);
 
     // Use Category Name if title is empty
     String title = _titleController.text;
@@ -806,6 +819,12 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
   Widget _buildAccountField(AppProvider provider, AccountCard? card) {
     if (provider.cards.isEmpty) {
       return CashCard(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AddCardScreen()),
+          );
+        },
         padding: const EdgeInsets.all(AppSpacing.lg),
         border: Border.all(
           color: _hasAccountError
@@ -824,6 +843,7 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
+            const Icon(Icons.chevron_right),
           ],
         ),
       );

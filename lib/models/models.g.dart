@@ -133,13 +133,23 @@ class AccountCardAdapter extends TypeAdapter<AccountCard> {
       spendingLimit: fields[9] as double?,
       bankName: fields[10] as String?,
       isCash: fields[11] == null ? false : fields[11] as bool,
+      accountType: fields[12] == null ? 'current' : fields[12] as String?,
+      interestEnabled: fields[13] == null ? false : fields[13] as bool,
+      interestRateEA: fields[14] as double?,
+      interestFrequency: fields[15] as String?,
+      nextInterestAt: fields[16] as DateTime?,
+      creditLimit: fields[17] as double?,
+      cutoffDay: fields[18] as int?,
+      paymentDueDay: fields[19] as int?,
+      annualInterestRate: fields[20] as double?,
+      monthlyManagementFee: fields[21] as double?,
     );
   }
 
   @override
   void write(BinaryWriter writer, AccountCard obj) {
     writer
-      ..writeByte(12)
+      ..writeByte(22)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -163,7 +173,27 @@ class AccountCardAdapter extends TypeAdapter<AccountCard> {
       ..writeByte(10)
       ..write(obj.bankName)
       ..writeByte(11)
-      ..write(obj.isCash);
+      ..write(obj.isCash)
+      ..writeByte(12)
+      ..write(obj.accountType)
+      ..writeByte(13)
+      ..write(obj.interestEnabled)
+      ..writeByte(14)
+      ..write(obj.interestRateEA)
+      ..writeByte(15)
+      ..write(obj.interestFrequency)
+      ..writeByte(16)
+      ..write(obj.nextInterestAt)
+      ..writeByte(17)
+      ..write(obj.creditLimit)
+      ..writeByte(18)
+      ..write(obj.cutoffDay)
+      ..writeByte(19)
+      ..write(obj.paymentDueDay)
+      ..writeByte(20)
+      ..write(obj.annualInterestRate)
+      ..writeByte(21)
+      ..write(obj.monthlyManagementFee);
   }
 
   @override

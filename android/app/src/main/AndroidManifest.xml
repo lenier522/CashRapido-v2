@@ -49,7 +49,7 @@
              "cashrapido/app_icon" (AppIconService en Flutter). -->
         <activity-alias
             android:name=".LauncherDefault"
-            android:enabled="true"
+            android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher"
             android:label="CashRapido"
@@ -59,7 +59,7 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity-alias>
-        <activity-alias
+<activity-alias
             android:name=".LauncherPlaya"
             android:enabled="false"
             android:exported="true"
@@ -71,7 +71,7 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity-alias>
-        <activity-alias
+<activity-alias
             android:name=".LauncherMar"
             android:enabled="false"
             android:exported="true"
@@ -83,7 +83,7 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity-alias>
-        <activity-alias
+<activity-alias
             android:name=".LauncherHalloween"
             android:enabled="false"
             android:exported="true"
@@ -95,7 +95,7 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity-alias>
-        <activity-alias
+<activity-alias
             android:name=".LauncherNavidad"
             android:enabled="false"
             android:exported="true"

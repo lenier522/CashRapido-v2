@@ -105,6 +105,32 @@ class InternalTransaction extends HiveObject {
   });
 }
 
+/// Tipos de cuenta/billetera permitidos en la app.
+class AccountTypes {
+  static const String current = 'current'; // Cuenta Corriente
+  static const String savings = 'savings'; // Ahorros
+  static const String creditCard = 'credit_card'; // Tarjeta de Crédito
+  static const String cash = 'cash'; // Efectivo
+  static const String other = 'other'; // Otros
+
+  static const List<String> values = <String>[
+    current,
+    savings,
+    creditCard,
+    cash,
+    other,
+  ];
+
+  static String normalize(String? value) {
+    if (value == null || value.isEmpty) return current;
+    if (values.contains(value)) return value;
+    // Compatibilidad con valores antiguos
+    if (value == 'checking') return current;
+    if (value == 'wallet' || value == 'efectivo') return cash;
+    return current;
+  }
+}
+
 @HiveType(typeId: 2)
 class AccountCard extends HiveObject {
   @HiveField(0)
@@ -143,6 +169,40 @@ class AccountCard extends HiveObject {
   @HiveField(11, defaultValue: false)
   final bool isCash;
 
+  /// Tipo de cuenta: current | savings | credit_card | cash | other
+  @HiveField(12, defaultValue: AccountTypes.current)
+  final String accountType;
+
+  // --- Ahorros con rendimiento ---
+  @HiveField(13, defaultValue: false)
+  final bool interestEnabled;
+
+  @HiveField(14)
+  final double? interestRateEA; // Tasa EA (%)
+
+  /// frecuencia de rendimiento: daily | monthly | yearly
+  @HiveField(15)
+  final String? interestFrequency;
+
+  @HiveField(16)
+  final DateTime? nextInterestAt; // Próximo rendimiento (fecha y hora)
+
+  // --- Tarjeta de crédito ---
+  @HiveField(17)
+  final double? creditLimit;
+
+  @HiveField(18)
+  final int? cutoffDay; // Día de corte
+
+  @HiveField(19)
+  final int? paymentDueDay; // Día de pago
+
+  @HiveField(20)
+  final double? annualInterestRate; // Tasa de interés anual (%)
+
+  @HiveField(21)
+  final double? monthlyManagementFee; // Cuota de manejo mensual
+
   AccountCard({
     required this.id,
     required this.name,
@@ -156,7 +216,17 @@ class AccountCard extends HiveObject {
     this.spendingLimit,
     this.bankName,
     this.isCash = false,
-  });
+    String? accountType,
+    this.interestEnabled = false,
+    this.interestRateEA,
+    this.interestFrequency,
+    this.nextInterestAt,
+    this.creditLimit,
+    this.cutoffDay,
+    this.paymentDueDay,
+    this.annualInterestRate,
+    this.monthlyManagementFee,
+  }) : accountType = AccountTypes.normalize(accountType ?? (isCash ? AccountTypes.cash : AccountTypes.current));
 
   AccountCard copyWith({
     String? id,
@@ -171,6 +241,22 @@ class AccountCard extends HiveObject {
     double? spendingLimit,
     String? bankName,
     bool? isCash,
+    String? accountType,
+    bool? interestEnabled,
+    double? interestRateEA,
+    String? interestFrequency,
+    DateTime? nextInterestAt,
+    bool clearNextInterestAt = false,
+    double? creditLimit,
+    bool clearCreditLimit = false,
+    int? cutoffDay,
+    bool clearCutoffDay = false,
+    int? paymentDueDay,
+    bool clearPaymentDueDay = false,
+    double? annualInterestRate,
+    bool clearAnnualInterestRate = false,
+    double? monthlyManagementFee,
+    bool clearMonthlyManagementFee = false,
   }) {
     return AccountCard(
       id: id ?? this.id,
@@ -185,8 +271,23 @@ class AccountCard extends HiveObject {
       spendingLimit: spendingLimit ?? this.spendingLimit,
       bankName: bankName ?? this.bankName,
       isCash: isCash ?? this.isCash,
+      accountType: AccountTypes.normalize(accountType ?? this.accountType),
+      interestEnabled: interestEnabled ?? this.interestEnabled,
+      interestRateEA: interestRateEA ?? this.interestRateEA,
+      interestFrequency: interestFrequency ?? this.interestFrequency,
+      nextInterestAt: clearNextInterestAt ? null : (nextInterestAt ?? this.nextInterestAt),
+      creditLimit: clearCreditLimit ? null : (creditLimit ?? this.creditLimit),
+      cutoffDay: clearCutoffDay ? null : (cutoffDay ?? this.cutoffDay),
+      paymentDueDay: clearPaymentDueDay ? null : (paymentDueDay ?? this.paymentDueDay),
+      annualInterestRate: clearAnnualInterestRate ? null : (annualInterestRate ?? this.annualInterestRate),
+      monthlyManagementFee: clearMonthlyManagementFee ? null : (monthlyManagementFee ?? this.monthlyManagementFee),
     );
   }
+
+  bool get isSavingsAccount => AccountTypes.normalize(accountType) == AccountTypes.savings;
+  bool get isCreditCardAccount => AccountTypes.normalize(accountType) == AccountTypes.creditCard;
+  bool get isCurrentAccount => AccountTypes.normalize(accountType) == AccountTypes.current;
+  bool get isOtherAccount => AccountTypes.normalize(accountType) == AccountTypes.other;
 }
 
 class Currency {

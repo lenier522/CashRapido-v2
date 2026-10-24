@@ -1,0 +1,15 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <application>
+        <!-- En release, el lanzador se delega exclusivamente a los <activity-alias>
+             (LauncherDefault, LauncherPlaya, etc.). Se elimina el intent-filter
+             de MAIN/LAUNCHER de MainActivity para evitar que el sistema Android
+             cree un icono duplicado en la pantalla de inicio. -->
+        <activity android:name=".MainActivity">
+            <intent-filter tools:node="remove">
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

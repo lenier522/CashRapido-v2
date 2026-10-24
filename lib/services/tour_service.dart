@@ -19,6 +19,8 @@ class FeatureTour {
   final GlobalKey navBarKey;
   final Function(int) onNavigate;
 
+
+
   /// Evita programar la navegación automática más de una vez por paso cuando
   /// el contenido del objetivo se reconstruye durante el tour.
   final Set<String> _navigatedSteps = <String>{};
@@ -30,11 +32,19 @@ class FeatureTour {
     required this.onNavigate,
   });
 
+  /// Programa la navegación automática de un paso una sola vez.
+  void _navigateOnce(String identify, int index) {
+    if (!_navigatedSteps.add(identify)) return;
+    Future.delayed(const Duration(milliseconds: 300), () {
+      onNavigate(index);
+    });
+  }
+
   void show() {
     late TutorialCoachMark tutorialCoachMark;
 
     tutorialCoachMark = TutorialCoachMark(
-      targets: _createTargets(),
+      targets: createTargets(),
       colorShadow: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
       textSkip: context.t('skip'), // Fallback, usamos nuestro propio widget
       paddingFocus: 10,
@@ -47,6 +57,7 @@ class FeatureTour {
             padding: const EdgeInsets.all(AppSpacing.lg),
             child: TextButton(
               onPressed: () {
+                onNavigate(0);
                 tutorialCoachMark.skip();
               },
               style: TextButton.styleFrom(
@@ -71,6 +82,13 @@ class FeatureTour {
           ),
         ),
       ),
+      onFinish: () {
+        onNavigate(0);
+      },
+      onSkip: () {
+        onNavigate(0);
+        return true;
+      },
       onClickTarget: (target) {
         tutorialCoachMark.next();
       },
@@ -82,18 +100,11 @@ class FeatureTour {
     tutorialCoachMark.show(context: context);
   }
 
-  /// Programa la navegación automática de un paso una sola vez.
-  void _navigateOnce(String identify, int index) {
-    if (!_navigatedSteps.add(identify)) return;
-    Future.delayed(const Duration(milliseconds: 300), () {
-      onNavigate(index);
-    });
-  }
-
-  List<TargetFocus> _createTargets() {
+  @visibleForTesting
+  List<TargetFocus> createTargets() {
     List<TargetFocus> targets = [];
 
-    // 0.1 Balance Card
+    // 1. Balance Card
     targets.add(
       TargetFocus(
         identify: "balanceCardTarget",
@@ -117,13 +128,15 @@ class FeatureTour {
       ),
     );
 
-    // 0.2 Quick Actions - Transfer
+    // 2. Quick Actions - Transfer
     targets.add(
       TargetFocus(
         identify: "transferTarget",
         keyTarget: TourKeys.transferActionKey,
         enableOverlayTab: true,
         enableTargetTab: false,
+        shape: ShapeLightFocus.RRect,
+        radius: 12,
         contents: [
           TargetContent(
             align: ContentAlign.bottom,
@@ -139,13 +152,14 @@ class FeatureTour {
       ),
     );
 
-    // 1. FAB - Add Transaction
+    // 3. FAB - AI Assistant
     targets.add(
       TargetFocus(
         identify: "fabKey",
         keyTarget: fabKey,
         enableOverlayTab: true,
         enableTargetTab: false,
+        shape: ShapeLightFocus.Circle,
         contents: [
           TargetContent(
             align: ContentAlign.top,
@@ -161,7 +175,7 @@ class FeatureTour {
       ),
     );
 
-    // 2. Bottom Navigation
+    // 4. Bottom Navigation Overview
     targets.add(
       TargetFocus(
         identify: "navBarKey",
@@ -169,7 +183,7 @@ class FeatureTour {
         enableOverlayTab: true,
         enableTargetTab: false,
         shape: ShapeLightFocus.RRect,
-        radius: 5,
+        radius: 12,
         contents: [
           TargetContent(
             align: ContentAlign.top,
@@ -185,14 +199,15 @@ class FeatureTour {
       ),
     );
 
-    // 3. Navigate to Home tab
+    // 5. Navigate to Home tab
     targets.add(
       TargetFocus(
         identify: "homeTab",
-        keyTarget: navBarKey,
+        keyTarget: TourKeys.homeTabKey,
         enableOverlayTab: true,
         enableTargetTab: false,
         shape: ShapeLightFocus.RRect,
+        radius: 16,
         contents: [
           TargetContent(
             align: ContentAlign.top,
@@ -209,14 +224,15 @@ class FeatureTour {
       ),
     );
 
-    // 4. Navigate to Movements tab
+    // 6. Navigate to Movements tab
     targets.add(
       TargetFocus(
         identify: "movementsTab",
-        keyTarget: navBarKey,
+        keyTarget: TourKeys.movementsTabKey,
         enableOverlayTab: true,
         enableTargetTab: false,
         shape: ShapeLightFocus.RRect,
+        radius: 16,
         contents: [
           TargetContent(
             align: ContentAlign.top,
@@ -233,14 +249,15 @@ class FeatureTour {
       ),
     );
 
-    // 5. Navigate to Stats tab
+    // 7. Navigate to Stats tab
     targets.add(
       TargetFocus(
         identify: "statsTab",
-        keyTarget: navBarKey,
+        keyTarget: TourKeys.statsTabKey,
         enableOverlayTab: true,
         enableTargetTab: false,
         shape: ShapeLightFocus.RRect,
+        radius: 16,
         contents: [
           TargetContent(
             align: ContentAlign.top,
@@ -257,14 +274,15 @@ class FeatureTour {
       ),
     );
 
-    // 6. Navigate to Profile tab
+    // 8. Navigate to Profile tab
     targets.add(
       TargetFocus(
         identify: "settingsTab",
-        keyTarget: navBarKey,
+        keyTarget: TourKeys.profileTabKey,
         enableOverlayTab: true,
         enableTargetTab: false,
         shape: ShapeLightFocus.RRect,
+        radius: 16,
         contents: [
           TargetContent(
             align: ContentAlign.top,
@@ -281,7 +299,7 @@ class FeatureTour {
       ),
     );
 
-    // 7. Final step - Return to Home
+    // 9. Final step - Return to Home
     targets.add(
       TargetFocus(
         identify: "finalStep",
@@ -289,6 +307,7 @@ class FeatureTour {
         enableOverlayTab: true,
         enableTargetTab: false,
         shape: ShapeLightFocus.RRect,
+        radius: 12,
         contents: [
           TargetContent(
             align: ContentAlign.top,

@@ -7,6 +7,7 @@ import '../providers/app_provider.dart';
 import '../services/localization_service.dart';
 import '../services/tour_service.dart';
 import '../services/feedback_service.dart';
+import '../utils/tour_keys.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
 import '../theme/app_shadows.dart';
@@ -248,6 +249,7 @@ class _MainNavigationBar extends StatelessWidget {
           onDestinationSelected: _handleDestinationSelected,
           destinations: _buildDestinations(context),
         ),
+        const SizedBox.shrink(),
         if (showPrimaryAction)
           _PrimaryActionButton(key: primaryActionKey, onPressed: onPrimaryAction),
       ],
@@ -264,11 +266,13 @@ class _MainNavigationBar extends StatelessWidget {
   List<Widget> _buildDestinations(BuildContext context) {
     return [
       NavigationDestination(
+        key: TourKeys.homeTabKey,
         icon: const Icon(Icons.home_outlined),
         selectedIcon: const Icon(Icons.home_rounded),
         label: context.t('nav_home'),
       ),
       NavigationDestination(
+        key: TourKeys.movementsTabKey,
         icon: const Icon(Icons.receipt_long_outlined),
         selectedIcon: const Icon(Icons.receipt_long_rounded),
         label: context.t('nav_movements'),
@@ -280,11 +284,13 @@ class _MainNavigationBar extends StatelessWidget {
         enabled: false,
       ),
       NavigationDestination(
+        key: TourKeys.statsTabKey,
         icon: const Icon(Icons.insights_outlined),
         selectedIcon: const Icon(Icons.insights_rounded),
         label: context.t('statistics'),
       ),
       NavigationDestination(
+        key: TourKeys.profileTabKey,
         icon: const Icon(Icons.person_outline_rounded),
         selectedIcon: const Icon(Icons.person_rounded),
         label: context.t('nav_profile'),

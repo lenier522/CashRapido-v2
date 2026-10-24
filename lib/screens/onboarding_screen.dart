@@ -12,6 +12,7 @@ import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
 import '../widgets/design/cash_button.dart';
 import 'default_license_screen.dart';
+import 'wallet_screen.dart';
 
 /// Pantalla de bienvenida / introducción (onboarding).
 ///
@@ -259,8 +260,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     await prefs.setBool('seenOnboarding', true);
 
     if (!mounted) return;
+    // Al terminar el onboarding, ir directamente a la billetera
+    // para crear la primera cuenta con los nuevos tipos disponibles.
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const DefaultLicenseScreen()),
+      MaterialPageRoute(builder: (_) => const WalletScreen()),
     );
   }
 }

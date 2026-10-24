@@ -101,8 +101,7 @@ class MainFeaturesScreen extends StatelessWidget {
                   icon: Icons.category_outlined,
                   title: context.t('feat_categories'),
                   subtitle: context.t('feat_categories_desc'),
-                  onTap: () =>
-                      pushProfileScreen(context, const AddCategoryScreen()),
+                  onTap: () => _openCategories(context, provider),
                 ),
                 CashNavRow(
                   icon: Icons.account_balance_wallet_outlined,
@@ -280,6 +279,20 @@ class MainFeaturesScreen extends StatelessWidget {
       return;
     }
     pushProfileScreen(context, const AIChatScreen());
+  }
+
+  /// Abre el alta de categorías respetando la licencia.
+  ///
+  /// Crear categorías está reservado a Pro o superior
+  /// ([AppProvider.canCreateCategory]); sin esta comprobación este catálogo se
+  /// saltaba la restricción que sí aplican el formulario de movimientos y las
+  /// estadísticas. Editar una categoría existente sigue permitido.
+  void _openCategories(BuildContext context, AppProvider provider) {
+    if (!provider.canCreateCategory) {
+      showFeatureLockedDialog(context);
+      return;
+    }
+    pushProfileScreen(context, const AddCategoryScreen());
   }
 
   String _currencySymbol(AppProvider provider) {

@@ -1,6 +1,7 @@
 package cu.lenier.cashrapido
 
 import android.content.ComponentName
+import android.content.Context
 import android.content.pm.PackageManager
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -11,12 +12,23 @@ class MainActivity : FlutterFragmentActivity() {
     /// Alias de lanzador declarados en AndroidManifest.xml.
     /// Cada clave corresponde a un icono seleccionable desde la app.
     private val iconAliases = mapOf(
-        "default" to "LauncherDefault",
-        "playa" to "LauncherPlaya",
-        "mar" to "LauncherMar",
+        "default"   to "LauncherDefault",
+        "playa"     to "LauncherPlaya",
+        "mar"       to "LauncherMar",
         "halloween" to "LauncherHalloween",
-        "navidad" to "LauncherNavidad",
+        "navidad"   to "LauncherNavidad",
     )
+
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        super.onCreate(savedInstanceState)
+        // Re-aplica el icono guardado al iniciar la app (ej. tras actualización de APK).
+        // AppIconService persiste con _selectedKey = 'app_icon_selected'; Flutter
+        // prefija automáticamente las claves con "flutter." en SharedPreferences.
+        val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+        val savedKey = prefs.getString("flutter.app_icon_selected", "default") ?: "default"
+        val alias = iconAliases[savedKey] ?: "LauncherDefault"
+        applyLauncherIcon(alias)
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -45,26 +57,31 @@ class MainActivity : FlutterFragmentActivity() {
 
     /// Activa el alias [enabledAlias] y desactiva los demás.
     ///
-    /// Se activa el nuevo primero para que el lanzador nunca quede sin
-    /// icono; `DONT_KILL_APP` evita matar el proceso en curso.
+    /// Se activa el nuevo primero para que el lanzador nunca quede sin icono.
+    /// Los aliases inactivos se ponen en COMPONENT_ENABLED_STATE_DEFAULT (no
+    /// DISABLED): así siguen el valor `android:enabled` del manifiesto (todos
+    /// tienen `enabled="false"`). Esto garantiza que tras reinstalar el APK
+    /// los estados se restablecen automáticamente a "deshabilitado", permitiendo
+    /// que `flutter run --release` encuentre y lance la app sin error.
     private fun applyLauncherIcon(enabledAlias: String) {
         val pm = packageManager
 
-        setAliasEnabled(pm, enabledAlias, PackageManager.COMPONENT_ENABLED_STATE_ENABLED)
+        // Habilita el alias activo primero (nunca sin icono)
+        setAliasState(pm, enabledAlias, PackageManager.COMPONENT_ENABLED_STATE_ENABLED)
 
+        // Los inactivos vuelven a su estado de manifiesto (enabled=false → deshabilitado)
         for (alias in iconAliases.values) {
             if (alias == enabledAlias) continue
-            setAliasEnabled(pm, alias, PackageManager.COMPONENT_ENABLED_STATE_DISABLED)
+            setAliasState(pm, alias, PackageManager.COMPONENT_ENABLED_STATE_DEFAULT)
         }
     }
 
     /// Cambia el estado de un alias ignorando los que no existan.
     ///
-    /// Los builds de depuración y perfil eliminan los aliases del manifest
-    /// (el lanzador es la propia `MainActivity`, para que `flutter run` nunca
-    /// falle), de modo que aquí puede no haber nada que cambiar: un componente
-    /// ausente no debe convertir el cambio de icono en un error.
-    private fun setAliasEnabled(pm: PackageManager, alias: String, state: Int) {
+    /// Los builds de depuración y perfil no eliminan ningún alias del manifiesto.
+    /// En release, el overlay elimina el intent-filter de MAIN/LAUNCHER de
+    /// MainActivity, delegando el lanzamiento exclusivamente a los aliases.
+    private fun setAliasState(pm: PackageManager, alias: String, state: Int) {
         try {
             pm.setComponentEnabledSetting(
                 ComponentName(this, "$packageName.$alias"),

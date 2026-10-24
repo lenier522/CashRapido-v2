@@ -1281,7 +1281,6 @@ class _HomeScreenState extends State<HomeScreen> {
     transactions = transactions.take(_recentTransactionsCount).toList();
 
     return CashSection(
-      key: TourKeys.transactionsKey,
       title: context.t('recent_transactions'),
       action: TextButton(
         onPressed: () => _openAllTransactions(context),

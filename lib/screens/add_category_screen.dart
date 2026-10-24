@@ -16,6 +16,7 @@ import '../widgets/design/cash_category_preview.dart';
 import '../widgets/design/cash_category_type_selector.dart';
 import '../widgets/design/cash_input.dart';
 import '../widgets/design/cash_selector_field.dart';
+import 'profile/profile_helpers.dart';
 
 /// Alta y edición de categorías.
 ///
@@ -92,15 +93,24 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
         .replaceAll(',', '.');
     final budget = double.tryParse(budgetText);
 
-    setState(() {
-      _nameError = null;
-      _isSaving = true;
-    });
-
     final AppProvider provider = Provider.of<AppProvider>(
       context,
       listen: false,
     );
+
+    // Crear categorías requiere licencia Pro o superior
+    // ([AppProvider.canCreateCategory]). La restricción se comprueba también
+    // en cada punto de entrada, pero se repite aquí para que ninguna ruta
+    // nueva pueda saltársela. Editar una categoría existente sigue permitido.
+    if (!_isEditing && !provider.canCreateCategory) {
+      showFeatureLockedDialog(context);
+      return;
+    }
+
+    setState(() {
+      _nameError = null;
+      _isSaving = true;
+    });
 
     if (_isEditing) {
       final Category category = widget.category!;

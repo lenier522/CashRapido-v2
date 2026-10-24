@@ -28,6 +28,42 @@ import 'package:cashrapido/utils/number_format_utils.dart';
 import '../models/recurring_transaction.dart';
 import '../models/notification_item.dart';
 
+/// Representación fuera de línea del perfil de Google de la sesión anterior.
+///
+/// Permite que la app muestre el nombre, email y foto del usuario de inmediato
+/// sin bloquear el arranque y sin mostrar «Invitado» cuando no hay conexión.
+class CachedGoogleAccount implements GoogleSignInAccount {
+  @override
+  final String? displayName;
+  @override
+  final String email;
+  @override
+  final String id;
+  @override
+  final String? photoUrl;
+  @override
+  final String? serverAuthCode;
+
+  CachedGoogleAccount({
+    this.displayName,
+    required this.email,
+    this.id = '',
+    this.photoUrl,
+    this.serverAuthCode,
+  });
+
+  @override
+  Future<GoogleSignInAuthentication> get authentication =>
+      throw UnsupportedError('Offline profile is cached');
+
+  @override
+  Future<Map<String, String>> get authHeaders =>
+      throw UnsupportedError('Offline profile is cached');
+
+  @override
+  Future<void> clearAuthCache() async {}
+}
+
 class AppProvider with ChangeNotifier {
   late Box<InternalTransaction> _transactionBox;
   late Box<Category> _categoryBox;
@@ -668,6 +704,13 @@ class AppProvider with ChangeNotifier {
       _tipsEnabled = prefs.getBool('tips_enabled') ?? true;
       _transferMovilEnabled = prefs.getBool('transfermovil_enabled') ?? false;
 
+      // Cargar perfil de Google en caché para disponibilidad inmediata y offline
+      _cachedGoogleDisplayName = prefs.getString('google_user_display_name');
+      _cachedGoogleEmail = prefs.getString('google_user_email');
+      _cachedGooglePhotoUrl = prefs.getString('google_user_photo_url');
+      _cachedGoogleIsConnected =
+          prefs.getBool('google_user_is_connected') ?? false;
+
       // Handle daily streak
       _streakDays = prefs.getInt('streak_days') ?? 0;
       _availableRandomPlans = prefs.getInt('available_random_plans') ?? 0;
@@ -777,42 +820,6 @@ class AppProvider with ChangeNotifier {
       // Load Custom Banks
       _customBanks = prefs.getStringList('custom_banks') ?? [];
 
-      // Initialize NotificationService
-      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-        try {
-          await _notificationService.initialize();
-        } catch (e) {
-          print('Notification init error: $e');
-        }
-      }
-
-      // Initialize AdService
-      _adsWatched = prefs.getInt('ads_watched') ?? 0;
-      _adService.onAdLoadedListener = notifyListeners;
-      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-        try {
-          await _adService.initialize();
-          _adService.loadRewardedAd();
-        } catch (e) {
-          print('AdService init error: $e');
-        }
-      }
-
-      if (_notificationsEnabled &&
-          (!kIsWeb && (Platform.isAndroid || Platform.isIOS))) {
-        try {
-          await _notificationService.scheduleAllNotifications(
-            _currentLocale?.languageCode ?? 'es',
-            dailyReminderEnabled: _dailyReminderEnabled,
-            dailyReminderHour: _dailyReminderHour,
-            dailyReminderMinute: _dailyReminderMinute,
-            tipsEnabled: _tipsEnabled,
-          );
-        } catch (e) {
-          print('Notification schedule error: $e');
-        }
-      }
-
       _fetchData();
       _processRecurringTransactions();
     } catch (e, stacktrace) {
@@ -826,19 +833,54 @@ class AppProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
 
-      // Initialize and update widgets with current data
-      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-        try {
-          await WidgetService.initialize();
-          await _updateWidgetsIfNeeded();
-        } catch (e) {
-          print('WidgetService init error: $e');
-        }
-      }
-
-      // Reconecta Google Drive en segundo plano si ya estaba autorizado.
-      _restoreDriveSession();
+      // Inicialización no bloqueante en segundo plano para arranque instantáneo
+      unawaited(_initBackgroundServices());
     }
+  }
+
+  /// Inicializa servicios externos pesados (anuncios, notificaciones, widgets y Google Drive)
+  /// de forma asíncrona sin retrasar la visualización inicial de la pantalla.
+  Future<void> _initBackgroundServices() async {
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return;
+
+    final prefs = await SharedPreferences.getInstance();
+
+    // 1. Notificaciones
+    try {
+      await _notificationService.initialize();
+      if (_notificationsEnabled) {
+        await _notificationService.scheduleAllNotifications(
+          _currentLocale?.languageCode ?? 'es',
+          dailyReminderEnabled: _dailyReminderEnabled,
+          dailyReminderHour: _dailyReminderHour,
+          dailyReminderMinute: _dailyReminderMinute,
+          tipsEnabled: _tipsEnabled,
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) print('Notification init error: $e');
+    }
+
+    // 2. Anuncios
+    try {
+      _adsWatched = prefs.getInt('ads_watched') ?? 0;
+      _adService.onAdLoadedListener = notifyListeners;
+      await _adService.initialize();
+      _adService.loadRewardedAd();
+    } catch (e) {
+      if (kDebugMode) print('AdService init error: $e');
+    }
+
+    // 3. Widgets de inicio
+    try {
+      await WidgetService.initialize();
+      await _updateWidgetsIfNeeded();
+    } catch (e) {
+      if (kDebugMode) print('WidgetService init error: $e');
+    }
+
+    // 4. Reconexión silenciosa de Google Drive (no bloquea, timeout 4s)
+    await _restoreDriveSession();
   }
 
   void _fetchData() {
@@ -1136,20 +1178,7 @@ class AppProvider with ChangeNotifier {
           (card.balance + amount).toStringAsFixed(2),
         );
 
-        final updatedCard = AccountCard(
-          id: card.id,
-          name: card.name,
-          balance: newBalance,
-          currency: card.currency,
-          cardNumber: card.cardNumber,
-          expiryDate: card.expiryDate,
-          colorValue: card.colorValue,
-          isLocked: card.isLocked,
-          pin: card.pin,
-          spendingLimit: card.spendingLimit,
-          bankName: card.bankName,
-          isCash: card.isCash, // Preserve isCash
-        );
+        final updatedCard = card.copyWith(balance: newBalance);
 
         await editCard(updatedCard);
       }
@@ -1505,20 +1534,7 @@ class AppProvider with ChangeNotifier {
     if (index != -1) {
       final card = _cardBox.getAt(index);
       if (card != null) {
-        final updatedCard = AccountCard(
-          id: card.id,
-          name: card.name,
-          balance: card.balance,
-          currency: card.currency,
-          cardNumber: card.cardNumber,
-          expiryDate: card.expiryDate,
-          colorValue: card.colorValue,
-          isLocked: !card.isLocked,
-          pin: card.pin,
-          spendingLimit: card.spendingLimit,
-          bankName: card.bankName,
-          isCash: card.isCash,
-        );
+        final updatedCard = card.copyWith(isLocked: !card.isLocked);
         await _cardBox.putAt(index, updatedCard);
 
         // Update local list
@@ -1536,20 +1552,7 @@ class AppProvider with ChangeNotifier {
     if (index != -1) {
       final card = _cardBox.getAt(index);
       if (card != null) {
-        final updatedCard = AccountCard(
-          id: card.id,
-          name: card.name,
-          balance: card.balance,
-          currency: card.currency,
-          cardNumber: card.cardNumber,
-          expiryDate: card.expiryDate,
-          colorValue: card.colorValue,
-          isLocked: card.isLocked,
-          pin: pin,
-          spendingLimit: card.spendingLimit,
-          bankName: card.bankName,
-          isCash: card.isCash,
-        );
+        final updatedCard = card.copyWith(pin: pin);
         await _cardBox.putAt(index, updatedCard);
 
         final listIndex = _cards.indexWhere((c) => c.id == cardId);
@@ -1566,20 +1569,7 @@ class AppProvider with ChangeNotifier {
     if (index != -1) {
       final card = _cardBox.getAt(index);
       if (card != null) {
-        final updatedCard = AccountCard(
-          id: card.id,
-          name: card.name,
-          balance: card.balance,
-          currency: card.currency,
-          cardNumber: card.cardNumber,
-          expiryDate: card.expiryDate,
-          colorValue: card.colorValue,
-          isLocked: card.isLocked,
-          pin: card.pin,
-          spendingLimit: limit,
-          bankName: card.bankName,
-          isCash: card.isCash,
-        );
+        final updatedCard = card.copyWith(spendingLimit: limit);
         await _cardBox.putAt(index, updatedCard);
 
         final listIndex = _cards.indexWhere((c) => c.id == cardId);
@@ -2163,15 +2153,51 @@ class AppProvider with ChangeNotifier {
   bool _isSyncing = false;
   bool get isSyncing => _isSyncing;
 
-  GoogleSignInAccount? get currentUser => _driveService.currentUser;
+  String? _cachedGoogleDisplayName;
+  String? _cachedGoogleEmail;
+  String? _cachedGooglePhotoUrl;
+  bool _cachedGoogleIsConnected = false;
+
+  GoogleSignInAccount? get currentUser {
+    final live = _driveService.currentUser;
+    if (live != null) return live;
+    if (_cachedGoogleIsConnected && _cachedGoogleEmail != null) {
+      return CachedGoogleAccount(
+        displayName: _cachedGoogleDisplayName,
+        email: _cachedGoogleEmail!,
+        photoUrl: _cachedGooglePhotoUrl,
+      );
+    }
+    return null;
+  }
+
   DateTime? _lastBackupDate;
   DateTime? get lastBackupDate => _lastBackupDate;
+
+  Future<void> _persistGoogleProfile(GoogleSignInAccount? account) async {
+    if (account == null) return;
+    _cachedGoogleDisplayName = account.displayName;
+    _cachedGoogleEmail = account.email;
+    _cachedGooglePhotoUrl = account.photoUrl;
+    _cachedGoogleIsConnected = true;
+
+    final prefs = await SharedPreferences.getInstance();
+    if (account.displayName != null && account.displayName!.isNotEmpty) {
+      await prefs.setString('google_user_display_name', account.displayName!);
+    }
+    await prefs.setString('google_user_email', account.email);
+    if (account.photoUrl != null && account.photoUrl!.isNotEmpty) {
+      await prefs.setString('google_user_photo_url', account.photoUrl!);
+    }
+    await prefs.setBool('google_user_is_connected', true);
+  }
 
   Future<void> signInToGoogle() async {
     try {
       if (kIsWeb) return; // Not supported properly in this flow yet
       final user = await _driveService.signInToGoogle();
       if (user != null) {
+        await _persistGoogleProfile(user);
         await _checkLastBackup();
       }
       notifyListeners();
@@ -2183,24 +2209,39 @@ class AppProvider with ChangeNotifier {
 
   Future<void> signOutFromGoogle() async {
     await _driveService.signOut();
+    _cachedGoogleDisplayName = null;
+    _cachedGoogleEmail = null;
+    _cachedGooglePhotoUrl = null;
+    _cachedGoogleIsConnected = false;
     _lastBackupDate = null;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('google_user_display_name');
+    await prefs.remove('google_user_email');
+    await prefs.remove('google_user_photo_url');
+    await prefs.setBool('google_user_is_connected', false);
+
     notifyListeners();
   }
 
   /// Restaura la sesión de Google Drive al abrir la app.
   ///
-  /// Sin esta llamada la sesión se "perdía" en cada arranque: `currentUser`
-  /// queda en `null` hasta que el usuario vuelve a conectarse a mano, aunque
-  /// ya hubiera autorizado el acceso. Es silenciosa (no muestra UI) y no
-  /// bloquea el arranque.
+  /// Se ejecuta con un timeout de 4 segundos para no bloquear la app si
+  /// el dispositivo está offline o con señal deficiente. Si no hay conexión,
+  /// se conserva el perfil en caché para seguir mostrando los datos del usuario.
   Future<void> _restoreDriveSession() async {
     if (kIsWeb) return;
     try {
-      final account = await _driveService.restoreSession();
+      final account = await _driveService.restoreSession().timeout(
+        const Duration(seconds: 4),
+        onTimeout: () => null,
+      );
       if (account != null) {
-        await _checkLastBackup();
-      } else {
-        _lastBackupDate = null;
+        await _persistGoogleProfile(account);
+        await _checkLastBackup().timeout(
+          const Duration(seconds: 4),
+          onTimeout: () => null,
+        );
       }
     } catch (e) {
       if (kDebugMode) print('Drive session restore error: $e');
@@ -2218,6 +2259,12 @@ class AppProvider with ChangeNotifier {
     _isSyncing = true;
     notifyListeners();
     try {
+      if (_driveService.currentUser == null) {
+        final restored = await _driveService.restoreSession();
+        if (restored != null) {
+          await _persistGoogleProfile(restored);
+        }
+      }
       await _driveService.backupData();
       await _checkLastBackup();
     } finally {
@@ -2230,20 +2277,16 @@ class AppProvider with ChangeNotifier {
     _isSyncing = true;
     notifyListeners();
     try {
-      // 1. Close boxes to release file locks
-      // But wait! verification showed we need paths BEFORE closing?
-      // Actually, .path property might rely on box being open?
-      // Yes. So we must get paths, THEN close boxes?
-
+      if (_driveService.currentUser == null) {
+        final restored = await _driveService.restoreSession();
+        if (restored != null) {
+          await _persistGoogleProfile(restored);
+        }
+      }
       await _closeBoxes();
-
-      // 2. Overwrite files
       await _driveService.restoreData();
-
-      // 3. Reopen and reload
       await _openBoxes();
     } catch (e) {
-      // Try to recover if something blew up
       if (!_transactionBox.isOpen) await _openBoxes();
       rethrow;
     } finally {

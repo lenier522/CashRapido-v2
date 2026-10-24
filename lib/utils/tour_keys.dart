@@ -8,4 +8,10 @@ class TourKeys {
   static final GlobalKey cardSelectorKey = GlobalKey();
   static final GlobalKey helpCenterKey = GlobalKey();
   static final GlobalKey transactionsKey = GlobalKey();
+
+  // Navigation tab keys
+  static final GlobalKey homeTabKey = GlobalKey();
+  static final GlobalKey movementsTabKey = GlobalKey();
+  static final GlobalKey statsTabKey = GlobalKey();
+  static final GlobalKey profileTabKey = GlobalKey();
 }
