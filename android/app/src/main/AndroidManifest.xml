@@ -33,10 +33,8 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
+            <!-- Sin intent-filter LAUNCHER aqui: los activity-alias son los
+                 unicos lanzadores. Solo uno esta habilitado a la vez. -->
         </activity>
 
         <!-- Aliases del lanzador: cada icono de la app es un alias con su

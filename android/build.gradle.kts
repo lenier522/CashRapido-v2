@@ -13,8 +13,16 @@ allprojects {
         google()
         mavenCentral()
     }
-    tasks.matching { it.name.contains("AarMetadata") }.configureEach {
-        enabled = false
+    // Force every sub-project (incl. plugins like apklis_license_validator that
+    // bundle AGP 8.x in their own buildscript) to resolve the same AGP version
+    // used by the host project.  Without this, the AGP 9.x version-check plugin
+    // expects intermediate dirs (aar_metadata_check) that AGP 8.x never creates.
+    buildscript {
+        configurations.configureEach {
+            resolutionStrategy {
+                force("com.android.tools.build:gradle:9.1.0")
+            }
+        }
     }
 }
 
