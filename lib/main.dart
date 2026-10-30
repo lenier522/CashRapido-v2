@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
+
 import 'screens/onboarding_screen.dart';
 import 'screens/main_screen.dart';
 import 'models/models.dart';
@@ -22,10 +23,13 @@ import 'models/loan.dart';
 import 'models/borrower.dart';
 import 'models/loan_activity.dart';
 import 'providers/app_provider.dart';
+
 import 'dart:io' show Platform, Process;
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:intl/date_symbol_data_local.dart';
+
 import 'services/localization_service.dart';
 
 import 'providers/business_provider.dart';
@@ -312,9 +316,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
     if (provider.validatePin(_pinController.text)) {
       setState(() => _isAuthenticated = true);
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('PIN incorrecto')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('PIN incorrecto')));
       _pinController.clear();
     }
   }
@@ -324,9 +327,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
     if (provider.validatePassword(_passwordController.text)) {
       setState(() => _isAuthenticated = true);
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Contraseña incorrecta')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Contraseña incorrecta')));
       _passwordController.clear();
     }
   }

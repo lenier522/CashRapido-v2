@@ -57,20 +57,31 @@ class _AppIconScreenState extends State<AppIconScreen> {
     }
 
     await AppIconService.saveSelected(variant);
-    await AppIconService.applyForLicense(
+    final bool applied = await AppIconService.applyForLicense(
       isEnterpriseActive: provider.isEnterpriseActive,
       selectedKey: variant.key,
     );
 
     if (!mounted) return;
     setState(() => _selected = variant);
-    CashSnack.success(context, context.t('app_icon_updated_msg'));
+
+    // Mensaje veraz: en debug/profile no hay aliases y durante una temporada
+    // se muestra el icono estacional, no el elegido.
+    final AppIconVariant? seasonal = AppIconService.seasonalFor(DateTime.now());
+    if (!applied) {
+      CashSnack.info(context, context.t('app_icon_dev_note'));
+    } else if (seasonal != null && seasonal != variant) {
+      CashSnack.info(context, context.t('app_icon_seasonal_active'));
+    } else {
+      CashSnack.success(context, context.t('app_icon_updated_msg'));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final bool canChange = context.watch<AppProvider>().isEnterpriseActive;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final AppIconVariant? seasonal = AppIconService.seasonalFor(DateTime.now());
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -96,6 +107,32 @@ class _AppIconScreenState extends State<AppIconScreen> {
                       : AppColors.textSecondary,
                 ),
           ),
+          if (seasonal != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  size: 18,
+                  color: isDark
+                      ? AppColors.textTertiaryDark
+                      : AppColors.textTertiary,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    context.t('app_icon_seasonal_active'),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondary,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: AppSpacing.lg),
           GridView.count(
             crossAxisCount: 3,

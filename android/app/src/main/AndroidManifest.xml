@@ -33,10 +33,6 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
-            <!-- Flutter tool reads this manifest BEFORE building to detect the
-                 launch activity. It only inspects <activity> elements (not
-                 <activity-alias>), so MainActivity must expose MAIN+LAUNCHER
-                 here. At runtime the aliases take over the launcher role. -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -44,12 +40,16 @@
         </activity>
 
         <!-- Aliases del lanzador: cada icono de la app es un alias con su
-             propio recurso. Solo uno está "enabled" a la vez; el cambio en
-             tiempo de ejecución lo hace MainActivity.via MethodChannel
-             "cashrapido/app_icon" (AppIconService en Flutter). -->
+             propio recurso. Solo uno está habilitado a la vez; el cambio en
+             tiempo de ejecución lo hace MainActivity vía MethodChannel
+             "cashrapido/app_icon" (AppIconService en Flutter).
+
+             `LauncherDefault` nace habilitado para que una instalación nueva
+             siempre tenga un icono visible en la pantalla de inicio. Al elegir
+             otro icono, la app lo deshabilita y habilita el alias elegido. -->
         <activity-alias
             android:name=".LauncherDefault"
-            android:enabled="false"
+            android:enabled="true"
             android:exported="true"
             android:icon="@mipmap/ic_launcher"
             android:label="CashRapido"

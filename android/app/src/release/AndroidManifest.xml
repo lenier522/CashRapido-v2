@@ -1,15 +1,17 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
-    <application>
-        <!-- En release, el lanzador se delega exclusivamente a los <activity-alias>
-             (LauncherDefault, LauncherPlaya, etc.). Se elimina el intent-filter
-             de MAIN/LAUNCHER de MainActivity para evitar que el sistema Android
-             cree un icono duplicado en la pantalla de inicio. -->
-        <activity android:name=".MainActivity">
-            <intent-filter tools:node="remove">
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-        </activity>
-    </application>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- En release el lanzador son exclusivamente los <activity-alias> del
+         manifest principal: MainActivity no declara MAIN/LAUNCHER, así que no
+         hay nada que eliminar aquí y nunca aparece un icono duplicado.
+
+         Consecuencia: `flutter run --release` elige el primer alias habilitado
+         del manifest (LauncherDefault) de forma estática. Si en el dispositivo
+         hay otro icono activo, ese alias está deshabilitado y el lanzamiento
+         automático falla; para release usa:
+
+             flutter build apk --release
+             adb install -r build/app/outputs/flutter-apk/app-release.apk
+
+         y abre la app desde su icono. `flutter run` en debug/profile sí
+         funciona siempre porque esos manifests convierten a MainActivity en el
+         lanzador y eliminan los aliases. -->
 </manifest>

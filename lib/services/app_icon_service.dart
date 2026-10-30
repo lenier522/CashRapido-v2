@@ -48,7 +48,11 @@ class AppIconService {
   ///
   /// [isEnterpriseActive] debe reflejar si la licencia Empresarial sigue
   /// vigente. Se llama al arrancar y cada vez que cambia la licencia.
-  static Future<void> applyForLicense({
+  ///
+  /// Devuelve `true` si el lado nativo pudo aplicar el icono. En los builds de
+  /// desarrollo (debug/profile) los aliases no existen en el manifest y
+  /// devuelve `false`: el icono solo se cambia en la versión instalada.
+  static Future<bool> applyForLicense({
     required bool isEnterpriseActive,
     String? selectedKey,
   }) async {
@@ -67,7 +71,7 @@ class AppIconService {
     // componentes ausentes, así que en debug es un simple no-op.
     if (kDebugMode) {
       await apply(AppIconVariant.defaultIcon);
-      return;
+      return false;
     }
 
     final AppIconVariant target = resolve(
@@ -75,7 +79,7 @@ class AppIconService {
       isEnterpriseActive: isEnterpriseActive,
       selectedKey: selectedKey,
     );
-    await apply(target);
+    return apply(target);
   }
 
   /// Determina el icono objetivo sin tocar el canal.
@@ -141,13 +145,22 @@ class AppIconService {
   }
 
   /// Notifica al lado nativo que debe mostrarse [variant].
-  static Future<void> apply(AppIconVariant variant) async {
+  ///
+  /// Devuelve `true` si el alias existe en este build y se aplicó. En
+  /// debug/profile los aliases se eliminan del manifest, por lo que devuelve
+  /// `false` (no es un error: el icono solo se cambia en release).
+  static Future<bool> apply(AppIconVariant variant) async {
     try {
-      await _channel.invokeMethod<bool>('setIcon', {'key': variant.key});
+      final bool? applied = await _channel.invokeMethod<bool>('setIcon', {
+        'key': variant.key,
+      });
+      return applied ?? false;
     } on MissingPluginException {
       // Plataformas sin el alias nativo (p. ej. escritorio): se ignora.
+      return false;
     } on PlatformException {
       // Un fallo del PackageManager no debe romper la app.
+      return false;
     }
   }
 }

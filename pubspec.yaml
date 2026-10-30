@@ -76,6 +76,10 @@ dependencies:
 
 
   cupertino_ui: any
+  supabase_flutter: ^2.18.3
+
+dependency_overrides:
+  image: 4.10.1
 dev_dependencies:
   flutter_test:
     sdk: flutter

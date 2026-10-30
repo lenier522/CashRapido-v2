@@ -84,6 +84,10 @@ class AppLocalizations {
       'app_icon_locked_note': 'Cambiar el icono es una función del plan Empresarial.',
       'app_icon_enterprise_note': 'Consigue el plan Empresarial para poder cambiar el icono de la app.',
       'app_icon_updated_msg': 'Icono actualizado',
+      'app_icon_seasonal_active':
+          'El icono de temporada está activo ahora; tu elección se aplicará cuando termine.',
+      'app_icon_dev_note':
+          'El icono solo se cambia en la versión instalada (release); en desarrollo no se aplica.',
       'app_icon_default': 'Por defecto',
       'app_icon_playa': 'Playa',
       'app_icon_mar': 'Mar',
@@ -2069,6 +2073,10 @@ class AppLocalizations {
       'app_icon_locked_note': 'Changing the icon is a Business plan feature.',
       'app_icon_enterprise_note': 'Get the Business plan to change the app icon.',
       'app_icon_updated_msg': 'Icon updated',
+      'app_icon_seasonal_active':
+          'The seasonal icon is active right now; your choice will apply when it ends.',
+      'app_icon_dev_note':
+          'The icon can only be changed in the installed release build; it is not applied in development.',
       'app_icon_default': 'Default',
       'app_icon_playa': 'Beach',
       'app_icon_mar': 'Sea',
@@ -4037,6 +4045,10 @@ class AppLocalizations {
       'app_icon_locked_note': "Changer l'icône est une fonction du forfait Entreprise.",
       'app_icon_enterprise_note': "Obtenez le forfait Entreprise pour changer l'icône de l'application.",
       'app_icon_updated_msg': 'Icône mise à jour',
+      'app_icon_seasonal_active':
+          "L'icône saisonnière est active en ce moment ; votre choix s'appliquera lorsqu'elle se terminera.",
+      'app_icon_dev_note':
+          "L'icône ne peut être modifiée que dans la version publiée ; elle ne s'applique pas en développement.",
       'app_icon_default': 'Par défaut',
       'app_icon_playa': 'Plage',
       'app_icon_mar': 'Mer',
