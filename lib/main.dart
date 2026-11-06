@@ -31,6 +31,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'services/localization_service.dart';
+import 'services/supabase_service.dart';
 import 'services/trial_service.dart';
 
 import 'providers/business_provider.dart';
@@ -43,6 +44,10 @@ void main() async {
   await Hive.initFlutter();
   await initializeDateFormatting('es', null);
   await dotenv.load(fileName: ".env");
+
+  // Conexión con Supabase. Si falla (sin red, servicio caído) la app sigue
+  // arrancando y trabajando con los datos locales de Hive.
+  await SupabaseService.initialize();
 
   // Register Adapters
   Hive.registerAdapter(CategoryAdapter());

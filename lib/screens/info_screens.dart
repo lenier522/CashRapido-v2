@@ -67,8 +67,11 @@ class HelpCenterScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Getting Started
-          _buildSectionHeader(context, '🚀 ${context.t('onboarding_title_1')}'),
+          // Primeros pasos
+          _buildSectionHeader(
+            context,
+            '🚀 ${context.t('help_section_start')}',
+          ),
           _buildHelpItem(
             context,
             context.t('help_q_add_card'),
@@ -86,10 +89,42 @@ class HelpCenterScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // Transactions
+          // Prueba gratuita y planes
           _buildSectionHeader(
             context,
-            '💰 ${context.t('recent_transactions')}',
+            '🎁 ${context.t('help_section_trial')}',
+          ),
+          _buildHelpItem(
+            context,
+            context.t('help_q_trial'),
+            context.t('help_a_trial'),
+          ),
+          _buildHelpItem(
+            context,
+            context.t('help_q_trial_end'),
+            context.t('help_a_trial_end'),
+          ),
+          _buildHelpItem(
+            context,
+            context.t('help_q_plans'),
+            context.t('help_a_plans'),
+          ),
+          _buildHelpItem(
+            context,
+            context.t('help_q_payment'),
+            context.t('help_a_payment'),
+          ),
+          _buildHelpItem(
+            context,
+            context.t('help_q_restore_purchase'),
+            context.t('help_a_restore_purchase'),
+          ),
+          const SizedBox(height: 20),
+
+          // Movimientos
+          _buildSectionHeader(
+            context,
+            '💰 ${context.t('help_section_movements')}',
           ),
           _buildHelpItem(
             context,
@@ -103,12 +138,17 @@ class HelpCenterScreen extends StatelessWidget {
           ),
           _buildHelpItem(
             context,
+            context.t('help_q_recurring'),
+            context.t('help_a_recurring'),
+          ),
+          _buildHelpItem(
+            context,
             context.t('help_q_categories'),
             context.t('help_a_categories'),
           ),
           const SizedBox(height: 20),
 
-          // Cards & Accounts
+          // Cuentas y tarjetas
           _buildSectionHeader(context, '💳 ${context.t('cards')}'),
           _buildHelpItem(
             context,
@@ -122,32 +162,84 @@ class HelpCenterScreen extends StatelessWidget {
           ),
           _buildHelpItem(
             context,
+            context.t('help_q_card_pin'),
+            context.t('help_a_card_pin'),
+          ),
+          _buildHelpItem(
+            context,
             context.t('help_q_money_counter'),
             context.t('help_a_money_counter'),
           ),
           const SizedBox(height: 20),
 
-          // Licenses
-          _buildSectionHeader(context, '🔓 ${context.t('paid_licenses')}'),
-          _buildHelpItem(
+          // Estadísticas y exportación
+          _buildSectionHeader(
             context,
-            context.t('help_q_license_types'),
-            context.t('help_a_license_types'),
+            '📊 ${context.t('help_section_stats')}',
           ),
           _buildHelpItem(
             context,
-            context.t('help_q_artpay'),
-            context.t('help_a_artpay'),
+            context.t('help_q_stats'),
+            context.t('help_a_stats'),
           ),
           _buildHelpItem(
             context,
-            context.t('help_q_restore_purchase'),
-            context.t('help_a_restore_purchase'),
+            context.t('help_q_export'),
+            context.t('help_a_export'),
           ),
           const SizedBox(height: 20),
 
-          // Settings & Customization
+          // Copias de seguridad
+          _buildSectionHeader(
+            context,
+            '☁️ ${context.t('help_section_backup')}',
+          ),
+          _buildHelpItem(
+            context,
+            context.t('help_q_backup_local'),
+            context.t('help_a_backup_local'),
+          ),
+          _buildHelpItem(
+            context,
+            context.t('help_q_drive'),
+            context.t('help_a_drive'),
+          ),
+          _buildHelpItem(
+            context,
+            context.t('help_q_delete_data'),
+            context.t('help_a_delete_data'),
+          ),
+          const SizedBox(height: 20),
+
+          // Negocio y préstamos
+          _buildSectionHeader(
+            context,
+            '🏪 ${context.t('help_section_business')}',
+          ),
+          _buildHelpItem(
+            context,
+            context.t('help_q_business'),
+            context.t('help_a_business'),
+          ),
+          _buildHelpItem(
+            context,
+            context.t('help_q_loans'),
+            context.t('help_a_loans'),
+          ),
+          const SizedBox(height: 20),
+
+          // Seguridad, IA y ajustes
           _buildSectionHeader(context, '⚙️ ${context.t('settings_title')}'),
+          _buildHelpItem(
+            context,
+            context.t('help_q_security'),
+            context.t('help_a_security'),
+          ),
+          _buildHelpItem(
+            context,
+            context.t('help_q_ai'),
+            context.t('help_a_ai'),
+          ),
           _buildHelpItem(
             context,
             context.t('help_q_custom_bank'),
@@ -160,7 +252,7 @@ class HelpCenterScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // Feedback
+          // Soporte
           _buildSectionHeader(context, '💬 ${context.t('feedback_title')}'),
           _buildHelpItem(
             context,

@@ -350,11 +350,6 @@ class AppLocalizations {
       'tip_4': 'Establece metas de ahorro realistas y alcanzables 🚀',
       'tip_5': 'Registrar gastos aumenta tu conciencia financiera 📈',
 
-      // Help Center
-      'help_q_add_card': '¿Cómo agregar mi primera tarjeta?',
-      'help_a_add_card':
-          'Ve a la pantalla de Billetera (icono inferior), toca el botón "+" y rellena los datos de tu tarjeta o efectivo.',
-
       // Business Module
       'nav_business': 'Negocio',
       'business_module_title': 'Módulo de Negocio',
@@ -1126,48 +1121,97 @@ class AppLocalizations {
       'investment_date': 'Fecha de Inversión',
       'scanned_code': 'Código escaneado',
 
-      'help_q_add_transaction': '¿Cómo registrar una transacción?',
+      // Help Center
+      'help_section_start': 'Primeros pasos',
+      'help_section_trial': 'Prueba y planes',
+      'help_section_movements': 'Movimientos',
+      'help_section_stats': 'Estadísticas y exportación',
+      'help_section_backup': 'Copias de seguridad',
+      'help_section_business': 'Negocio y préstamos',
+      'help_q_add_card': '¿Cómo creo mi primera cuenta?',
+      'help_a_add_card':
+          'Abre Billetera en la barra inferior y toca el botón «+». Elige el tipo (efectivo, banco o tarjeta), escribe el nombre, el saldo inicial y el color, y guarda.',
+      'help_q_add_transaction': '¿Cómo registro un ingreso o un gasto?',
       'help_a_add_transaction':
-          'Toca el botón "+" flotante. Selecciona gasto/ingreso, categoría, monto y descripción.',
-      'help_q_scanner': '¿Cómo usar el escáner?',
+          'Toca el botón «+» flotante y elige Gasto o Ingreso. Selecciona la cuenta, la categoría, el monto y la fecha; puedes añadir una nota antes de guardar.',
+      'help_q_scanner': '¿Cómo uso el escáner de tarjetas?',
       'help_a_scanner':
-          'Toca "Más" en acciones rápidas → "Escanear Tarjeta". Alinea tu tarjeta con el marco.',
-      'help_q_edit_transaction': '¿Cómo editar una transacción?',
-      'help_a_edit_transaction':
-          'Toca cualquier transacción en la lista para ver detalles y editarla o eliminarla.',
-      'help_q_transfer': '¿Cómo transferir entre tarjetas?',
-      'help_a_transfer':
-          'Usa "Transferir" en acciones rápidas. Selecciona origen, destino y monto.',
-      'help_q_categories': '¿Puedo crear categorías personalizadas?',
-      'help_a_categories':
-          'Con la licencia Pro o Enterprise, puedes crear tus propias categorías en Configuración.',
-      'help_q_cards_limit': '¿Cuántas tarjetas puedo tener?',
-      'help_a_cards_limit':
-          'Depende de tu licencia. Gratis: 1, Pro: 4, Enterprise: Ilimitadas.',
-      'help_q_change_balance': '¿Cómo cambiar el balance?',
-      'help_a_change_balance':
-          'Ve a Billetera → Toca la tarjeta → Editar → Ajusta el balance.',
-      'help_q_money_counter': '¿Qué es el Contador de Dinero?',
-      'help_a_money_counter':
-          'Herramienta para contar billetes/monedas. Solo para cuentas de Efectivo.',
-      'help_q_license_types': '¿Qué tipos de licencias existen?',
-      'help_a_license_types':
-          'Personal (Gratis), Pro y Enterprise. Cada una desbloquea más tarjetas, gráficos y sincronización.',
-      'help_q_artpay': '¿Cómo pagar con ArtPay?',
-      'help_a_artpay':
-          '1. Regístrate en https://artpay.neti.cu\n2. Recarga tu saldo en la plataforma web.\n3. Al adquirir una licencia en CashRapido, selecciona "ArtPay" como método de pago.\n4. Sigue las instrucciones y confirma el pago desde tu cuenta.',
+          'En Acciones rápidas toca «Escanear» y alinea la tarjeta dentro del marco. La app lee el número y la fecha de vencimiento. Necesita permiso de cámara y está disponible en Enterprise y durante la prueba.',
+      'help_q_trial': '¿Qué incluye la prueba gratuita de 2 días?',
+      'help_a_trial':
+          'Al instalar la app tienes 48 horas con todo desbloqueado, excepto el Asistente IA, las copias en Google Drive y las copias de seguridad locales, que requieren un plan de pago. En Inicio ves el tiempo restante.',
+      'help_q_trial_end': '¿Qué pasa cuando termina la prueba?',
+      'help_a_trial_end':
+          'Si no hay un plan activo, se eliminan automáticamente los datos guardados en el dispositivo: movimientos, cuentas, categorías, negocio, préstamos y chats. Si compras un plan dentro de las 48 horas, tus datos se conservan aunque el plan caduque después.',
+      'help_q_plans': '¿Qué planes hay y qué incluye cada uno?',
+      'help_a_plans':
+          'Personal: 3 cuentas, transferencias, estadísticas detalladas y monedas.\nPro: 4 cuentas, categorías propias, PIN por cuenta y exportación a Excel.\nEnterprise: cuentas ilimitadas, IA, Google Drive, Negocio, Préstamos, PDF, widgets y biometría.\nCada nivel se vende por semana, mes o año.',
+      'help_q_payment': '¿Cómo pago mi plan?',
+      'help_a_payment':
+          'Abre Perfil → Licencias, elige el plan y pulsa Pagar. En Cuba el pago se gestiona con Apklis. Fuera de Cuba puedes pagar con PayPal o desbloquear licencias viendo anuncios. El precio se muestra antes de confirmar.',
       'help_q_restore_purchase': '¿Cómo restauro mi compra?',
       'help_a_restore_purchase':
-          'Ve a Configuración -> Licencias -> Verificar Licencia. La app comprobará tu compra en Apklis automáticamente.',
+          'En Licencias toca el icono de verificar de la barra superior: la app comprobará tu compra en Apklis. Si el plan no aparece, escríbenos desde Perfil → Ayuda y privacidad con el correo de la compra.',
+      'help_q_edit_transaction': '¿Cómo edito o elimino un movimiento?',
+      'help_a_edit_transaction':
+          'Toca cualquier movimiento de la lista para abrir su detalle; desde ahí puedes editarlo o eliminarlo.',
+      'help_q_transfer': '¿Cómo transfiero entre cuentas?',
+      'help_a_transfer':
+          'En Acciones rápidas toca «Transferir», elige la cuenta de origen, la de destino y el monto. No cuenta como gasto: solo mueve saldo entre tus cuentas.',
+      'help_q_recurring': '¿Qué son los movimientos recurrentes?',
+      'help_a_recurring':
+          'En Acciones rápidas → «Recurrente» defines ingresos o gastos que se repiten (semanal, mensual o anual). La app los registra sola en la fecha indicada.',
+      'help_q_categories': '¿Puedo crear categorías personalizadas?',
+      'help_a_categories':
+          'Sí, con Pro o Enterprise. Se crean desde el selector de categorías al registrar un movimiento. Durante la prueba también están disponibles.',
+      'help_q_cards_limit': '¿Cuántas cuentas puedo tener?',
+      'help_a_cards_limit':
+          'Gratis: 1. Personal: 3. Pro: 4. Enterprise: ilimitadas. Durante la prueba no hay límite. Puedes ver y reordenar tus cuentas en Billetera.',
+      'help_q_change_balance': '¿Cómo cambio el saldo de una cuenta?',
+      'help_a_change_balance':
+          'Ve a Billetera, toca la cuenta y entra en Editar. Ahí ajustas el saldo, el nombre, el color y el PIN de esa cuenta.',
+      'help_q_card_pin': '¿Puedo proteger una cuenta con PIN?',
+      'help_a_card_pin':
+          'Sí. Con Pro o superior, al crear o editar una cuenta puedes asignarle un PIN para ocultar sus movimientos. Al abrirla tendrás que introducirlo.',
+      'help_q_money_counter': '¿Qué es el Contador de Dinero?',
+      'help_a_money_counter':
+          'Es una herramienta para contar billetes y monedas por denominación y comparar el total con el saldo de una cuenta de efectivo. Está en Billetera, en las cuentas de tipo efectivo.',
+      'help_q_stats': '¿Qué puedo ver en Estadísticas?',
+      'help_a_stats':
+          'Ingresos, gastos, balance, tasa de ahorro, presupuestos y gráficos por día, semana, mes, año o rango personalizado. Con Personal o superior puedes filtrar por cuenta y ver el detalle por período.',
+      'help_q_export': '¿Puedo exportar mis datos?',
+      'help_a_export':
+          'Desde Estadísticas puedes compartir o guardar un resumen en PDF (Enterprise) y exportar los datos a Excel (Pro o superior). Durante la prueba ambas opciones están disponibles.',
+      'help_q_backup_local': '¿Cómo hago una copia de seguridad local?',
+      'help_a_backup_local':
+          'En Perfil → Mi cuenta → Respaldar datos (local) se genera un archivo que puedes guardar o compartir. Al importarlo se reemplazan los datos actuales. Requiere un plan de pago, incluso durante la prueba.',
+      'help_q_drive': '¿Cómo funciona la copia en Google Drive?',
+      'help_a_drive':
+          'Con Enterprise puedes conectar tu cuenta de Google y guardar una copia cifrada en tu Drive desde Perfil → Ayuda y privacidad → Copias de seguridad. El archivo queda en tu cuenta.',
+      'help_q_delete_data': '¿Cómo borro todos mis datos?',
+      'help_a_delete_data':
+          'En Perfil → Mi cuenta → Restablecer datos puedes borrar todo y empezar de nuevo. La app ofrece crear una copia antes (requiere plan de pago) y la acción no se puede deshacer.',
+      'help_q_business': '¿Qué incluye el módulo Negocio?',
+      'help_a_business':
+          'Disponible en Enterprise: catálogo de productos con stock y costos, punto de venta, gastos del negocio, vendedores, cierres de caja y reportes en PDF y Excel.',
+      'help_q_loans': '¿Qué incluye el módulo Préstamos?',
+      'help_a_loans':
+          'Disponible en Enterprise: registra préstamos y clientes, cobra cuotas totales o parciales, controla la mora y consulta reportes de cartera.',
+      'help_q_security': '¿Cómo protejo la app?',
+      'help_a_security':
+          'En Ajustes → Cuenta y seguridad defines un PIN o una contraseña de la app y, con Enterprise, activas la biometría. Los datos se guardan en el dispositivo, no en un servidor.',
+      'help_q_ai': '¿Cómo funciona el Asistente IA?',
+      'help_a_ai':
+          'Disponible en Enterprise. Actívalo en Ajustes → Preferencias y pregúntale por tus finanzas desde el chat. No compartas contraseñas, PIN ni números de tarjeta con el asistente.',
       'help_q_custom_bank': '¿Puedo agregar bancos personalizados?',
       'help_a_custom_bank':
-          'Sí, en Configuración -> Bancos puedes crear y editar tus propias entidades bancarias (Plan Pro+).',
+          'Sí, con Pro o superior. En Ajustes → Gestionar bancos puedes añadir, editar y eliminar entidades, y luego usarlas al crear cuentas.',
       'help_q_currency': '¿Cómo cambio la moneda principal?',
       'help_a_currency':
-          'En Configuración -> Moneda Principal. Esto define la moneda por defecto para los totales.',
-      'help_q_feedback': '¿Cómo puedo dar mi opinión?',
+          'En Ajustes → Moneda principal eliges la moneda de los totales. En Ajustes → Tasas de cambio defines la conversión entre tus monedas.',
+      'help_q_feedback': '¿Cómo envío una sugerencia o reporto un error?',
       'help_a_feedback':
-          'La app te invitará a unirte a nuestro grupo de Telegram después de usarla varios días.',
+          'Desde Perfil → Ayuda y privacidad puedes contactar con soporte, reportar un error o enviar una sugerencia. También puedes unirte a nuestra comunidad de Telegram.',
 
       // General
       'app_name': 'CashRapido',
@@ -2320,11 +2364,6 @@ class AppLocalizations {
       'comma': 'Comma (,)',
       'point': 'Point (.)',
       'numeric_format_desc': 'Choose the decimal separator for the whole app',
-      // Help Center
-      'help_q_add_card': 'How to add my first card?',
-      'help_a_add_card':
-          'Go to Wallet screen (bottom icon), tap (+) and fill in your card or cash details.',
-
       // Business Module
       'nav_business': 'Business',
       'business_module_title': 'Business Module',
@@ -3087,48 +3126,97 @@ class AppLocalizations {
       'investment_date': 'Investment Date',
       'scanned_code': 'Scanned code',
 
-      'help_q_add_transaction': 'How to record a transaction?',
+      // Help Center
+      'help_section_start': 'Getting started',
+      'help_section_trial': 'Trial and plans',
+      'help_section_movements': 'Transactions',
+      'help_section_stats': 'Statistics and export',
+      'help_section_backup': 'Backups',
+      'help_section_business': 'Business and loans',
+      'help_q_add_card': 'How do I create my first account?',
+      'help_a_add_card':
+          'Open Wallet in the bottom bar and tap the (+) button. Choose the type (cash, bank or card), enter the name, starting balance and color, then save.',
+      'help_q_add_transaction': 'How do I record an income or an expense?',
       'help_a_add_transaction':
-          'Tap the floating (+) button. Select expense/income, category, amount and description.',
-      'help_q_scanner': 'How to use the scanner?',
+          'Tap the floating (+) button and choose Expense or Income. Select the account, category, amount and date; you can add a note before saving.',
+      'help_q_scanner': 'How do I use the card scanner?',
       'help_a_scanner':
-          'Tap "More" in quick actions -> "Scan Card". Align your card within the frame.',
-      'help_q_edit_transaction': 'How to edit a transaction?',
-      'help_a_edit_transaction':
-          'Tap any transaction in the list to view details and edit or delete it.',
-      'help_q_transfer': 'How to transfer between cards?',
-      'help_a_transfer':
-          'Use "Transfer" in quick actions. Select source, destination and amount.',
-      'help_q_categories': 'Can I create custom categories?',
-      'help_a_categories':
-          'With Pro or Enterprise license, you can create your own categories in Settings.',
-      'help_q_cards_limit': 'How many cards can I have?',
-      'help_a_cards_limit':
-          'Depends on your license. Free: 1, Pro: 4, Enterprise: Unlimited.',
-      'help_q_change_balance': 'How to change balance?',
-      'help_a_change_balance':
-          'Go to Wallet -> Tap card -> Edit -> Adjust balance.',
-      'help_q_money_counter': 'What is the Money Counter?',
-      'help_a_money_counter':
-          'Tool for counting bills/coins. Only for Cash accounts.',
-      'help_q_license_types': 'What license types are available?',
-      'help_a_license_types':
-          'Personal (Free), Pro, and Enterprise. Each unlocks more cards, charts, and cloud sync.',
-      'help_q_artpay': 'How to pay with ArtPay?',
-      'help_a_artpay':
-          '1. Register at https://artpay.neti.cu\n2. Top up your balance on the web platform.\n3. When buying a license in CashRapido, choose "ArtPay" as payment method.\n4. Follow the instructions and confirm the payment from your account.',
+          'In Quick actions tap "Scan" and align the card inside the frame. The app reads the number and expiry date. It needs camera permission and is available on Enterprise and during the trial.',
+      'help_q_trial': 'What does the 2-day free trial include?',
+      'help_a_trial':
+          'For 48 hours after installing the app everything is unlocked, except the AI Assistant, Google Drive backups and local backups, which require a paid plan. Home shows the time remaining.',
+      'help_q_trial_end': 'What happens when the trial ends?',
+      'help_a_trial_end':
+          'If there is no active plan, the data stored on the device is deleted automatically: transactions, accounts, categories, business, loans and chats. If you buy a plan within the 48 hours, your data is kept even if that plan expires later.',
+      'help_q_plans': 'Which plans are available and what do they include?',
+      'help_a_plans':
+          'Personal: 3 accounts, transfers, detailed statistics and currencies.\nPro: 4 accounts, custom categories, per-account PIN and Excel export.\nEnterprise: unlimited accounts, AI, Google Drive, Business, Loans, PDF, widgets and biometrics.\nEach level is sold weekly, monthly or yearly.',
+      'help_q_payment': 'How do I pay for my plan?',
+      'help_a_payment':
+          'Open Profile → Licenses, choose the plan and tap Pay. In Cuba the payment is handled through Apklis. Outside Cuba you can pay with PayPal or unlock licenses by watching ads. The price is shown before confirming.',
       'help_q_restore_purchase': 'How do I restore my purchase?',
       'help_a_restore_purchase':
-          'Go to Settings -> Licenses -> Verify License. The app will check your Apklis purchase automatically.',
+          'In Licenses tap the verify icon in the top bar: the app will check your Apklis purchase. If the plan does not appear, contact us from Profile → Help and privacy with the purchase email.',
+      'help_q_edit_transaction': 'How do I edit or delete a transaction?',
+      'help_a_edit_transaction':
+          'Tap any transaction in the list to open its details; from there you can edit or delete it.',
+      'help_q_transfer': 'How do I transfer between accounts?',
+      'help_a_transfer':
+          'In Quick actions tap "Transfer", then choose the source account, the destination and the amount. It is not counted as an expense: it only moves balance between your accounts.',
+      'help_q_recurring': 'What are recurring transactions?',
+      'help_a_recurring':
+          'In Quick actions → "Recurring" you set incomes or expenses that repeat (weekly, monthly or yearly). The app records them automatically on the scheduled date.',
+      'help_q_categories': 'Can I create custom categories?',
+      'help_a_categories':
+          'Yes, with Pro or Enterprise. Create them from the category picker when recording a transaction. They are also available during the trial.',
+      'help_q_cards_limit': 'How many accounts can I have?',
+      'help_a_cards_limit':
+          'Free: 1. Personal: 3. Pro: 4. Enterprise: unlimited. There is no limit during the trial. You can view and reorder your accounts in Wallet.',
+      'help_q_change_balance': 'How do I change an account balance?',
+      'help_a_change_balance':
+          'Go to Wallet, tap the account and open Edit. There you can adjust the balance, name, color and PIN of that account.',
+      'help_q_card_pin': 'Can I protect an account with a PIN?',
+      'help_a_card_pin':
+          'Yes. With Pro or higher, you can assign a PIN to an account when creating or editing it to hide its transactions. You will be asked for it when opening the account.',
+      'help_q_money_counter': 'What is the Money Counter?',
+      'help_a_money_counter':
+          'It is a tool to count bills and coins by denomination and compare the total with the balance of a cash account. You will find it in Wallet, on cash-type accounts.',
+      'help_q_stats': 'What can I see in Statistics?',
+      'help_a_stats':
+          'Income, expenses, balance, savings rate, budgets and charts by day, week, month, year or custom range. With Personal or higher you can filter by account and see the detail per period.',
+      'help_q_export': 'Can I export my data?',
+      'help_a_export':
+          'From Statistics you can share or save a PDF summary (Enterprise) and export the data to Excel (Pro or higher). Both options are available during the trial.',
+      'help_q_backup_local': 'How do I make a local backup?',
+      'help_a_backup_local':
+          'In Profile → My account → Backup data (local) the app creates a file you can save or share. Importing it replaces the current data. It requires a paid plan, even during the trial.',
+      'help_q_drive': 'How does the Google Drive backup work?',
+      'help_a_drive':
+          'With Enterprise you can connect your Google account and store an encrypted copy in your Drive from Profile → Help and privacy → Backups. The file stays in your account.',
+      'help_q_delete_data': 'How do I delete all my data?',
+      'help_a_delete_data':
+          'In Profile → My account → Reset data you can erase everything and start over. The app offers to create a backup first (requires a paid plan) and the action cannot be undone.',
+      'help_q_business': 'What does the Business module include?',
+      'help_a_business':
+          'Available on Enterprise: product catalog with stock and costs, point of sale, business expenses, sellers, cash closings and reports in PDF and Excel.',
+      'help_q_loans': 'What does the Loans module include?',
+      'help_a_loans':
+          'Available on Enterprise: record loans and clients, collect full or partial installments, track late payments and check portfolio reports.',
+      'help_q_security': 'How do I protect the app?',
+      'help_a_security':
+          'In Settings → Account and security you can set an app PIN or password and, with Enterprise, enable biometrics. Data is stored on the device, not on a server.',
+      'help_q_ai': 'How does the AI Assistant work?',
+      'help_a_ai':
+          'Available on Enterprise. Enable it in Settings → Preferences and ask about your finances from the chat. Do not share passwords, PINs or card numbers with the assistant.',
       'help_q_custom_bank': 'Can I add custom banks?',
       'help_a_custom_bank':
-          'Yes, in Settings -> Banks you can create and edit your own banks (Pro+ Plan).',
-      'help_q_currency': 'How to change main currency?',
+          'Yes, with Pro or higher. In Settings → Manage banks you can add, edit and delete institutions, then use them when creating accounts.',
+      'help_q_currency': 'How do I change the main currency?',
       'help_a_currency':
-          'In Settings -> Main Currency. This sets the default currency for totals.',
-      'help_q_feedback': 'How can I give feedback?',
+          'In Settings → Main currency you choose the currency for totals. In Settings → Exchange rates you set the conversion between your currencies.',
+      'help_q_feedback': 'How do I send a suggestion or report a bug?',
       'help_a_feedback':
-          'The app will invite you to our Telegram group after a few days of use.',
+          'From Profile → Help and privacy you can contact support, report a bug or send a suggestion. You can also join our Telegram community.',
 
       // Feedback
       'feedback_title': 'Your opinion matters!',
@@ -4306,50 +4394,96 @@ class AppLocalizations {
       'numeric_format_desc':
           'Choisissez le séparateur décimal pour toute l\'application',
       // Help Center
-      'help_q_add_card': 'Comment ajouter ma première carte ?',
+      'help_section_start': 'Premiers pas',
+      'help_section_trial': 'Essai et offres',
+      'help_section_movements': 'Transactions',
+      'help_section_stats': 'Statistiques et export',
+      'help_section_backup': 'Sauvegardes',
+      'help_section_business': 'Commerce et prêts',
+      'help_q_add_card': 'Comment créer mon premier compte ?',
       'help_a_add_card':
-          'Allez à l\'écran Portefeuille, appuyez sur (+) et remplissez les détails de carte ou espèces.',
-      'help_q_add_transaction': 'Comment enregistrer une transaction ?',
+          'Ouvrez Portefeuille dans la barre inférieure et appuyez sur (+). Choisissez le type (espèces, banque ou carte), saisissez le nom, le solde initial et la couleur, puis enregistrez.',
+      'help_q_add_transaction': 'Comment enregistrer un revenu ou une dépense ?',
       'help_a_add_transaction':
-          'Appuyez sur le bouton flottant (+). Sélectionnez dépense/revenu, catégorie, montant.',
-      'help_q_scanner': 'Comment utiliser le scanner ?',
+          'Appuyez sur le bouton flottant (+) et choisissez Dépense ou Revenu. Sélectionnez le compte, la catégorie, le montant et la date ; vous pouvez ajouter une note avant d\'enregistrer.',
+      'help_q_scanner': 'Comment utiliser le scanner de cartes ?',
       'help_a_scanner':
-          'Appuyez sur "Plus" -> "Scanner Carte". Alignez votre carte avec le cadre.',
-      'help_q_edit_transaction': 'Comment modifier une transaction ?',
-      'help_a_edit_transaction':
-          'Appuyez sur une transaction pour voir les détails, la modifier ou la supprimer.',
-      'help_q_transfer': 'Comment transférer entre cartes ?',
-      'help_a_transfer':
-          'Utilisez "Transférer". Sélectionnez la source, la destination et le montant.',
-      'help_q_categories': 'Puis-je créer des catégories ?',
-      'help_a_categories':
-          'Avec la licence Pro ou Entreprise, vous pouvez créer vos propres catégories.',
-      'help_q_cards_limit': 'Combien de cartes puis-je avoir ?',
-      'help_a_cards_limit':
-          'Dépend de votre licence. Gratuit : 1, Pro : 4, Entreprise : Illimité.',
-      'help_q_change_balance': 'Comment changer le solde ?',
-      'help_a_change_balance':
-          'Portefeuille -> Carte -> Modifier -> Ajuster le solde.',
-      'help_q_money_counter': 'Qu\'est-ce que le Compteur d\'Argent ?',
-      'help_a_money_counter':
-          'Outil pour compter billets/pièces. Uniquement pour les comptes Espèces.',
-      'help_q_license_types': 'Quels types de licences existent ?',
-      'help_a_license_types':
-          'Personnel (Gratuit), Pro et Entreprise. Chacun débloque plus de fonctionnalités.',
-      'help_a_artpay':
-          '1. Inscrivez-vous sur https://artpay.neti.cu\n2. Rechargez votre solde sur la plateforme web.\n3. Lors de l\'achat d\'une licence CashRapido, choisissez "ArtPay" comme moyen de paiement.\n4. Suivez les instructions et confirmez le paiement depuis votre compte.',
+          'Dans Actions rapides, appuyez sur « Scanner » et alignez la carte dans le cadre. L\'appli lit le numéro et la date d\'expiration. Le scanner nécessite l\'autorisation caméra et est disponible en Entreprise et pendant l\'essai.',
+      'help_q_trial': 'Que comprend l\'essai gratuit de 2 jours ?',
+      'help_a_trial':
+          'Pendant 48 heures après l\'installation, tout est débloqué sauf l\'Assistant IA, les sauvegardes Google Drive et les sauvegardes locales, qui exigent une offre payante. L\'accueil affiche le temps restant.',
+      'help_q_trial_end': 'Que se passe-t-il à la fin de l\'essai ?',
+      'help_a_trial_end':
+          'Sans offre active, les données enregistrées sur l\'appareil sont supprimées automatiquement : transactions, comptes, catégories, commerce, prêts et discussions. Si vous achetez une offre pendant les 48 heures, vos données sont conservées même si elle expire ensuite.',
+      'help_q_plans': 'Quelles offres existent et que comprennent-elles ?',
+      'help_a_plans':
+          'Personnel : 3 comptes, transferts, statistiques détaillées et devises.\nPro : 4 comptes, catégories personnalisées, PIN par compte et export Excel.\nEntreprise : comptes illimités, IA, Google Drive, Commerce, Prêts, PDF, widgets et biométrie.\nChaque niveau se vend à la semaine, au mois ou à l\'année.',
+      'help_q_payment': 'Comment payer mon offre ?',
+      'help_a_payment':
+          'Ouvrez Profil → Licences, choisissez l\'offre et appuyez sur Payer. À Cuba, le paiement passe par Apklis. Hors de Cuba, vous pouvez payer avec PayPal ou débloquer des licences en regardant des publicités. Le prix s\'affiche avant confirmation.',
       'help_q_restore_purchase': 'Comment restaurer mon achat ?',
       'help_a_restore_purchase':
-          'Paramètres -> Licences -> Vérifier. L\'appli vérifiera votre achat Apklis.',
-      'help_q_custom_bank': 'Puis-je ajouter des banques ?',
+          'Dans Licences, appuyez sur l\'icône de vérification de la barre supérieure : l\'appli vérifiera votre achat Apklis. Si l\'offre n\'apparaît pas, écrivez-nous depuis Profil → Aide et confidentialité avec l\'e-mail d\'achat.',
+      'help_q_edit_transaction': 'Comment modifier ou supprimer une transaction ?',
+      'help_a_edit_transaction':
+          'Appuyez sur une transaction de la liste pour ouvrir son détail ; vous pouvez ensuite la modifier ou la supprimer.',
+      'help_q_transfer': 'Comment transférer entre comptes ?',
+      'help_a_transfer':
+          'Dans Actions rapides, appuyez sur « Transférer », puis choisissez le compte source, le compte destination et le montant. Ce n\'est pas une dépense : cela déplace seulement le solde entre vos comptes.',
+      'help_q_recurring': 'Que sont les transactions récurrentes ?',
+      'help_a_recurring':
+          'Dans Actions rapides → « Récurrent », définissez des revenus ou dépenses qui se répètent (chaque semaine, mois ou année). L\'appli les enregistre automatiquement à la date prévue.',
+      'help_q_categories': 'Puis-je créer des catégories personnalisées ?',
+      'help_a_categories':
+          'Oui, avec Pro ou Entreprise. Créez-les depuis le sélecteur de catégories lors de l\'enregistrement d\'une transaction. Elles sont aussi disponibles pendant l\'essai.',
+      'help_q_cards_limit': 'Combien de comptes puis-je avoir ?',
+      'help_a_cards_limit':
+          'Gratuit : 1. Personnel : 3. Pro : 4. Entreprise : illimité. Aucune limite pendant l\'essai. Vous pouvez voir et réorganiser vos comptes dans Portefeuille.',
+      'help_q_change_balance': 'Comment changer le solde d\'un compte ?',
+      'help_a_change_balance':
+          'Allez dans Portefeuille, appuyez sur le compte et ouvrez Modifier. Vous y ajustez le solde, le nom, la couleur et le PIN du compte.',
+      'help_q_card_pin': 'Puis-je protéger un compte par PIN ?',
+      'help_a_card_pin':
+          'Oui. Avec Pro ou supérieur, vous pouvez attribuer un PIN à un compte lors de sa création ou modification pour masquer ses transactions. Il vous sera demandé à l\'ouverture.',
+      'help_q_money_counter': 'Qu\'est-ce que le Compteur d\'Argent ?',
+      'help_a_money_counter':
+          'C\'est un outil pour compter les billets et pièces par coupure et comparer le total avec le solde d\'un compte en espèces. Il se trouve dans Portefeuille, sur les comptes de type espèces.',
+      'help_q_stats': 'Que puis-je voir dans Statistiques ?',
+      'help_a_stats':
+          'Revenus, dépenses, solde, taux d\'épargne, budgets et graphiques par jour, semaine, mois, année ou période personnalisée. Avec Personnel ou supérieur, vous pouvez filtrer par compte et voir le détail par période.',
+      'help_q_export': 'Puis-je exporter mes données ?',
+      'help_a_export':
+          'Depuis Statistiques, vous pouvez partager ou enregistrer un résumé PDF (Entreprise) et exporter les données vers Excel (Pro ou supérieur). Les deux options sont disponibles pendant l\'essai.',
+      'help_q_backup_local': 'Comment faire une sauvegarde locale ?',
+      'help_a_backup_local':
+          'Dans Profil → Mon compte → Sauvegarder les données (local), l\'appli crée un fichier que vous pouvez enregistrer ou partager. L\'importer remplace les données actuelles. Une offre payante est requise, même pendant l\'essai.',
+      'help_q_drive': 'Comment fonctionne la sauvegarde Google Drive ?',
+      'help_a_drive':
+          'Avec Entreprise, vous pouvez connecter votre compte Google et enregistrer une copie chiffrée dans votre Drive depuis Profil → Aide et confidentialité → Sauvegardes. Le fichier reste dans votre compte.',
+      'help_q_delete_data': 'Comment supprimer toutes mes données ?',
+      'help_a_delete_data':
+          'Dans Profil → Mon compte → Réinitialiser les données, vous pouvez tout effacer et repartir de zéro. L\'appli propose de créer une sauvegarde avant (offre payante requise) et l\'action est irréversible.',
+      'help_q_business': 'Que comprend le module Commerce ?',
+      'help_a_business':
+          'Disponible en Entreprise : catalogue de produits avec stock et coûts, point de vente, dépenses du commerce, vendeurs, clôtures de caisse et rapports PDF et Excel.',
+      'help_q_loans': 'Que comprend le module Prêts ?',
+      'help_a_loans':
+          'Disponible en Entreprise : enregistrez des prêts et des clients, encaissez des échéances totales ou partielles, suivez les retards et consultez les rapports de portefeuille.',
+      'help_q_security': 'Comment protéger l\'appli ?',
+      'help_a_security':
+          'Dans Paramètres → Compte et sécurité, définissez un PIN ou un mot de passe de l\'appli et, avec Entreprise, activez la biométrie. Les données sont stockées sur l\'appareil, pas sur un serveur.',
+      'help_q_ai': 'Comment fonctionne l\'Assistant IA ?',
+      'help_a_ai':
+          'Disponible en Entreprise. Activez-le dans Paramètres → Préférences et posez vos questions sur vos finances depuis le chat. Ne partagez pas de mots de passe, PIN ni numéros de carte avec l\'assistant.',
+      'help_q_custom_bank': 'Puis-je ajouter des banques personnalisées ?',
       'help_a_custom_bank':
-          'Oui, dans Paramètres -> Banques, vous pouvez créer vos propres banques (Plan Pro+).',
+          'Oui, avec Pro ou supérieur. Dans Paramètres → Gérer les banques, vous pouvez ajouter, modifier et supprimer des établissements, puis les utiliser lors de la création de comptes.',
       'help_q_currency': 'Comment changer la devise principale ?',
       'help_a_currency':
-          'Dans Paramètres -> Devise Principale. Définit la devise par défaut.',
-      'help_q_feedback': 'Comment donner mon avis ?',
+          'Dans Paramètres → Devise principale, choisissez la devise des totaux. Dans Paramètres → Taux de change, définissez la conversion entre vos devises.',
+      'help_q_feedback': 'Comment envoyer une suggestion ou signaler un bug ?',
       'help_a_feedback':
-          'L\'application vous invitera à rejoindre notre groupe Telegram après quelques jours.',
+          'Depuis Profil → Aide et confidentialité, vous pouvez contacter le support, signaler un bug ou envoyer une suggestion. Vous pouvez aussi rejoindre notre communauté Telegram.',
 
       // Business Module
       'nav_business': 'Commerce',
@@ -5733,7 +5867,6 @@ class AppLocalizations {
       'expires': 'Expire',
       'days': 'jours',
       'renew': 'Renouveler',
-      'help_q_artpay': 'Comment payer avec ArtPay ?',
 
       // Licenses
       'licenses_title': 'Licences Disponibles',
