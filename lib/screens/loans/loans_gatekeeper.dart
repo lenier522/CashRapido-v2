@@ -12,8 +12,10 @@ class LoansGatekeeper extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = Provider.of<AppProvider>(context);
 
-    // Check license (Enterprise level required)
-    if (provider.licenseType.level != LicenseLevel.enterprise && !provider.isPromoActive) {
+    // Check license (Enterprise level required, or the 48 h free trial)
+    if (provider.licenseType.level != LicenseLevel.enterprise &&
+        !provider.isPromoActive &&
+        !provider.isTrialActive) {
       return const LoansLockedScreen();
     }
 

@@ -12,10 +12,11 @@ class BusinessGatekeeper extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = Provider.of<AppProvider>(context);
 
-    // Check license (Pro or Enterprise level required)
+    // Check license (Pro or Enterprise level required, or the free trial)
     if (provider.licenseType.level != LicenseLevel.pro &&
         provider.licenseType.level != LicenseLevel.enterprise &&
-        !provider.isPromoActive) {
+        !provider.isPromoActive &&
+        !provider.isTrialActive) {
       return const BusinessLockedScreen();
     }
 

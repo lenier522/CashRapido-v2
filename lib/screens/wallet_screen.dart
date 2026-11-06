@@ -21,6 +21,7 @@ import '../widgets/design/cash_quick_action.dart';
 import '../widgets/design/cash_section.dart';
 import '../widgets/design/cash_stat_card.dart';
 import 'add_card_screen.dart';
+import 'default_license_screen.dart';
 import 'licenses_screen.dart';
 import 'money_counter_screen.dart';
 
@@ -708,6 +709,22 @@ class _WalletScreenState extends State<WalletScreen> {
             buttonLabel: context.t('add_account'),
             onButtonPressed: () => _openAddCard(context, provider),
           ),
+          if (!Navigator.canPop(context)) ...[
+            const SizedBox(height: AppSpacing.md),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (_) => const DefaultLicenseScreen(),
+                  ),
+                );
+              },
+              child: Text(
+                context.t('continue_btn'),
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
         ],
       ),
     );

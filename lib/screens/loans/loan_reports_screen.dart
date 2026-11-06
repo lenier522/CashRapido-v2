@@ -467,6 +467,13 @@ class LoanReportsScreen extends StatelessWidget {
             title: context.t('reports_export_json'),
             subtitle: context.t('reports_export_json_desc'),
             onTap: () async {
+              if (!Provider.of<AppProvider>(
+                context,
+                listen: false,
+              ).canBackupLocal) {
+                _showBackupLocked(context);
+                return;
+              }
               final shareText = context.t('reports_share_text');
               try {
                 final jsonString = lp.exportBackupData();
@@ -499,6 +506,13 @@ class LoanReportsScreen extends StatelessWidget {
             title: context.t('reports_import_json'),
             subtitle: context.t('reports_import_json_desc'),
             onTap: () async {
+              if (!Provider.of<AppProvider>(
+                context,
+                listen: false,
+              ).canBackupLocal) {
+                _showBackupLocked(context);
+                return;
+              }
               try {
                 final result = await FilePicker.platform.pickFiles(
                   type: FileType.custom,
@@ -544,6 +558,17 @@ class LoanReportsScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Aviso para las copias de seguridad locales, que requieren plan de pago
+/// incluso durante la prueba gratuita.
+void _showBackupLocked(BuildContext context) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(context.t('feature_locked_desc')),
+      backgroundColor: AppColors.warning,
+    ),
+  );
 }
 
 /// Fila accionable de exportación/respaldo.

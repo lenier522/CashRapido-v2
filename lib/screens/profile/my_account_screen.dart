@@ -124,6 +124,10 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
   Future<void> _backupLocal() async {
     if (_busy != null) return;
     final AppProvider provider = context.read<AppProvider>();
+    if (!provider.canBackupLocal) {
+      showFeatureLockedDialog(context);
+      return;
+    }
     setState(() => _busy = 'backup');
     try {
       await provider.backupToLocal();
@@ -139,7 +143,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
   Future<void> _import() async {
     if (_busy != null) return;
     final AppProvider provider = context.read<AppProvider>();
-    if (!provider.canImportData) {
+    if (!provider.canImportData || !provider.canBackupLocal) {
       showFeatureLockedDialog(context);
       return;
     }
@@ -182,7 +186,8 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     );
     if (first != true || !mounted) return;
 
-    // Paso intermedio: copia de seguridad opcional.
+    // Paso intermedio: copia de seguridad opcional (solo con plan de pago).
+    final bool canBackup = context.read<AppProvider>().canBackupLocal;
     final String? choice = await showDialog<String>(
       context: context,
       builder: (BuildContext ctx) => AlertDialog(
@@ -196,10 +201,11 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
             onPressed: () => Navigator.pop(ctx),
             child: Text(context.t('cancel')),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, 'backup'),
-            child: Text(context.t('reset_backup_and_reset')),
-          ),
+          if (canBackup)
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'backup'),
+              child: Text(context.t('reset_backup_and_reset')),
+            ),
           CashButton(
             label: context.t('reset_confirm_final_action'),
             type: CashButtonType.danger,
@@ -247,8 +253,8 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
   @override
   Widget build(BuildContext context) {
     final bool busy = _busy != null;
-    final bool canChangeIcon =
-        context.watch<AppProvider>().isEnterpriseActive;
+    final AppProvider appProvider = context.watch<AppProvider>();
+    final bool canChangeIcon = appProvider.isEnterpriseActive;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -321,6 +327,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                 icon: Icons.save_alt_rounded,
                 title: context.t('backup_local'),
                 subtitle: context.t('backup_local_sub'),
+                muted: !appProvider.canBackupLocal,
                 onTap: busy ? null : _backupLocal,
                 trailing: _busy == 'backup'
                     ? const _RowSpinner()

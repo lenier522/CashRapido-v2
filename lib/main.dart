@@ -31,6 +31,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'services/localization_service.dart';
+import 'services/trial_service.dart';
 
 import 'providers/business_provider.dart';
 import 'providers/loan_provider.dart';
@@ -74,6 +75,10 @@ void main() async {
   Hive.registerAdapter(RecurringTransactionAdapter());
   Hive.registerAdapter(NotificationItemAdapter());
 
+  // Prueba gratuita de 48 h: si ya terminó sin un plan activo, los datos se
+  // borran aquí, antes de que los providers abran Hive.
+  final bool trialDataWiped = await TrialService.enforceAtStartup();
+
   // Open Boxes
   await Hive.openBox<ChatConversation>('ai_chats');
 
@@ -105,7 +110,10 @@ void main() async {
           },
         ),
       ],
-      child: MyApp(seenOnboarding: seenOnboarding),
+      child: MyApp(
+        seenOnboarding: seenOnboarding,
+        trialDataWiped: trialDataWiped,
+      ),
     ),
   );
 }
@@ -113,7 +121,14 @@ void main() async {
 class MyApp extends StatelessWidget {
   final bool seenOnboarding;
 
-  const MyApp({super.key, required this.seenOnboarding});
+  /// `true` si la prueba gratuita acaba de terminar y se borraron los datos.
+  final bool trialDataWiped;
+
+  const MyApp({
+    super.key,
+    required this.seenOnboarding,
+    this.trialDataWiped = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +158,10 @@ class MyApp extends StatelessWidget {
             ...GlobalMaterialLocalizations.delegates,
           ],
 
-          home: AuthWrapper(seenOnboarding: seenOnboarding),
+          home: AuthWrapper(
+            seenOnboarding: seenOnboarding,
+            trialDataWiped: trialDataWiped,
+          ),
         );
       },
     );
@@ -152,13 +170,22 @@ class MyApp extends StatelessWidget {
 
 class AuthWrapper extends StatefulWidget {
   final bool seenOnboarding;
-  const AuthWrapper({super.key, required this.seenOnboarding});
+
+  /// `true` si la prueba gratuita acaba de terminar y se borraron los datos.
+  final bool trialDataWiped;
+
+  const AuthWrapper({
+    super.key,
+    required this.seenOnboarding,
+    this.trialDataWiped = false,
+  });
 
   @override
   State<AuthWrapper> createState() => _AuthWrapperState();
 }
 
-class _AuthWrapperState extends State<AuthWrapper> {
+class _AuthWrapperState extends State<AuthWrapper>
+    with WidgetsBindingObserver {
   bool _isAuthenticated = false;
   bool _isLoading = true;
   String _authMethod = ''; // 'biometric', 'pin', 'password', or ''
@@ -190,10 +217,79 @@ class _AuthWrapperState extends State<AuthWrapper> {
     // Add more codes here...
   ];
 
+  /// Evita que dos reanudaciones seguidas ejecuten el borrado a la vez.
+  bool _trialEnforcing = false;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _checkAuthentication();
+    if (widget.trialDataWiped) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showTrialEndedNotice();
+      });
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _enforceTrialExpiry();
+    }
+  }
+
+  /// Si la prueba terminó mientras la app estaba en segundo plano, borra los
+  /// datos y avisa al usuario.
+  Future<void> _enforceTrialExpiry() async {
+    if (!mounted || _trialEnforcing) return;
+
+    final AppProvider app = Provider.of<AppProvider>(context, listen: false);
+    final BusinessProvider business = Provider.of<BusinessProvider>(
+      context,
+      listen: false,
+    );
+    final LoanProvider loans = Provider.of<LoanProvider>(
+      context,
+      listen: false,
+    );
+
+    _trialEnforcing = true;
+    try {
+      // Si los providers aún están cargando, el arranque ya aplicó la prueba.
+      if (app.isLoading || business.isLoading || loans.isLoading) return;
+      if (!await TrialService.shouldWipe()) return;
+
+      await app.resetAllData();
+      await business.clearAllData();
+      await loans.clearAllData();
+      await TrialService.markWiped();
+      app.markTrialDataWiped();
+
+      if (!mounted) return;
+      await _showTrialEndedNotice();
+    } finally {
+      _trialEnforcing = false;
+    }
+  }
+
+  Future<void> _showTrialEndedNotice() async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext ctx) => AlertDialog(
+        icon: const Icon(Icons.hourglass_disabled_rounded),
+        title: Text(ctx.t('trial_ended_title')),
+        content: Text(ctx.t('trial_ended_body')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(ctx.t('close')),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _checkAuthentication() async {
@@ -573,6 +669,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _pinController.dispose();
     _passwordController.dispose();
     _activationCodeController.dispose();

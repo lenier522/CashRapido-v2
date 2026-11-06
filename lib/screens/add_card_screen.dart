@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import '../models/models.dart';
 import '../providers/app_provider.dart';
 import '../screens/card_scanner_screen.dart';
+import '../screens/default_license_screen.dart';
 import '../screens/licenses_screen.dart';
 import '../services/localization_service.dart';
 import '../theme/app_colors.dart';
@@ -234,6 +235,8 @@ class _AddCardScreenState extends State<AddCardScreen> {
                 ? 'AHORRO'
                 : _selectedBank;
 
+    final bool isFirstCard = provider.cards.isEmpty && !_isEditing;
+
     if (_isEditing) {
       final updatedCard = AccountCard(
         id: widget.cardToEdit!.id,
@@ -286,7 +289,17 @@ class _AddCardScreenState extends State<AddCardScreen> {
     }
 
     if (!mounted) return;
-    Navigator.pop(context);
+    // Durante la prueba gratuita no se fuerza el paywall: el usuario tiene
+    // todas las funciones desbloqueadas. El embudo se mantiene para quien
+    // crea su primera cuenta sin prueba (por ejemplo, después del borrado).
+    if (isFirstCard && !provider.isTrialActive) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const DefaultLicenseScreen()),
+        (route) => false,
+      );
+    } else {
+      Navigator.pop(context);
+    }
   }
 
   Future<void> _pickDateTime() async {
@@ -478,7 +491,12 @@ class _AddCardScreenState extends State<AddCardScreen> {
               const SizedBox(height: AppSpacing.md),
               Wrap(spacing: AppSpacing.md, runSpacing: AppSpacing.md, children: [for (final color in _cardColors) _ColorSwatch(color: color, isSelected: _selectedColorValue == color.toARGB32(), onTap: () => setState(() => _selectedColorValue = color.toARGB32()))]),
               const SizedBox(height: AppSpacing.xxxl),
-              CashButton(label: context.t('save_card'), icon: const Icon(Icons.check, size: 20), loading: _isSaving, onPressed: _isSaving ? null : _saveCard),
+              CashButton(
+                label: _isEditing ? context.t('save_card') : context.t('form_create_account'),
+                icon: const Icon(Icons.check, size: 20),
+                loading: _isSaving,
+                onPressed: _isSaving ? null : _saveCard,
+              ),
             ],
           ),
         ),

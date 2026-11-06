@@ -1396,7 +1396,7 @@ class AppLocalizations {
       'wallet_subtitle': 'Tus cuentas y tarjetas',
       'no_cards': 'No tienes tarjetas',
       'add_now': 'Agregar Ahora',
-      'add_account': 'Agregar cuenta',
+      'add_account': 'Crear una cuenta',
       'my_cards': 'Mis Tarjetas',
       'accounts': 'cuentas',
       'of': 'de',
@@ -1968,7 +1968,7 @@ class AppLocalizations {
       'form_extra_section': 'Detalles de la cuenta',
       'form_visual_section': 'Estilo',
       'form_no_accounts': 'Necesitas una cuenta para registrar movimientos.',
-      'form_create_account': 'Crear cuenta',
+      'form_create_account': 'Crear una cuenta',
       'form_pin_title': 'PIN de la cuenta',
       'form_pin_error': 'El PIN no es correcto.',
       'form_locked_account': 'Esta cuenta está bloqueada.',
@@ -2007,6 +2007,13 @@ class AppLocalizations {
       'rec_yearly': 'Anual',
       'rec_empty_categories': 'No hay categorías disponibles.',
       'rec_empty_accounts': 'No hay cuentas disponibles.',
+      // ── Prueba gratuita ──────────────────────────────────────────────────
+      'trial_active_title': 'Prueba gratis de 2 días',
+      'trial_active_desc':
+          'Te quedan {time}. Al terminar sin un plan activo se eliminarán todos los datos.',
+      'trial_ended_title': 'Prueba finalizada',
+      'trial_ended_body':
+          'Tu prueba gratuita de 2 días terminó sin un plan activo, así que se eliminaron los datos guardados en este dispositivo.',
     },
     'en': {
       // ── Profile ───────────────────────────────────────────────────────────
@@ -3979,6 +3986,13 @@ class AppLocalizations {
       'rec_yearly': 'Yearly',
       'rec_empty_categories': 'No categories available.',
       'rec_empty_accounts': 'No accounts available.',
+      // ── Free trial ───────────────────────────────────────────────────────
+      'trial_active_title': '2-day free trial',
+      'trial_active_desc':
+          '{time} left. If the trial ends without an active plan, all your data will be deleted.',
+      'trial_ended_title': 'Trial ended',
+      'trial_ended_body':
+          'Your 2-day free trial ended without an active plan, so the data stored on this device was deleted.',
     },
     'fr': {
       // ── Profil ────────────────────────────────────────────────────────────
@@ -5983,6 +5997,13 @@ class AppLocalizations {
       'rec_yearly': 'Annuel',
       'rec_empty_categories': 'Aucune catégorie disponible.',
       'rec_empty_accounts': 'Aucun compte disponible.',
+      // ── Essai gratuit ────────────────────────────────────────────────────
+      'trial_active_title': 'Essai gratuit de 2 jours',
+      'trial_active_desc':
+          'Il reste {time}. Si l’essai se termine sans offre active, toutes vos données seront supprimées.',
+      'trial_ended_title': 'Essai terminé',
+      'trial_ended_body':
+          'Votre essai gratuit de 2 jours s’est terminé sans offre active : les données enregistrées sur cet appareil ont été supprimées.',
     },
   };
 

@@ -130,7 +130,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   void _openAiChat() {
     final provider = Provider.of<AppProvider>(context, listen: false);
-    if (!provider.aiChatEnabled) {
+    if (!provider.canUseAI || !provider.aiChatEnabled) {
       _showFeatureLocked();
       return;
     }

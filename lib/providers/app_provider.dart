@@ -4,27 +4,39 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:local_auth/local_auth.dart';
+
 import 'dart:convert';
+
 import '../services/widget_service.dart';
+
 import 'package:crypto/crypto.dart';
+
 import '../models/models.dart';
+
 import 'dart:async';
+
 import '../models/payment_method.dart';
 import '../services/notification_service.dart';
 import '../services/export_service.dart';
 import '../services/drive_service.dart';
 import '../services/ad_service.dart';
+
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
+
 import 'dart:io';
 import 'dart:ui' as ui;
+
 import '../services/backup_service.dart';
 import '../licences/apklis.dart';
 import '../licences/art_pay.dart';
 import '../licences/license_type.dart';
+import '../services/trial_service.dart';
 import '../services/app_icon_service.dart';
+
 import 'package:cashrapido/utils/number_format_utils.dart';
+
 import '../models/recurring_transaction.dart';
 import '../models/notification_item.dart';
 
@@ -184,14 +196,59 @@ class AppProvider with ChangeNotifier {
   LicenseType _licenseType = LicenseType.free;
   LicenseType get licenseType {
     if (!kIsWeb && Platform.isWindows) {
-      return LicenseType
-          .monthlyEnterprise; // Fully unlocked on Windows after MAC/Code Activation
+      return LicenseType.monthlyEnterprise; // Fully unlocked on Windows after MAC/Code Activation
     }
     return _licenseType;
   }
 
   DateTime? _licenseActivationDate;
   DateTime? get licenseActivationDate => _licenseActivationDate;
+
+  // --- Prueba gratuita de 48 h ---
+  //
+  // La ventana y el borrado viven en [TrialService]; aquí solo se expone el
+  // estado para la UI y para el gating de capacidades.
+  DateTime? _trialStart;
+  bool _trialExempt = false;
+  bool _trialWiped = false;
+
+  /// Momento en que empezó la prueba gratuita.
+  DateTime? get trialStartDate => _trialStart;
+
+  /// Momento en que termina la prueba gratuita.
+  DateTime? get trialEndsAt {
+    final DateTime? start = _trialStart;
+    return start == null ? null : TrialService.endsAt(start);
+  }
+
+  /// Instalaciones anteriores a la prueba: nunca se les borran los datos.
+  bool get isTrialExempt => _trialExempt;
+
+  /// `true` mientras la prueba de 48 h siga vigente.
+  bool get isTrialActive {
+    if (_trialExempt) return false;
+    final DateTime? start = _trialStart;
+    return start != null && TrialService.isWithinWindow(start);
+  }
+
+  /// Tiempo restante de prueba (cero si ya terminó).
+  Duration get trialRemaining {
+    final DateTime? start = _trialStart;
+    if (start == null) return Duration.zero;
+    return _trialExempt ? Duration.zero : TrialService.remaining(start);
+  }
+
+  /// `true` cuando la ventana de prueba ya pasó (haya o no plan).
+  bool get isTrialExpired => !_trialExempt && !isTrialActive;
+
+  /// `true` si los datos ya se borraron al terminar la prueba.
+  bool get trialDataWiped => _trialWiped;
+
+  /// Registra en memoria que el borrado por fin de prueba ya ocurrió.
+  void markTrialDataWiped() {
+    _trialWiped = true;
+    notifyListeners();
+  }
 
   /// Indica si hay una licencia **Empresarial vigente** (no vencida).
   ///
@@ -236,6 +293,11 @@ class AppProvider with ChangeNotifier {
 
     SharedPreferences.getInstance().then((prefs) {
       prefs.setInt('license_type', type.index);
+      if (type != LicenseType.free) {
+        // Plan adquirido durante la prueba: sus datos ya no se borran por
+        // fin de prueba, aunque el plan caduque más adelante.
+        prefs.setBool(TrialService.convertedKey, true);
+      }
       if (expirationDate != null) {
         prefs.setString(
           'license_expiration_date',
@@ -278,7 +340,7 @@ class AppProvider with ChangeNotifier {
 
   // Payment System
   // Change this variable to build for different regions
-  final bool _isCuba = false;
+  final bool _isCuba = true;
   bool get isCuba => _isCuba;
 
   List<PaymentMethod> get paymentMethods {
@@ -316,8 +378,7 @@ class AppProvider with ChangeNotifier {
         PaymentMethod(
           id: 'art_pay',
           name: 'Art-Pay (.lic)',
-          iconAsset:
-              'assets/icons/art_pay.png', // Fallback to Icons.payment if not found
+          iconAsset: 'assets/icons/art_pay.png', // Fallback to Icons.payment if not found
           isEnabled: false,
           isVisible: false,
         ),
@@ -369,8 +430,7 @@ class AppProvider with ChangeNotifier {
         PaymentMethod(
           id: 'art_pay',
           name: 'Art-Pay (.lic)',
-          iconAsset:
-              'assets/icons/art_pay.png', // Fallback to Icons.payment if not found
+          iconAsset: 'assets/icons/art_pay.png', // Fallback to Icons.payment if not found
           isEnabled: false,
           isVisible: false,
         ),
@@ -489,15 +549,20 @@ class AppProvider with ChangeNotifier {
 
   // Capability Getters
 
+  /// Durante la prueba gratuita de 48 h todo está desbloqueado **excepto**
+  /// IA, copias en Google Drive y copias de seguridad locales, que siguen
+  /// requiriendo un plan de pago.
+  bool get _trialUnlocked => isTrialActive;
+
   bool get isPremium {
     // For backward compatibility or general "Not Free" check
-    return _licenseType != LicenseType.free;
+    return _trialUnlocked || _licenseType != LicenseType.free;
   }
 
   // Specific Capabilities
 
   int get maxCards {
-    if (isPromoActive) return 999;
+    if (isPromoActive || _trialUnlocked) return 999;
     final level = _licenseType.level;
     switch (level) {
       case LicenseLevel.free:
@@ -524,70 +589,122 @@ class AppProvider with ChangeNotifier {
 
   // Features unlocked at PERSONAL level or higher
   bool get canTransfer =>
-      isPromoActive || _licenseType.level != LicenseLevel.free;
+      isPromoActive ||
+      _trialUnlocked ||
+      _licenseType.level != LicenseLevel.free;
   bool get canSecurizeCard =>
-      isPromoActive || _licenseType.level != LicenseLevel.free; // Lock/Limit
+      isPromoActive ||
+      _trialUnlocked ||
+      _licenseType.level != LicenseLevel.free; // Lock/Limit
   bool get canViewDetailedStats =>
       isPromoActive ||
+      _trialUnlocked ||
       _licenseType.level != LicenseLevel.free; // Day/Week/Year/Range
   bool get canChangePassword =>
-      isPromoActive || _licenseType.level != LicenseLevel.free;
+      isPromoActive ||
+      _trialUnlocked ||
+      _licenseType.level != LicenseLevel.free;
   bool get canAddCurrency =>
-      isPromoActive || _licenseType.level != LicenseLevel.free;
+      isPromoActive ||
+      _trialUnlocked ||
+      _licenseType.level != LicenseLevel.free;
   bool get canImportData =>
-      isPromoActive || _licenseType.level != LicenseLevel.free;
+      isPromoActive ||
+      _trialUnlocked ||
+      _licenseType.level != LicenseLevel.free;
 
   // Features locked at Pro level or higher
   bool get canExportData =>
-      isPromoActive || _licenseType.level.index >= LicenseLevel.pro.index;
+      isPromoActive ||
+      _trialUnlocked ||
+      _licenseType.level.index >= LicenseLevel.pro.index;
+
+  /// Copias de seguridad locales: siguen siendo de pago incluso durante la
+  /// prueba gratuita. Las desbloquea cualquier plan de pago vigente.
+  bool get canBackupLocal => licenseType.isPaid;
+
+  // Fuera de la prueba: IA y Google Drive siguen siendo de pago.
   bool get canSyncDrive =>
       isPromoActive || _licenseType.level == LicenseLevel.enterprise;
   bool get canUseAI =>
       isPromoActive || _licenseType.level == LicenseLevel.enterprise;
+
   bool get canUseBiometrics =>
-      isPromoActive || _licenseType.level == LicenseLevel.enterprise;
+      isPromoActive ||
+      _trialUnlocked ||
+      _licenseType.level == LicenseLevel.enterprise;
 
   // Enterprise Only
   bool get canUseScanner =>
-      isPromoActive || _licenseType.level == LicenseLevel.enterprise;
+      isPromoActive ||
+      _trialUnlocked ||
+      _licenseType.level == LicenseLevel.enterprise;
   bool get canUseMoreActions =>
-      isPromoActive || _licenseType.level == LicenseLevel.enterprise;
+      isPromoActive ||
+      _trialUnlocked ||
+      _licenseType.level == LicenseLevel.enterprise;
   bool get canExportPDF =>
-      isPromoActive || _licenseType.level == LicenseLevel.enterprise;
+      isPromoActive ||
+      _trialUnlocked ||
+      _licenseType.level == LicenseLevel.enterprise;
 
   // Features locked at Pro level or higher
   bool get canChangeCardPIN =>
-      isPromoActive || _licenseType.level.index >= LicenseLevel.pro.index;
+      isPromoActive ||
+      _trialUnlocked ||
+      _licenseType.level.index >= LicenseLevel.pro.index;
   bool get canChangeAppPIN =>
-      isPromoActive || _licenseType.level.index >= LicenseLevel.pro.index;
+      isPromoActive ||
+      _trialUnlocked ||
+      _licenseType.level.index >= LicenseLevel.pro.index;
   bool get canCreateCategory =>
-      isPromoActive || _licenseType.level.index >= LicenseLevel.pro.index;
+      isPromoActive ||
+      _trialUnlocked ||
+      _licenseType.level.index >= LicenseLevel.pro.index;
   bool get canFilterStatsAccount =>
-      isPromoActive || _licenseType.level.index >= LicenseLevel.pro.index;
+      isPromoActive ||
+      _trialUnlocked ||
+      _licenseType.level.index >= LicenseLevel.pro.index;
   bool get canFilterStatsByIndividualAccount =>
-      isPromoActive || _licenseType.level == LicenseLevel.enterprise;
+      isPromoActive ||
+      _trialUnlocked ||
+      _licenseType.level == LicenseLevel.enterprise;
   bool get canReorderCards =>
-      isPromoActive || _licenseType.level.index >= LicenseLevel.pro.index;
+      isPromoActive ||
+      _trialUnlocked ||
+      _licenseType.level.index >= LicenseLevel.pro.index;
   bool get canManageBanks =>
-      isPromoActive || _licenseType.level.index >= LicenseLevel.pro.index;
+      isPromoActive ||
+      _trialUnlocked ||
+      _licenseType.level.index >= LicenseLevel.pro.index;
   bool get canExportExcel =>
-      isPromoActive || _licenseType.level.index >= LicenseLevel.pro.index;
+      isPromoActive ||
+      _trialUnlocked ||
+      _licenseType.level.index >= LicenseLevel.pro.index;
   bool get canCustomizeCharts =>
-      isPromoActive || _licenseType.level == LicenseLevel.enterprise;
+      isPromoActive ||
+      _trialUnlocked ||
+      _licenseType.level == LicenseLevel.enterprise;
 
   // New Feature: TransferMovil Integration (Personal or higher)
   bool _transferMovilEnabled = false;
   bool get transferMovilEnabled => _transferMovilEnabled;
 
   bool get canUseTransferMovil =>
-      isPromoActive || _licenseType.level.index >= LicenseLevel.personal.index;
+      isPromoActive ||
+      _trialUnlocked ||
+      _licenseType.level.index >= LicenseLevel.personal.index;
 
   // Widgets (Enterprise Only)
   bool get canUseWidgets =>
-      isPromoActive || _licenseType.level == LicenseLevel.enterprise;
+      isPromoActive ||
+      _trialUnlocked ||
+      _licenseType.level == LicenseLevel.enterprise;
 
   bool get canUseBusinessModule =>
-      isPromoActive || _licenseType.level == LicenseLevel.enterprise;
+      isPromoActive ||
+      _trialUnlocked ||
+      _licenseType.level == LicenseLevel.enterprise;
 
   Future<void> setTransferMovilEnabled(bool enabled) async {
     if (enabled && !canUseTransferMovil) {
@@ -681,13 +798,14 @@ class AppProvider with ChangeNotifier {
       // Ensure Default Categories exist
       await _seedDefaultCategories();
 
-      // Initialize Default Wallet if empty (Optional, for easy start)
-      if (_cardBox.isEmpty) {
-        await _seedDefaultCards();
-      }
-
-      if (_cardBox.isEmpty) {
-        await _seedDefaultCards();
+      // Clean up legacy unconfigured default card if user has no transactions
+      if (_transactionBox.isEmpty && _cardBox.length == 1) {
+        final onlyCard = _cardBox.values.first;
+        if (onlyCard.name == 'Efectivo' &&
+            onlyCard.cardNumber == '0000' &&
+            onlyCard.balance == 0.0) {
+          await _cardBox.clear();
+        }
       }
 
       final prefs = await SharedPreferences.getInstance();
@@ -801,6 +919,15 @@ class AppProvider with ChangeNotifier {
 
       // Check Expiration
       _checkLicenseExpiration();
+
+      // Estado de la prueba gratuita (la ventana y el posible borrado se
+      // resolvieron en `TrialService.enforceAtStartup` antes de abrir Hive).
+      final String? trialStartRaw = prefs.getString(TrialService.startKey);
+      _trialStart = trialStartRaw == null
+          ? DateTime.now()
+          : DateTime.tryParse(trialStartRaw) ?? DateTime.now();
+      _trialExempt = prefs.getBool(TrialService.exemptKey) ?? false;
+      _trialWiped = prefs.getBool(TrialService.wipedKey) ?? false;
 
       // Aplica el icono de la app según la licencia vigente y la elección
       // guardada (el estacional y el restablecimiento por vencimiento viven
@@ -1195,7 +1322,12 @@ class AppProvider with ChangeNotifier {
   /// Update widgets with current main card balance and stats
   Future<void> _updateWidgetsIfNeeded() async {
     try {
-      if (_cards.isEmpty) return;
+      if (_cards.isEmpty) {
+        // Sin cuentas (por ejemplo, tras el borrado de fin de prueba) el
+        // widget no debe seguir mostrando saldos que ya no existen.
+        await WidgetService.updateAllWidgets(0, _mainCurrency);
+        return;
+      }
 
       // Find main card (first card or explicitly marked main)
       final mainCard = _cards.first;
@@ -1754,19 +1886,6 @@ class AppProvider with ChangeNotifier {
     _categories = _categoryBox.values.toList().cast<Category>();
   }
 
-  Future<void> _seedDefaultCards() async {
-    // Add a default CUP card
-    final card = AccountCard(
-      id: _uuid.v4(),
-      name: 'Efectivo',
-      balance: 0.0,
-      currency: 'CUP',
-      cardNumber: '0000',
-      expiryDate: 'N/A',
-      colorValue: 0xFF4CAF50,
-    );
-    await _cardBox.add(card);
-  }
 
   // --- Getters ---
 
@@ -2299,6 +2418,9 @@ class AppProvider with ChangeNotifier {
   final BackupService _backupService = BackupService();
 
   Future<void> backupToLocal() async {
+    if (!canBackupLocal) {
+      throw Exception('Las copias de seguridad requieren un plan de pago.');
+    }
     try {
       final file = await _backupService.createBackup();
       await Share.shareXFiles([
@@ -2316,6 +2438,9 @@ class AppProvider with ChangeNotifier {
   /// canceló el selector de archivos. Antes devolvía `void` y la pantalla de
   /// Ajustes mostraba "restauración correcta" incluso al cancelar.
   Future<bool> restoreFromLocal() async {
+    if (!canBackupLocal) {
+      throw Exception('Las copias de seguridad requieren un plan de pago.');
+    }
     try {
       // Pick file
       FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -2392,7 +2517,6 @@ class AppProvider with ChangeNotifier {
     }
 
     await _seedDefaultCategories();
-    await _seedDefaultCards();
 
     _fetchData();
     notifyListeners();

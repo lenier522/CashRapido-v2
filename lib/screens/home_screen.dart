@@ -106,6 +106,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHeader(context, provider),
+                  if (provider.isTrialActive) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    _buildTrialBanner(context, provider),
+                  ],
                   const SizedBox(height: AppSpacing.xxl),
                   _buildBalanceCard(context, provider),
                   const SizedBox(height: AppSpacing.xxl),
@@ -180,6 +184,59 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ],
     );
+  }
+
+  /// Recordatorio de la prueba gratuita de 48 h.
+  ///
+  /// Mientras la prueba siga activa se muestra el tiempo restante y se avisa
+  /// de que, al terminar sin un plan, los datos se eliminarán.
+  Widget _buildTrialBanner(BuildContext context, AppProvider provider) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+
+    return CashCard(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const LicensesScreen()),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.timer_outlined, size: 20, color: AppColors.orange),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              '${context.t('trial_active_title')} · '
+              '${_formatTrialRemaining(provider.trialRemaining)}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimary,
+              ),
+            ),
+          ),
+          Icon(
+            Icons.chevron_right_rounded,
+            size: 20,
+            color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Texto corto del tiempo restante de prueba, p. ej. «46 h 12 min».
+  String _formatTrialRemaining(Duration remaining) {
+    if (remaining.inMinutes <= 0) return '0 min';
+    final int hours = remaining.inHours;
+    final int minutes = remaining.inMinutes % 60;
+    return hours == 0 ? '$minutes min' : '$hours h $minutes min';
   }
 
   /// Cuenta de Google Drive en la barra superior de Inicio.

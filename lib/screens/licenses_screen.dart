@@ -445,9 +445,55 @@ class _LicensesScreenState extends State<LicensesScreen> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                context.t('current_license_free'),
-                style: GoogleFonts.outfit(color: Colors.white70, fontSize: 13),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (provider.isTrialActive) ...[
+                    Text(
+                      context.t('trial_active_title'),
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      context.t('trial_active_desc').replaceAll(
+                        '{time}',
+                        _formatTrialRemaining(provider.trialRemaining),
+                      ),
+                      style: GoogleFonts.outfit(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ] else if (provider.trialDataWiped) ...[
+                    Text(
+                      context.t('trial_ended_title'),
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      context.t('trial_ended_body'),
+                      style: GoogleFonts.outfit(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ] else
+                    Text(
+                      context.t('current_license_free'),
+                      style: GoogleFonts.outfit(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
+                    ),
+                ],
               ),
             ),
           ],
@@ -567,6 +613,14 @@ class _LicensesScreenState extends State<LicensesScreen> {
       default:
         return [];
     }
+  }
+
+  /// Texto corto del tiempo restante de prueba, p. ej. «46 h 12 min».
+  String _formatTrialRemaining(Duration remaining) {
+    if (remaining.inMinutes <= 0) return '0 min';
+    final int hours = remaining.inHours;
+    final int minutes = remaining.inMinutes % 60;
+    return hours == 0 ? '$minutes min' : '$hours h $minutes min';
   }
 
   String _formatDate(DateTime date) {

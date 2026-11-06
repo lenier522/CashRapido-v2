@@ -71,30 +71,40 @@ class CashButton extends StatelessWidget {
         ),
       );
     } else if (icon != null) {
-      buttonContent = Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          icon!,
-          const SizedBox(width: AppSpacing.sm),
-          // Flexible para que una etiqueta larga con fuente alternativa o con
-          // escala de texto grande se recorte en vez de desbordar el botón.
-          Flexible(
-            child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-          ),
-        ],
+      buttonContent = FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            icon!,
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              label,
+              maxLines: 1,
+              softWrap: false,
+            ),
+          ],
+        ),
       );
     } else {
-      buttonContent = Text(label, maxLines: 1, overflow: TextOverflow.ellipsis);
+      buttonContent = FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          label,
+          maxLines: 1,
+          softWrap: false,
+        ),
+      );
     }
 
     final ButtonStyle style = FilledButton.styleFrom(
       backgroundColor: backgroundColor,
       foregroundColor: foregroundColor,
-      minimumSize: Size(0, height),
+      minimumSize: Size(fullWidth ? 0 : 120, height),
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xxl,
-        vertical: AppSpacing.md,
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
       ),
       shape: const RoundedRectangleBorder(borderRadius: AppRadius.radiusLg),
       side: borderColor == null
