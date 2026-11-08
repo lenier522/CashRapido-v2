@@ -42,6 +42,8 @@ import 'package:cashrapido/utils/number_format_utils.dart';
 
 import '../models/recurring_transaction.dart';
 import '../models/notification_item.dart';
+import '../services/changelog_service.dart';
+import '../services/app_info.dart';
 
 /// Representación fuera de línea del perfil de Google de la sesión anterior.
 ///
@@ -349,7 +351,7 @@ class AppProvider with ChangeNotifier {
 
   // Payment System
   // Change this variable to build for different regions
-  final bool _isCuba = true;
+  final bool _isCuba = false;
   bool get isCuba => _isCuba;
 
   List<PaymentMethod> get paymentMethods {
@@ -1024,6 +1026,38 @@ class AppProvider with ChangeNotifier {
 
     // 4. Reconexión silenciosa de Google Drive (no bloquea, timeout 4s)
     await _restoreDriveSession();
+
+    // 5. Detectar versión nueva y crear notificación interna
+    await _checkNewVersionNotification(prefs);
+  }
+
+  /// Compara la versión actual con la última vista.
+  /// Si es diferente, crea una notificación en la bandeja interna de la app.
+  Future<void> _checkNewVersionNotification(SharedPreferences prefs) async {
+    try {
+      const seenKey = 'last_seen_changelog_version';
+      final lastSeen = prefs.getString(seenKey);
+      final current = AppInfo.version;
+
+      if (lastSeen == current) return; // misma versión, nada que hacer
+
+      // Leer el changelog y obtener la entrada de la versión actual
+      final entry = await ChangelogService.entryFor(current);
+      if (entry == null) return;
+
+      final changesSummary = entry.changes.take(5).map((c) => '• $c').join('\n');
+
+      await addNotificationItem(
+        title: '🎉 CashRapido ${AppInfo.version} disponible',
+        body: changesSummary.isNotEmpty
+            ? changesSummary
+            : 'Nueva versión instalada. Revisa las novedades.',
+      );
+
+      await prefs.setString(seenKey, current);
+    } catch (e) {
+      if (kDebugMode) print('Error checking new version: $e');
+    }
   }
 
   /// Recarga las listas desde Hive tras recuperar la copia de la nube.

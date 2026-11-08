@@ -109,6 +109,7 @@ flutter:
     - assets/icons/app_icons/
     - assets/onboarding/
     - .env
+    - CHANGELOG.md
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
