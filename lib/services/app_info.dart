@@ -1,24 +1,44 @@
+import 'package:package_info_plus/package_info_plus.dart';
+
 /// Datos identificativos de la aplicación, centralizados.
 ///
-/// La versión debe coincidir con `version` de `pubspec.yaml`. Antes vivía
-/// repetida en distintas pantallas; aquí queda una sola fuente de verdad para
-/// los pies de página, «Acerca de», licencias e información legal.
+/// Obtiene dinámicamente la información real del paquete mediante
+/// `package_info_plus`, manteniéndose siempre sincronizado con `pubspec.yaml`
+/// y con el archivo APK instalado.
 abstract final class AppInfo {
-  /// Nombre comercial de la aplicación.
-  static const String name = 'CashRapido';
-
-  /// Identificador del paquete en las tiendas.
-  static const String packageId = 'cu.lenier.cashrapido';
-
-  /// Versión visible (debe coincidir con `pubspec.yaml`).
-  static const String version = '1.26.60';
-
-  /// Número de compilación (debe coincidir con `pubspec.yaml`).
-  static const String buildNumber = '34070185';
+  static String _name = 'CashRapido';
+  static String _packageId = 'cu.lenier.cashrapido';
+  static String _version = '1.26.62';
+  static String _buildNumber = '34070187';
 
   /// Autor de la aplicación.
   static const String developer = 'Lenier Cruz Perez';
 
+  /// Inicializa los datos de versión dinámicamente desde la plataforma.
+  static Future<void> initialize() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (info.appName.isNotEmpty) _name = info.appName;
+      if (info.packageName.isNotEmpty) _packageId = info.packageName;
+      if (info.version.isNotEmpty) _version = info.version;
+      if (info.buildNumber.isNotEmpty) _buildNumber = info.buildNumber;
+    } catch (_) {
+      // Si falla (ej. entorno de pruebas o escritorio), mantiene los valores por defecto
+    }
+  }
+
+  /// Nombre comercial de la aplicación.
+  static String get name => _name;
+
+  /// Identificador del paquete en las tiendas.
+  static String get packageId => _packageId;
+
+  /// Versión visible (debe coincidir con la instalada).
+  static String get version => _version;
+
+  /// Número de compilación.
+  static String get buildNumber => _buildNumber;
+
   /// Versión completa lista para mostrar.
-  static const String fullVersion = '$version+$buildNumber';
+  static String get fullVersion => '$_version+$_buildNumber';
 }

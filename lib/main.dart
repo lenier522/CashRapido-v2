@@ -34,6 +34,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:intl/date_symbol_data_local.dart';
 
+import 'services/app_info.dart';
 import 'services/cloud_sync_service.dart';
 import 'services/localization_service.dart';
 import 'services/supabase_service.dart';
@@ -46,6 +47,7 @@ import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AppInfo.initialize();
   await Hive.initFlutter();
   await initializeDateFormatting('es', null);
   await dotenv.load(fileName: ".env");

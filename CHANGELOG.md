@@ -8,7 +8,13 @@
   - Este archivo se lee directamente desde la app: respeta el formato exacto.
 -->
 
-## [1.26.60] – 2026-11-08
+## [1.26.62] – 2026-11-08
+
+- Mejoras de rendimiento
+- Correccion de errores
+
+
+## [1.26.60] – 2026-11-01
 
 - Foto del desarrollador en la página web.
 - Mejoras de navegación móvil en el sitio web.
@@ -27,3 +33,4 @@
 - Soporte multimoneda y tasas de cambio.
 - Recordatorios y notificaciones programadas.
 - Modo oscuro y personalización de icono.
+
