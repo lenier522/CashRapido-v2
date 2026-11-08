@@ -291,6 +291,7 @@ class AppLocalizations {
       'feat_export_import_desc': 'Genera respaldos o restaura una copia',
       'feat_backup': 'Copia de seguridad en la nube',
       'feat_backup_desc': 'Sincroniza con Google Drive',
+      'feat_requires_license': 'Requiere licencia',
       'feat_licenses': 'Licencias',
       'feat_licenses_desc': 'Consulta, activa o renueva tu licencia',
 
@@ -2321,6 +2322,7 @@ class AppLocalizations {
       'feat_export_import_desc': 'Generate backups or restore a copy',
       'feat_backup': 'Cloud backup',
       'feat_backup_desc': 'Sync with Google Drive',
+      'feat_requires_license': 'Requires license',
       'feat_licenses': 'Licenses',
       'feat_licenses_desc': 'Check, activate or renew your license',
 
@@ -4350,6 +4352,7 @@ class AppLocalizations {
           'Générez des sauvegardes ou restaurez une copie',
       'feat_backup': 'Sauvegarde cloud',
       'feat_backup_desc': 'Synchroniser avec Google Drive',
+      'feat_requires_license': 'Nécessite une licence',
       'feat_licenses': 'Licences',
       'feat_licenses_desc': 'Consultez, activez ou renouvelez votre licence',
 

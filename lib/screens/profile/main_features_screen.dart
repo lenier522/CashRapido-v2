@@ -235,9 +235,19 @@ class MainFeaturesScreen extends StatelessWidget {
                 CashNavRow(
                   icon: Icons.cloud_outlined,
                   title: context.t('feat_backup'),
-                  subtitle: context.t('feat_backup_desc'),
-                  onTap: () =>
-                      pushProfileScreen(context, const GoogleDriveScreen()),
+                  subtitle: provider.canSyncDrive
+                      ? context.t('feat_backup_desc')
+                      : '${context.t('feat_backup_desc')} • ${context.t('feat_requires_license')}',
+                  trailing: provider.canSyncDrive
+                      ? null
+                      : Icon(
+                          Icons.lock_rounded,
+                          size: 18,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AppColors.textTertiaryDark
+                              : AppColors.textTertiary,
+                        ),
+                  onTap: () => _openCloudBackup(context, provider),
                 ),
                 CashNavRow(
                   icon: Icons.workspace_premium_outlined,
@@ -267,6 +277,14 @@ class MainFeaturesScreen extends StatelessWidget {
       backgroundColor: Colors.transparent,
       builder: (_) => AddTransactionModal(startAsExpense: expense),
     );
+  }
+
+  void _openCloudBackup(BuildContext context, AppProvider provider) {
+    if (!provider.canSyncDrive) {
+      showFeatureLockedDialog(context);
+      return;
+    }
+    pushProfileScreen(context, const GoogleDriveScreen());
   }
 
   void _openAi(BuildContext context, AppProvider provider) {
