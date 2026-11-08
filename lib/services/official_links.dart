@@ -18,7 +18,7 @@ abstract final class OfficialLinks {
   static const String community = 'https://t.me/cashrapido26';
 
   /// Instagram oficial.
-  static const String instagram = 'https://instagram.com/cashrapido23';
+  static const String instagram = 'https://instagram.com/cashrapido02';
 
   /// Redes todavía no configuradas por el proyecto.
   ///
