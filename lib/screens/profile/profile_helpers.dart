@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 
 import '../../licences/license_type.dart';
+import '../../services/cloud_sync_service.dart';
 import '../../services/localization_service.dart';
 import '../../services/official_links.dart';
+import '../../services/supabase_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
 import '../../widgets/design/cash_button.dart';
@@ -39,6 +43,41 @@ String licenseLabel(BuildContext context, LicenseType type) {
 /// Navega a [screen] con una ruta estándar.
 Future<void> pushProfileScreen(BuildContext context, Widget screen) {
   return Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+}
+
+/// Conecta la cuenta de Google del usuario.
+///
+/// Es la única autenticación de la app: crea/restaura la sesión de Supabase y
+/// deja la misma cuenta lista para Google Drive. Devuelve `true` si quedó
+/// conectada y avisa al usuario si canceló o falló.
+Future<bool> connectGoogleAccount(BuildContext context) async {
+  try {
+    await SupabaseService.signInWithGoogle();
+    // La cuenta recién conectada guarda su paquete sin esperar a la siguiente
+    // edición; si falla (sin red), la sincronización automática lo reintenta.
+    unawaited(CloudSyncService.pushNow());
+    return true;
+  } on SupabaseAuthException catch (e) {
+    if (context.mounted) {
+      final String key = switch (e.code) {
+        'not_configured' => 'google_login_not_configured',
+        'offline' => 'google_login_offline',
+        'cancelled' => 'google_login_cancelled',
+        _ => 'google_login_error',
+      };
+      if (e.code == 'cancelled') {
+        CashSnack.info(context, context.t(key));
+      } else {
+        CashSnack.error(context, context.t(key));
+      }
+    }
+    return false;
+  } catch (_) {
+    if (context.mounted) {
+      CashSnack.error(context, context.t('google_login_error'));
+    }
+    return false;
+  }
 }
 
 /// Muestra el aviso de función bloqueada con acceso a la pantalla de licencias.
@@ -92,7 +131,11 @@ Future<void> openOfficialEmail(
   String? subject,
   String? body,
 }) async {
-  final bool ok = await LinkLauncher.email(to: to, subject: subject, body: body);
+  final bool ok = await LinkLauncher.email(
+    to: to,
+    subject: subject,
+    body: body,
+  );
   if (!ok && context.mounted) {
     CashSnack.error(context, context.t('link_open_error'));
   }

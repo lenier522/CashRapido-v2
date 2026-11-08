@@ -1,8 +1,12 @@
 import 'dart:convert';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+
+import '../services/cloud_sync_service.dart';
+
 import '../models/business.dart';
 import '../models/product.dart';
 import '../models/product_category.dart';
@@ -62,7 +66,9 @@ class BusinessProvider with ChangeNotifier {
   // Get data for active business only
   List<ProductCategory> get productCategories => _activeBusinessId == null
       ? []
-      : _productCategories.where((c) => c.businessId == _activeBusinessId).toList();
+      : _productCategories
+            .where((c) => c.businessId == _activeBusinessId)
+            .toList();
 
   List<Product> get products => _activeBusinessId == null
       ? []
@@ -86,7 +92,9 @@ class BusinessProvider with ChangeNotifier {
 
   List<SellerInventory> get sellerInventory => _activeBusinessId == null
       ? []
-      : _sellerInventory.where((si) => si.businessId == _activeBusinessId).toList();
+      : _sellerInventory
+            .where((si) => si.businessId == _activeBusinessId)
+            .toList();
 
   List<SellerInventory> getSellerInventoryBySeller(String sellerId) {
     return sellerInventory.where((si) => si.sellerId == sellerId).toList();
@@ -109,9 +117,23 @@ class BusinessProvider with ChangeNotifier {
     _saleBox = await Hive.openBox<Sale>('sales');
     _expenseBox = await Hive.openBox<BusinessExpense>('business_expenses');
     _closingBox = await Hive.openBox<Closing>('closings');
-    _productCategoryBox = await Hive.openBox<ProductCategory>('product_categories');
+    _productCategoryBox = await Hive.openBox<ProductCategory>(
+      'product_categories',
+    );
     _sellerBox = await Hive.openBox<Seller>('sellers');
-    _sellerInventoryBox = await Hive.openBox<SellerInventory>('seller_inventory');
+    _sellerInventoryBox = await Hive.openBox<SellerInventory>(
+      'seller_inventory',
+    );
+    CloudSyncService.registerBoxes(<String, Box<dynamic>>{
+      'businesses': _businessBox,
+      'products': _productBox,
+      'sales': _saleBox,
+      'business_expenses': _expenseBox,
+      'closings': _closingBox,
+      'product_categories': _productCategoryBox,
+      'sellers': _sellerBox,
+      'seller_inventory': _sellerInventoryBox,
+    });
 
     final prefs = await SharedPreferences.getInstance();
     _mainCurrency = prefs.getString('main_currency') ?? 'CUP';
@@ -119,7 +141,9 @@ class BusinessProvider with ChangeNotifier {
     if (ratesJson != null) {
       try {
         final decoded = jsonDecode(ratesJson) as Map<String, dynamic>;
-        _exchangeRates = decoded.map((key, value) => MapEntry(key, (value as num).toDouble()));
+        _exchangeRates = decoded.map(
+          (key, value) => MapEntry(key, (value as num).toDouble()),
+        );
       } catch (e) {
         _exchangeRates = {};
       }
@@ -134,6 +158,12 @@ class BusinessProvider with ChangeNotifier {
 
     _fetchData();
     _isLoading = false;
+    notifyListeners();
+  }
+
+  /// Recarga las listas desde Hive tras recuperar la copia de la nube.
+  void refreshFromBoxes() {
+    _fetchData();
     notifyListeners();
   }
 
@@ -178,16 +208,17 @@ class BusinessProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  double convertAmount(double amount, String currency) => _convertAmount(amount, currency);
+  double convertAmount(double amount, String currency) =>
+      _convertAmount(amount, currency);
 
   double _convertAmount(double amount, String currency) {
     if (currency == _mainCurrency) return amount;
-    
+
     final rateToMain = _exchangeRates[currency];
     if (rateToMain != null && rateToMain > 0) {
       return amount * rateToMain;
     }
-    
+
     return amount;
   }
 
@@ -635,7 +666,10 @@ class BusinessProvider with ChangeNotifier {
 
   double getTotalAssignedQuantityForProduct(String productId) {
     return _sellerInventory
-        .where((si) => si.productId == productId && si.businessId == _activeBusinessId)
+        .where(
+          (si) =>
+              si.productId == productId && si.businessId == _activeBusinessId,
+        )
         .fold<double>(0.0, (sum, si) => sum + si.assignedQuantity);
   }
 
@@ -643,7 +677,12 @@ class BusinessProvider with ChangeNotifier {
     final product = getProductById(productId);
     if (product == null) return 0.0;
     final assignedToOthers = _sellerInventory
-        .where((si) => si.productId == productId && si.sellerId != sellerId && si.businessId == _activeBusinessId)
+        .where(
+          (si) =>
+              si.productId == productId &&
+              si.sellerId != sellerId &&
+              si.businessId == _activeBusinessId,
+        )
         .fold<double>(0.0, (sum, si) => sum + si.assignedQuantity);
     final maxAllowed = product.currentStock - assignedToOthers;
     return maxAllowed > 0 ? maxAllowed : 0.0;
@@ -660,9 +699,9 @@ class BusinessProvider with ChangeNotifier {
     final maxAssignable = getMaxAssignableToSeller(productId, sellerId);
     final safeQty = quantity > maxAssignable ? maxAssignable : quantity;
 
-    final existing = _sellerInventory.where(
-      (si) => si.sellerId == sellerId && si.productId == productId,
-    ).toList();
+    final existing = _sellerInventory
+        .where((si) => si.sellerId == sellerId && si.productId == productId)
+        .toList();
 
     if (existing.isNotEmpty) {
       final updated = SellerInventory(
@@ -679,7 +718,9 @@ class BusinessProvider with ChangeNotifier {
       );
       if (key != null) {
         await _sellerInventoryBox.put(key, updated);
-        final idx = _sellerInventory.indexWhere((si) => si.id == existing.first.id);
+        final idx = _sellerInventory.indexWhere(
+          (si) => si.id == existing.first.id,
+        );
         if (idx != -1) _sellerInventory[idx] = updated;
       }
     } else {
@@ -713,7 +754,11 @@ class BusinessProvider with ChangeNotifier {
     }
   }
 
-  Map<String, double> calculateSellerSales(String sellerId, DateTime start, DateTime end) {
+  Map<String, double> calculateSellerSales(
+    String sellerId,
+    DateTime start,
+    DateTime end,
+  ) {
     final periodSales = _sales.where(
       (s) =>
           s.sellerId == sellerId &&
@@ -726,9 +771,11 @@ class BusinessProvider with ChangeNotifier {
   }
 
   double getSellerTotalSales(String sellerId) {
-    return _sales.where(
-      (s) => s.sellerId == sellerId && s.businessId == _activeBusinessId,
-    ).fold<double>(0.0, (sum, s) => sum + s.total);
+    return _sales
+        .where(
+          (s) => s.sellerId == sellerId && s.businessId == _activeBusinessId,
+        )
+        .fold<double>(0.0, (sum, s) => sum + s.total);
   }
 
   /// Valor del inventario que le queda actualmente al vendedor por vender (stock actual en mano).
@@ -772,7 +819,10 @@ class BusinessProvider with ChangeNotifier {
   }) async {
     if (_activeBusinessId == null) return;
 
-    final subtotal = items.fold<double>(0.0, (sum, item) => sum + item.subtotal);
+    final subtotal = items.fold<double>(
+      0.0,
+      (sum, item) => sum + item.subtotal,
+    );
     final total = (subtotal - discount) > 0 ? (subtotal - discount) : 0.0;
 
     final sale = Sale(
@@ -805,9 +855,11 @@ class BusinessProvider with ChangeNotifier {
     // Deduct from seller's assigned inventory
     if (sellerId != null) {
       for (var item in items) {
-        final existing = _sellerInventory.where(
-          (si) => si.sellerId == sellerId && si.productId == item.productId,
-        ).toList();
+        final existing = _sellerInventory
+            .where(
+              (si) => si.sellerId == sellerId && si.productId == item.productId,
+            )
+            .toList();
         if (existing.isNotEmpty) {
           final inv = existing.first;
           final remaining = inv.assignedQuantity - item.quantity;
@@ -827,7 +879,10 @@ class BusinessProvider with ChangeNotifier {
 
     // Deposit to personal account if requested or if business has linked card
     final effectiveCardId = cardId ?? linkedCardId;
-    if (effectiveCardId != null && appProvider != null && status == 'paid' && total > 0) {
+    if (effectiveCardId != null &&
+        appProvider != null &&
+        status == 'paid' &&
+        total > 0) {
       final activeBiz = activeBusiness;
       final currency = activeBiz?.currency ?? appProvider.mainCurrency;
       final productNames = items.map((i) => i.productName).join(', ');
@@ -850,7 +905,8 @@ class BusinessProvider with ChangeNotifier {
     String? depositCardId,
     AppProvider? appProvider,
   }) async {
-    if (_activeBusinessId == null) return {'success': false, 'error': 'No active business'};
+    if (_activeBusinessId == null)
+      return {'success': false, 'error': 'No active business'};
 
     final sellerId = closingData['sellerId'] as String?;
     final sellerName = (closingData['sellerName'] as String?) ?? 'Vendedor';
@@ -868,17 +924,25 @@ class BusinessProvider with ChangeNotifier {
       if (_sales.any((existing) => existing.id == saleId)) continue;
 
       final itemsRaw = (s['items'] as List<dynamic>?) ?? [];
-      final items = itemsRaw.map((it) => SaleItem(
-        productId: it['productId'] as String,
-        productName: it['productName'] as String,
-        quantity: (it['quantity'] as num).toDouble(),
-        unitPrice: (it['unitPrice'] as num).toDouble(),
-        subtotal: (it['subtotal'] as num).toDouble(),
-      )).toList();
+      final items = itemsRaw
+          .map(
+            (it) => SaleItem(
+              productId: it['productId'] as String,
+              productName: it['productName'] as String,
+              quantity: (it['quantity'] as num).toDouble(),
+              unitPrice: (it['unitPrice'] as num).toDouble(),
+              subtotal: (it['subtotal'] as num).toDouble(),
+            ),
+          )
+          .toList();
 
-      final saleTotal = (s['total'] as num?)?.toDouble() ?? items.fold<double>(0.0, (sum, i) => sum + i.subtotal);
+      final saleTotal =
+          (s['total'] as num?)?.toDouble() ??
+          items.fold<double>(0.0, (sum, i) => sum + i.subtotal);
       final paymentMethod = (s['paymentMethod'] as String?) ?? 'Efectivo';
-      final saleDate = s['date'] != null ? DateTime.parse(s['date'] as String) : DateTime.now();
+      final saleDate = s['date'] != null
+          ? DateTime.parse(s['date'] as String)
+          : DateTime.now();
       final discount = (s['discount'] as num?)?.toDouble() ?? 0.0;
       final clientName = s['clientName'] as String?;
       final status = (s['status'] as String?) ?? 'paid';
@@ -903,13 +967,16 @@ class BusinessProvider with ChangeNotifier {
       totalIncome += saleTotal;
 
       // Track payment methods and sold items for closing metrics
-      paymentMethodsMap[paymentMethod] = (paymentMethodsMap[paymentMethod] ?? 0.0) + saleTotal;
+      paymentMethodsMap[paymentMethod] =
+          (paymentMethodsMap[paymentMethod] ?? 0.0) + saleTotal;
       for (final item in items) {
         if (soldProductsMap.containsKey(item.productId)) {
           soldProductsMap[item.productId]!['qty'] =
-              (soldProductsMap[item.productId]!['qty'] as double) + item.quantity;
+              (soldProductsMap[item.productId]!['qty'] as double) +
+              item.quantity;
           soldProductsMap[item.productId]!['revenue'] =
-              (soldProductsMap[item.productId]!['revenue'] as double) + item.subtotal;
+              (soldProductsMap[item.productId]!['revenue'] as double) +
+              item.subtotal;
         } else {
           soldProductsMap[item.productId] = {
             'name': item.productName,
@@ -924,7 +991,10 @@ class BusinessProvider with ChangeNotifier {
         final prodIdx = _products.indexWhere((p) => p.id == item.productId);
         if (prodIdx != -1) {
           final product = _products[prodIdx];
-          final newStock = (product.currentStock - item.quantity).clamp(0.0, double.infinity);
+          final newStock = (product.currentStock - item.quantity).clamp(
+            0.0,
+            double.infinity,
+          );
           await updateStock(product.id, newStock);
         }
       }
@@ -932,9 +1002,12 @@ class BusinessProvider with ChangeNotifier {
       // Deduct from seller's assigned inventory
       if (sellerId != null) {
         for (var item in items) {
-          final existing = _sellerInventory.where(
-            (si) => si.sellerId == sellerId && si.productId == item.productId,
-          ).toList();
+          final existing = _sellerInventory
+              .where(
+                (si) =>
+                    si.sellerId == sellerId && si.productId == item.productId,
+              )
+              .toList();
           if (existing.isNotEmpty) {
             final inv = existing.first;
             final remaining = inv.assignedQuantity - item.quantity;
@@ -953,7 +1026,9 @@ class BusinessProvider with ChangeNotifier {
       }
     }
 
-    final computedSoldProductsJson = jsonEncode(soldProductsMap.values.toList());
+    final computedSoldProductsJson = jsonEncode(
+      soldProductsMap.values.toList(),
+    );
     final computedPaymentMethodsJson = jsonEncode(paymentMethodsMap);
 
     // Save Closing Report
@@ -962,28 +1037,38 @@ class BusinessProvider with ChangeNotifier {
       final closing = Closing(
         id: closingId,
         businessId: _activeBusinessId!,
-        period: (closingMap['period'] as String?) ?? 'Cierre Vendedor: $sellerName',
-        startDate: closingMap['startDate'] != null ? DateTime.parse(closingMap['startDate'] as String) : DateTime.now(),
-        endDate: closingMap['endDate'] != null ? DateTime.parse(closingMap['endDate'] as String) : DateTime.now(),
+        period:
+            (closingMap['period'] as String?) ?? 'Cierre Vendedor: $sellerName',
+        startDate: closingMap['startDate'] != null
+            ? DateTime.parse(closingMap['startDate'] as String)
+            : DateTime.now(),
+        endDate: closingMap['endDate'] != null
+            ? DateTime.parse(closingMap['endDate'] as String)
+            : DateTime.now(),
         income: (closingMap['income'] as num?)?.toDouble() ?? totalIncome,
         expenses: (closingMap['expenses'] as num?)?.toDouble() ?? 0.0,
         profit: (closingMap['profit'] as num?)?.toDouble() ?? totalIncome,
         roi: (closingMap['roi'] as num?)?.toDouble() ?? 0.0,
         salesCount: (closingMap['salesCount'] as int?) ?? salesImported,
         expensesCount: (closingMap['expensesCount'] as int?) ?? 0,
-        soldProductsJson: (closingMap['soldProductsJson'] as String?) ??
+        soldProductsJson:
+            (closingMap['soldProductsJson'] as String?) ??
             (soldProductsMap.isNotEmpty ? computedSoldProductsJson : '[]'),
         addedProductsJson: (closingMap['addedProductsJson'] as String?) ?? '[]',
         bestSellerName: sellerName,
         bestSellerQty: salesImported,
-        paymentMethodsJson: (closingMap['paymentMethodsJson'] as String?) ??
+        paymentMethodsJson:
+            (closingMap['paymentMethodsJson'] as String?) ??
             (paymentMethodsMap.isNotEmpty ? computedPaymentMethodsJson : '{}'),
-        expenseCategoriesJson: (closingMap['expenseCategoriesJson'] as String?) ?? '{}',
-        totalDiscounts: (closingMap['totalDiscounts'] as num?)?.toDouble() ?? 0.0,
+        expenseCategoriesJson:
+            (closingMap['expenseCategoriesJson'] as String?) ?? '{}',
+        totalDiscounts:
+            (closingMap['totalDiscounts'] as num?)?.toDouble() ?? 0.0,
         sellerStatsJson: jsonEncode({
-          sellerName: {'total': totalIncome, 'count': salesImported}
+          sellerName: {'total': totalIncome, 'count': salesImported},
         }),
-        costOfGoodsSold: (closingMap['costOfGoodsSold'] as num?)?.toDouble() ?? 0.0,
+        costOfGoodsSold:
+            (closingMap['costOfGoodsSold'] as num?)?.toDouble() ?? 0.0,
         netProfit: (closingMap['netProfit'] as num?)?.toDouble() ?? totalIncome,
       );
 
@@ -1016,7 +1101,11 @@ class BusinessProvider with ChangeNotifier {
     };
   }
 
-  Future<void> deleteSale(String id, {bool restoreStock = true, AppProvider? appProvider}) async {
+  Future<void> deleteSale(
+    String id, {
+    bool restoreStock = true,
+    AppProvider? appProvider,
+  }) async {
     final index = _sales.indexWhere((s) => s.id == id);
     if (index == -1) return;
 
@@ -1024,7 +1113,10 @@ class BusinessProvider with ChangeNotifier {
 
     // Revert deposit on linked card if it was paid
     final effectiveCardId = linkedCardId;
-    if (appProvider != null && effectiveCardId != null && sale.status == 'paid' && sale.total > 0) {
+    if (appProvider != null &&
+        effectiveCardId != null &&
+        sale.status == 'paid' &&
+        sale.total > 0) {
       final activeBiz = activeBusiness;
       final currency = activeBiz?.currency ?? appProvider.mainCurrency;
       final productNames = sale.items.map((i) => i.productName).join(', ');
@@ -1055,9 +1147,13 @@ class BusinessProvider with ChangeNotifier {
       // If assigned to a seller, also restore seller's assigned inventory
       if (sale.sellerId != null) {
         for (var item in sale.items) {
-          final existing = _sellerInventory.where(
-            (si) => si.sellerId == sale.sellerId && si.productId == item.productId,
-          ).toList();
+          final existing = _sellerInventory
+              .where(
+                (si) =>
+                    si.sellerId == sale.sellerId &&
+                    si.productId == item.productId,
+              )
+              .toList();
           if (existing.isNotEmpty) {
             final inv = existing.first;
             await assignProductToSeller(
@@ -1114,7 +1210,7 @@ class BusinessProvider with ChangeNotifier {
         sellerName: oldSale.sellerName,
         status: 'paid',
       );
-      
+
       await _saleBox.put(key, newSale);
       _sales[index] = newSale;
 
@@ -1166,7 +1262,9 @@ class BusinessProvider with ChangeNotifier {
     // Deduct expense from linked card on main screen
     final cardId = linkedCardId;
     if (appProvider != null && cardId != null && amount > 0) {
-      final desc = description.trim().isNotEmpty ? description.trim() : category;
+      final desc = description.trim().isNotEmpty
+          ? description.trim()
+          : category;
       await appProvider.addTransaction(
         amount: -amount,
         title: "Gasto Negocio: $desc",
@@ -1190,7 +1288,9 @@ class BusinessProvider with ChangeNotifier {
 
     // Refund expense to linked card on main screen if applicable
     if (appProvider != null && cardId != null && expense.amount > 0) {
-      final desc = expense.description.trim().isNotEmpty ? expense.description.trim() : expense.category;
+      final desc = expense.description.trim().isNotEmpty
+          ? expense.description.trim()
+          : expense.category;
       await appProvider.addTransaction(
         amount: expense.amount,
         title: "Gasto Cancelado: $desc",
@@ -1239,19 +1339,26 @@ class BusinessProvider with ChangeNotifier {
   }) async {
     if (_activeBusinessId == null) return;
 
-    final periodSales = sales.where(
-      (s) =>
-          s.date.isAfter(startDate) &&
-          s.date.isBefore(endDate.add(const Duration(days: 1))),
-    ).toList();
+    final periodSales = sales
+        .where(
+          (s) =>
+              s.date.isAfter(startDate) &&
+              s.date.isBefore(endDate.add(const Duration(days: 1))),
+        )
+        .toList();
 
-    final periodExpenses = expenses.where(
-      (e) =>
-          e.date.isAfter(startDate) &&
-          e.date.isBefore(endDate.add(const Duration(days: 1))),
-    ).toList();
+    final periodExpenses = expenses
+        .where(
+          (e) =>
+              e.date.isAfter(startDate) &&
+              e.date.isBefore(endDate.add(const Duration(days: 1))),
+        )
+        .toList();
 
-    final double income = periodSales.fold<double>(0.0, (sum, s) => sum + s.total);
+    final double income = periodSales.fold<double>(
+      0.0,
+      (sum, s) => sum + s.total,
+    );
     final double expenseTotal = periodExpenses.fold<double>(
       0.0,
       (sum, e) => sum + _convertAmount(e.amount, e.currency),
@@ -1262,7 +1369,9 @@ class BusinessProvider with ChangeNotifier {
       0.0,
       (sum, p) => sum + p.totalInvestment,
     );
-    final double roi = totalInvestment > 0 ? (profit / totalInvestment) * 100 : 0.0;
+    final double roi = totalInvestment > 0
+        ? (profit / totalInvestment) * 100
+        : 0.0;
 
     // Detailed metrics computation
     final Map<String, Map<String, dynamic>> soldGroups = {};
@@ -1272,12 +1381,15 @@ class BusinessProvider with ChangeNotifier {
 
     for (final sale in periodSales) {
       totalDiscounts += sale.discount;
-      paymentMethods[sale.paymentMethod] = (paymentMethods[sale.paymentMethod] ?? 0.0) + sale.total;
+      paymentMethods[sale.paymentMethod] =
+          (paymentMethods[sale.paymentMethod] ?? 0.0) + sale.total;
       for (final item in sale.items) {
         final key = item.productId;
         if (soldGroups.containsKey(key)) {
-          soldGroups[key]!['qty'] = (soldGroups[key]!['qty'] as num).toDouble() + item.quantity;
-          soldGroups[key]!['revenue'] = (soldGroups[key]!['revenue'] as double) + item.subtotal;
+          soldGroups[key]!['qty'] =
+              (soldGroups[key]!['qty'] as num).toDouble() + item.quantity;
+          soldGroups[key]!['revenue'] =
+              (soldGroups[key]!['revenue'] as double) + item.subtotal;
         } else {
           soldGroups[key] = {
             'name': item.productName,
@@ -1309,7 +1421,8 @@ class BusinessProvider with ChangeNotifier {
     for (final exp in periodExpenses) {
       final category = exp.category;
       final double amtInMain = _convertAmount(exp.amount, exp.currency);
-      expenseCategories[category] = (expenseCategories[category] ?? 0.0) + amtInMain;
+      expenseCategories[category] =
+          (expenseCategories[category] ?? 0.0) + amtInMain;
     }
     final expenseCategoriesJson = jsonEncode(expenseCategories);
     final paymentMethodsJson = jsonEncode(paymentMethods);
@@ -1322,22 +1435,29 @@ class BusinessProvider with ChangeNotifier {
       if (!sellerStats.containsKey(name)) {
         sellerStats[name] = {'total': 0.0, 'count': 0};
       }
-      sellerStats[name]!['total'] = (sellerStats[name]!['total'] as double) + sale.total;
+      sellerStats[name]!['total'] =
+          (sellerStats[name]!['total'] as double) + sale.total;
       sellerStats[name]!['count'] = (sellerStats[name]!['count'] as int) + 1;
     }
     final sellerStatsJson = jsonEncode(sellerStats);
 
-    final periodAddedProducts = products.where(
-      (p) =>
-          p.investmentDate.isAfter(startDate) &&
-          p.investmentDate.isBefore(endDate.add(const Duration(days: 1))),
-    ).toList();
-    
-    final List<Map<String, dynamic>> addedList = periodAddedProducts.map((p) => {
-      'name': p.name,
-      'qty': p.initialQuantity,
-      'cost': p.costPerUnit,
-    }).toList();
+    final periodAddedProducts = products
+        .where(
+          (p) =>
+              p.investmentDate.isAfter(startDate) &&
+              p.investmentDate.isBefore(endDate.add(const Duration(days: 1))),
+        )
+        .toList();
+
+    final List<Map<String, dynamic>> addedList = periodAddedProducts
+        .map(
+          (p) => {
+            'name': p.name,
+            'qty': p.initialQuantity,
+            'cost': p.costPerUnit,
+          },
+        )
+        .toList();
     final addedProductsJson = jsonEncode(addedList);
 
     final closing = Closing(
@@ -1408,7 +1528,8 @@ class BusinessProvider with ChangeNotifier {
     if (closing.netProfit <= 0) return 'no_profit';
     if (amount <= 0 || amount > remaining + 0.005) return 'invalid_amount';
 
-    final businessCurrency = activeBusiness?.currency ?? appProvider.mainCurrency;
+    final businessCurrency =
+        activeBusiness?.currency ?? appProvider.mainCurrency;
     AccountCard? targetCard;
     for (final c in appProvider.cards) {
       if (c.id == targetCardId) {
@@ -1420,7 +1541,9 @@ class BusinessProvider with ChangeNotifier {
 
     final bool differentCurrency = targetCard.currency != businessCurrency;
     final double deposited = differentCurrency ? amount * exchangeRate : amount;
-    final String txCurrency = differentCurrency ? targetCard.currency : businessCurrency;
+    final String txCurrency = differentCurrency
+        ? targetCard.currency
+        : businessCurrency;
 
     final txError = await appProvider.addTransaction(
       amount: deposited,
@@ -1520,7 +1643,10 @@ class BusinessProvider with ChangeNotifier {
 
   // Total Expenses (all time)
   double get totalExpenses {
-    return expenses.fold<double>(0.0, (sum, e) => sum + _convertAmount(e.amount, e.currency));
+    return expenses.fold<double>(
+      0.0,
+      (sum, e) => sum + _convertAmount(e.amount, e.currency),
+    );
   }
 
   // Total Profit (all time)
@@ -1528,12 +1654,16 @@ class BusinessProvider with ChangeNotifier {
 
   // Cost of Goods Sold (from closings)
   double get totalCostOfGoodsSold {
-    return _closings.where((c) => c.businessId == _activeBusinessId).fold<double>(0.0, (sum, c) => sum + c.costOfGoodsSold);
+    return _closings
+        .where((c) => c.businessId == _activeBusinessId)
+        .fold<double>(0.0, (sum, c) => sum + c.costOfGoodsSold);
   }
 
   // Net Profit after COGS (sum of all closings' netProfit)
   double get totalNetProfit {
-    return _closings.where((c) => c.businessId == _activeBusinessId).fold<double>(0.0, (sum, c) => sum + c.netProfit);
+    return _closings
+        .where((c) => c.businessId == _activeBusinessId)
+        .fold<double>(0.0, (sum, c) => sum + c.netProfit);
   }
 
   // Total Investment
@@ -1560,7 +1690,10 @@ class BusinessProvider with ChangeNotifier {
   /// Balance total disponible para operar y renovar inventario
   /// (Capital Inicial - Compras de Inventario - Gastos + Ventas)
   double get availableInventoryBalance {
-    return initialCapital - totalInventoryPurchases - totalExpenses + totalSalesRevenue;
+    return initialCapital -
+        totalInventoryPurchases -
+        totalExpenses +
+        totalSalesRevenue;
   }
 
   // Low stock products (stock < 10)
@@ -1585,20 +1718,22 @@ class BusinessProvider with ChangeNotifier {
     return sorted.take(limit).map((e) {
       final product = _products.firstWhere(
         (p) => p.id == e.key,
-        orElse: () => _products.isNotEmpty ? _products.first : Product(
-          id: '',
-          businessId: '',
-          name: 'Producto eliminado',
-          description: '',
-          sku: '',
-          investmentDate: DateTime.now(),
-          initialQuantity: 0,
-          costPerUnit: 0,
-          currency: 'CUP',
-          totalInvestment: 0,
-          currentStock: 0,
-          salePrice: 0,
-        ),
+        orElse: () => _products.isNotEmpty
+            ? _products.first
+            : Product(
+                id: '',
+                businessId: '',
+                name: 'Producto eliminado',
+                description: '',
+                sku: '',
+                investmentDate: DateTime.now(),
+                initialQuantity: 0,
+                costPerUnit: 0,
+                currency: 'CUP',
+                totalInvestment: 0,
+                currentStock: 0,
+                salePrice: 0,
+              ),
       );
       return {'product': product, 'quantitySold': e.value};
     }).toList();

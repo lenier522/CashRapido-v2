@@ -1,57 +1,44 @@
 import 'dart:io';
+
 import 'package:google_sign_in/google_sign_in.dart' as sign_in;
 import 'package:googleapis/drive/v3.dart' as drive;
-import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+
 import 'backup_service.dart';
+import 'google_auth_service.dart';
 
 class DriveService {
-  final sign_in.GoogleSignIn _googleSignIn = sign_in.GoogleSignIn(
-    scopes: [drive.DriveApi.driveFileScope],
-  );
-
-  sign_in.GoogleSignInAccount? get currentUser => _googleSignIn.currentUser;
-  Stream<sign_in.GoogleSignInAccount?> get onAuthStateChanged =>
-      _googleSignIn.onCurrentUserChanged;
+  /// Misma sesión de Google que el acceso a la cuenta: Drive no tiene un
+  /// segundo inicio de sesión propio.
+  sign_in.GoogleSignInAccount? get currentUser => GoogleAuthService.currentUser;
 
   final BackupService _backupService = BackupService();
 
-  Future<sign_in.GoogleSignInAccount?> signInToGoogle() async {
-    try {
-      return await _googleSignIn.signIn();
-    } catch (e) {
-      print('Sign in failed: $e');
-      rethrow;
-    }
-  }
-
-  /// Restaura la sesión de Google sin mostrar ninguna interfaz.
+  /// Reconoce la cuenta ya autorizada sin mostrar interfaz.
   ///
   /// `google_sign_in` no conserva `currentUser` entre arranques de la app: hay
   /// que pedir una reconexión silenciosa. Devuelve la cuenta si el usuario ya
   /// había concedido el permiso, o `null` si no hay sesión previa.
   Future<sign_in.GoogleSignInAccount?> restoreSession() async {
-    try {
-      return await _googleSignIn.signInSilently();
-    } catch (e) {
-      print('Silent sign in failed: $e');
-      return null;
-    }
+    final GoogleAuthResult? result = await GoogleAuthService.signInSilently();
+    return result?.account;
   }
 
-  Future<void> signOut() async {
-    await _googleSignIn.disconnect();
-  }
+  Future<void> signOut() => GoogleAuthService.signOut();
 
   Future<drive.DriveApi?> _getDriveApi() async {
-    final client = await _googleSignIn.authenticatedClient();
+    if (GoogleAuthService.currentUser == null) {
+      await GoogleAuthService.signInSilently();
+    }
+
+    final client = await GoogleAuthService.authenticatedClient();
     if (client == null) return null;
     return drive.DriveApi(client);
   }
 
   Future<void> backupData() async {
-    final currentUser = _googleSignIn.currentUser;
+    final currentUser = GoogleAuthService.currentUser;
     if (currentUser == null) {
       throw Exception("Debes iniciar sesión con Google.");
     }
@@ -90,7 +77,7 @@ class DriveService {
   }
 
   Future<void> restoreData() async {
-    final currentUser = _googleSignIn.currentUser;
+    final currentUser = GoogleAuthService.currentUser;
     if (currentUser == null) {
       throw Exception("Debes iniciar sesión con Google.");
     }
@@ -120,12 +107,10 @@ class DriveService {
     }
 
     // 2. Download to Temp
-    final media =
-        await api.files.get(
-              backupDriveFile.id!,
-              downloadOptions: drive.DownloadOptions.fullMedia,
-            )
-            as drive.Media;
+    final media = await api.files.get(
+      backupDriveFile.id!,
+      downloadOptions: drive.DownloadOptions.fullMedia,
+    ) as drive.Media;
 
     final appDir = await getApplicationDocumentsDirectory();
     final tempZipPath = p.join(appDir.path, 'temp_cloud_restore.zip');

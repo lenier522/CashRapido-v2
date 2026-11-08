@@ -1,9 +1,13 @@
 import 'dart:math';
 import 'dart:convert';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:crypto/crypto.dart';
+
+import '../services/cloud_sync_service.dart';
+
 import '../models/loan.dart';
 import '../models/borrower.dart';
 import '../models/loan_activity.dart';
@@ -30,16 +34,24 @@ class LoanProvider with ChangeNotifier {
   List<Borrower> get borrowers => _borrowers;
   List<LoanActivity> get activities => _activities;
 
-  List<Loan> get activeLoans => _loans.where((l) => l.status == 'active' || l.status == 'overdue').toList();
+  List<Loan> get activeLoans => _loans
+      .where((l) => l.status == 'active' || l.status == 'overdue')
+      .toList();
   List<Loan> get paidLoans => _loans.where((l) => l.status == 'paid').toList();
-  List<Loan> get overdueLoans => _loans.where((l) => l.status == 'overdue').toList();
+  List<Loan> get overdueLoans =>
+      _loans.where((l) => l.status == 'overdue').toList();
 
   // ========== INITIALIZATION & ENCRYPTION ==========
 
   Future<Box<T>> _openEncryptedBox<T>(String name) async {
-    final encryptionKey = sha256.convert(utf8.encode("cashrapido_secure_loans_salt_2026")).bytes;
+    final encryptionKey = sha256
+        .convert(utf8.encode("cashrapido_secure_loans_salt_2026"))
+        .bytes;
     try {
-      return await Hive.openBox<T>(name, encryptionCipher: HiveAesCipher(encryptionKey));
+      return await Hive.openBox<T>(
+        name,
+        encryptionCipher: HiveAesCipher(encryptionKey),
+      );
     } catch (e) {
       // Fallback: If it was already opened unencrypted or can't decrypt, open it unencrypted
       return await Hive.openBox<T>(name);
@@ -51,6 +63,12 @@ class LoanProvider with ChangeNotifier {
     _paymentBox = await _openEncryptedBox<LoanPayment>('loan_payments');
     _borrowerBox = await _openEncryptedBox<Borrower>('borrowers');
     _activityBox = await _openEncryptedBox<LoanActivity>('loan_activities');
+    CloudSyncService.registerBoxes(<String, Box<dynamic>>{
+      'loans': _loanBox,
+      'loan_payments': _paymentBox,
+      'borrowers': _borrowerBox,
+      'loan_activities': _activityBox,
+    });
 
     _fetchData();
 
@@ -60,6 +78,12 @@ class LoanProvider with ChangeNotifier {
     }
 
     _isLoading = false;
+    notifyListeners();
+  }
+
+  /// Recarga las listas desde Hive tras recuperar la copia de la nube.
+  void refreshFromBoxes() {
+    _fetchData();
     notifyListeners();
   }
 
@@ -107,7 +131,12 @@ class LoanProvider with ChangeNotifier {
     double total = 0.0;
     for (var l in _loans) {
       if (l.currency == currency) {
-        final totalWithInterest = calculateTotalWithInterest(l.amount, l.interestRate, l.interestType, l.durationValue);
+        final totalWithInterest = calculateTotalWithInterest(
+          l.amount,
+          l.interestRate,
+          l.interestType,
+          l.durationValue,
+        );
         total += (totalWithInterest - l.remainingAmount);
       }
     }
@@ -117,10 +146,13 @@ class LoanProvider with ChangeNotifier {
   double getMetricTotalDisbursedToday(String currency) {
     final today = DateTime.now();
     return _loans
-        .where((l) => l.currency == currency && 
-                      l.startDate.year == today.year && 
-                      l.startDate.month == today.month && 
-                      l.startDate.day == today.day)
+        .where(
+          (l) =>
+              l.currency == currency &&
+              l.startDate.year == today.year &&
+              l.startDate.month == today.month &&
+              l.startDate.day == today.day,
+        )
         .fold(0.0, (sum, l) => sum + l.amount);
   }
 
@@ -128,11 +160,29 @@ class LoanProvider with ChangeNotifier {
     final today = DateTime.now();
     return _payments
         .where((p) {
-          final l = _loans.firstWhere((item) => item.id == p.loanId, orElse: () => Loan(id: '', borrowerName: '', amount: 0, interestRate: 0, interestType: '', frequency: '', durationValue: 0, startDate: DateTime.now(), dueDate: DateTime.now(), isNotificationsEnabled: false, remainingAmount: 0, status: '', currency: ''));
-          return l.id.isNotEmpty && l.currency == currency && 
-                 p.date.year == today.year && 
-                 p.date.month == today.month && 
-                 p.date.day == today.day;
+          final l = _loans.firstWhere(
+            (item) => item.id == p.loanId,
+            orElse: () => Loan(
+              id: '',
+              borrowerName: '',
+              amount: 0,
+              interestRate: 0,
+              interestType: '',
+              frequency: '',
+              durationValue: 0,
+              startDate: DateTime.now(),
+              dueDate: DateTime.now(),
+              isNotificationsEnabled: false,
+              remainingAmount: 0,
+              status: '',
+              currency: '',
+            ),
+          );
+          return l.id.isNotEmpty &&
+              l.currency == currency &&
+              p.date.year == today.year &&
+              p.date.month == today.month &&
+              p.date.day == today.day;
         })
         .fold(0.0, (sum, p) => sum + p.amount);
   }
@@ -148,7 +198,9 @@ class LoanProvider with ChangeNotifier {
       if (l.status == 'overdue') {
         uniqueBorrowers.add(l.borrowerId ?? l.borrowerName);
       } else {
-        bool hasOverdueInstallment = l.installments.any((inst) => inst.status == 'overdue');
+        bool hasOverdueInstallment = l.installments.any(
+          (inst) => inst.status == 'overdue',
+        );
         if (hasOverdueInstallment) {
           uniqueBorrowers.add(l.borrowerId ?? l.borrowerName);
         }
@@ -162,7 +214,12 @@ class LoanProvider with ChangeNotifier {
     double profit = 0.0;
     for (var l in _loans) {
       if (l.currency == currency && l.status != 'written_off') {
-        final totalWithInterest = calculateTotalWithInterest(l.amount, l.interestRate, l.interestType, l.durationValue);
+        final totalWithInterest = calculateTotalWithInterest(
+          l.amount,
+          l.interestRate,
+          l.interestType,
+          l.durationValue,
+        );
         final interestExpected = totalWithInterest - l.amount;
         profit += interestExpected;
       }
@@ -222,7 +279,11 @@ class LoanProvider with ChangeNotifier {
 
   // ========== AUDIT LOGGER HELPERS ==========
 
-  Future<void> addActivity(String loanId, String action, String description) async {
+  Future<void> addActivity(
+    String loanId,
+    String action,
+    String description,
+  ) async {
     final id = _uuid.v4();
     final activity = LoanActivity(
       id: id,
@@ -315,7 +376,12 @@ class LoanProvider with ChangeNotifier {
     }
   }
 
-  double calculateTotalWithInterest(double principal, double rate, String type, int duration) {
+  double calculateTotalWithInterest(
+    double principal,
+    double rate,
+    String type,
+    int duration,
+  ) {
     if (rate <= 0) return principal;
     final int count = duration > 0 ? duration : 1;
     switch (type) {
@@ -340,7 +406,12 @@ class LoanProvider with ChangeNotifier {
     DateTime? explicitDueDate,
   }) {
     final count = durationValue > 0 ? durationValue : 1;
-    final totalRepayment = calculateTotalWithInterest(principal, rate, interestType, count);
+    final totalRepayment = calculateTotalWithInterest(
+      principal,
+      rate,
+      interestType,
+      count,
+    );
     final installmentAmount = totalRepayment / count;
 
     final schedule = <Installment>[];
@@ -351,7 +422,9 @@ class LoanProvider with ChangeNotifier {
       DateTime instDueDate;
 
       if (frequency == 'single') {
-        instDueDate = explicitDueDate != null ? _normalizeDate(explicitDueDate) : _addMonths(start, 1);
+        instDueDate = explicitDueDate != null
+            ? _normalizeDate(explicitDueDate)
+            : _addMonths(start, 1);
       } else {
         switch (frequency) {
           case 'daily':
@@ -379,13 +452,15 @@ class LoanProvider with ChangeNotifier {
 
       final isOverdue = today.isAfter(instDueDate);
 
-      schedule.add(Installment(
-        number: i,
-        dueDate: instDueDate,
-        amount: installmentAmount,
-        paidAmount: 0.0,
-        status: isOverdue ? 'overdue' : 'pending',
-      ));
+      schedule.add(
+        Installment(
+          number: i,
+          dueDate: instDueDate,
+          amount: installmentAmount,
+          paidAmount: 0.0,
+          status: isOverdue ? 'overdue' : 'pending',
+        ),
+      );
     }
     return schedule;
   }
@@ -416,16 +491,10 @@ class LoanProvider with ChangeNotifier {
         if (left <= 0) break;
         final inst = schedule[i];
         if (left >= inst.amount) {
-          schedule[i] = inst.copyWith(
-            paidAmount: inst.amount,
-            status: 'paid',
-          );
+          schedule[i] = inst.copyWith(paidAmount: inst.amount, status: 'paid');
           left -= inst.amount;
         } else {
-          schedule[i] = inst.copyWith(
-            paidAmount: left,
-            status: 'partial',
-          );
+          schedule[i] = inst.copyWith(paidAmount: left, status: 'partial');
           left = 0.0;
         }
       }
@@ -442,7 +511,8 @@ class LoanProvider with ChangeNotifier {
     required double amount,
     required double interestRate,
     required String interestType, // 'simple', 'compound', 'fixed'
-    required String frequency, // 'daily', 'weekly', 'biweekly', 'monthly', 'single'
+    required String
+    frequency, // 'daily', 'weekly', 'biweekly', 'monthly', 'single'
     required int durationValue,
     required DateTime startDate,
     required DateTime dueDate,
@@ -457,7 +527,12 @@ class LoanProvider with ChangeNotifier {
   }) async {
     final id = _uuid.v4();
     final count = durationValue > 0 ? durationValue : 1;
-    final totalExpected = calculateTotalWithInterest(amount, interestRate, interestType, count);
+    final totalExpected = calculateTotalWithInterest(
+      amount,
+      interestRate,
+      interestType,
+      count,
+    );
 
     // Schedule installments
     final installmentsList = generateAmortizationSchedule(
@@ -498,7 +573,11 @@ class LoanProvider with ChangeNotifier {
     await _loanBox.put(id, loan);
     _loans.insert(0, loan);
 
-    await addActivity(id, "Creado", "Préstamo registrado por un total de \$${amount.toStringAsFixed(2)} $currency a retornar \$${totalExpected.toStringAsFixed(2)}.");
+    await addActivity(
+      id,
+      "Creado",
+      "Préstamo registrado por un total de \$${amount.toStringAsFixed(2)} $currency a retornar \$${totalExpected.toStringAsFixed(2)}.",
+    );
 
     if (deductFromCard && cardId != null && appProvider != null) {
       await appProvider.addTransaction(
@@ -509,7 +588,11 @@ class LoanProvider with ChangeNotifier {
         cardId: cardId,
         date: startDate,
       );
-      await addActivity(id, "Desembolsado", "Monto de \$${amount.toStringAsFixed(2)} $currency deducido de la cuenta vinculada.");
+      await addActivity(
+        id,
+        "Desembolsado",
+        "Monto de \$${amount.toStringAsFixed(2)} $currency deducido de la cuenta vinculada.",
+      );
     }
 
     await _rescheduleLoanNotifications(loan);
@@ -523,8 +606,12 @@ class LoanProvider with ChangeNotifier {
 
     await _loanBox.put(updatedLoan.id, updatedLoan);
     _loans[index] = updatedLoan;
-    
-    await addActivity(updatedLoan.id, "Editado", "Los parámetros del préstamo fueron actualizados.");
+
+    await addActivity(
+      updatedLoan.id,
+      "Editado",
+      "Los parámetros del préstamo fueron actualizados.",
+    );
     await _rescheduleLoanNotifications(updatedLoan);
     notifyListeners();
   }
@@ -537,14 +624,18 @@ class LoanProvider with ChangeNotifier {
     _loans.removeAt(index);
 
     // Delete payments
-    final paymentsToDelete = _payments.where((p) => p.loanId == loanId).toList();
+    final paymentsToDelete = _payments
+        .where((p) => p.loanId == loanId)
+        .toList();
     for (var p in paymentsToDelete) {
       await _paymentBox.delete(p.id);
       _payments.removeWhere((item) => item.id == p.id);
     }
 
     // Delete activities
-    final activitiesToDelete = _activities.where((a) => a.loanId == loanId).toList();
+    final activitiesToDelete = _activities
+        .where((a) => a.loanId == loanId)
+        .toList();
     for (var a in activitiesToDelete) {
       await _activityBox.delete(a.id);
       _activities.removeWhere((item) => item.id == a.id);
@@ -584,7 +675,11 @@ class LoanProvider with ChangeNotifier {
     await _loanBox.put(oldLoanId, closedLoan);
     _loans[oldIdx] = closedLoan;
 
-    await addActivity(oldLoanId, "Refinanciado", "El saldo deudor restante de \$${remainingDebt.toStringAsFixed(2)} fue refinanciado en un nuevo acuerdo.");
+    await addActivity(
+      oldLoanId,
+      "Refinanciado",
+      "El saldo deudor restante de \$${remainingDebt.toStringAsFixed(2)} fue refinanciado en un nuevo acuerdo.",
+    );
 
     // 2. Create new loan (Principal = newAmount + remaining debt, or simply newAmount if remaining debt is already added in UI)
     await createLoan(
@@ -598,13 +693,15 @@ class LoanProvider with ChangeNotifier {
       startDate: newStartDate,
       dueDate: newDueDate,
       isNotificationsEnabled: oldLoan.isNotificationsEnabled,
-      notes: "Refinanciación del préstamo previo del ${oldLoan.startDate.day}/${oldLoan.startDate.month}/${oldLoan.startDate.year}.",
+      notes:
+          "Refinanciación del préstamo previo del ${oldLoan.startDate.day}/${oldLoan.startDate.month}/${oldLoan.startDate.year}.",
       cardId: cardId,
       currency: newCurrency,
       lateFeeType: lateFeeType,
       lateFeeValue: lateFeeValue,
       appProvider: appProvider,
-      deductFromCard: false, // Do not disburse again since it represents a rollover
+      deductFromCard:
+          false, // Do not disburse again since it represents a rollover
     );
   }
 
@@ -623,7 +720,11 @@ class LoanProvider with ChangeNotifier {
     await _loanBox.put(loanId, updated);
     _loans[idx] = updated;
 
-    await addActivity(loanId, "Pérdida", "El préstamo ha sido declarado incobrable (Pérdida de \$${remainingDebt.toStringAsFixed(2)} ${loan.currency}).");
+    await addActivity(
+      loanId,
+      "Pérdida",
+      "El préstamo ha sido declarado incobrable (Pérdida de \$${remainingDebt.toStringAsFixed(2)} ${loan.currency}).",
+    );
     notifyListeners();
   }
 
@@ -685,7 +786,9 @@ class LoanProvider with ChangeNotifier {
       newStatus = 'overdue';
     } else {
       // Check if any installment remains overdue
-      bool hasOverdue = updatedInstallments.any((inst) => inst.status == 'overdue');
+      bool hasOverdue = updatedInstallments.any(
+        (inst) => inst.status == 'overdue',
+      );
       newStatus = hasOverdue ? 'overdue' : 'active';
     }
 
@@ -713,7 +816,11 @@ class LoanProvider with ChangeNotifier {
     await _loanBox.put(loanId, updatedLoan);
     _loans[loanIndex] = updatedLoan;
 
-    await addActivity(loanId, "Cobro", "Cobro registrado por \$${amount.toStringAsFixed(2)} ${loan.currency}. Afectó cuotas: ${affectedNumbers.join(', ')}. Pendiente: \$${newRemaining.toStringAsFixed(2)}.");
+    await addActivity(
+      loanId,
+      "Cobro",
+      "Cobro registrado por \$${amount.toStringAsFixed(2)} ${loan.currency}. Afectó cuotas: ${affectedNumbers.join(', ')}. Pendiente: \$${newRemaining.toStringAsFixed(2)}.",
+    );
 
     // Balance integration
     if (depositToCard && cardId != null && appProvider != null) {
@@ -741,8 +848,13 @@ class LoanProvider with ChangeNotifier {
 
     if (loanIndex != -1) {
       final loan = _loans[loanIndex];
-      final maxAllowed = calculateTotalWithInterest(loan.amount, loan.interestRate, loan.interestType, loan.durationValue);
-      
+      final maxAllowed = calculateTotalWithInterest(
+        loan.amount,
+        loan.interestRate,
+        loan.interestType,
+        loan.durationValue,
+      );
+
       double newRemaining = loan.remainingAmount + payment.amount;
       if (newRemaining > maxAllowed) newRemaining = maxAllowed;
 
@@ -753,7 +865,9 @@ class LoanProvider with ChangeNotifier {
       // Reverse walk
       final affected = payment.affectedInstallmentNumbers ?? [];
       for (var num in affected.reversed) {
-        final idx = updatedInstallments.indexWhere((inst) => inst.number == num);
+        final idx = updatedInstallments.indexWhere(
+          (inst) => inst.number == num,
+        );
         if (idx != -1) {
           final inst = updatedInstallments[idx];
           // Simple revert strategy: subtract the payment's portion
@@ -796,7 +910,11 @@ class LoanProvider with ChangeNotifier {
       await _loanBox.put(loan.id, updatedLoan);
       _loans[loanIndex] = updatedLoan;
 
-      await addActivity(loan.id, "Eliminar Cobro", "Se anuló el cobro de \$${payment.amount.toStringAsFixed(2)} ${loan.currency}.");
+      await addActivity(
+        loan.id,
+        "Eliminar Cobro",
+        "Se anuló el cobro de \$${payment.amount.toStringAsFixed(2)} ${loan.currency}.",
+      );
       await _rescheduleLoanNotifications(updatedLoan);
     }
 
@@ -814,7 +932,10 @@ class LoanProvider with ChangeNotifier {
 
     for (var i = 0; i < _loans.length; i++) {
       final l = _loans[i];
-      if (l.status == 'paid' || l.status == 'written_off' || l.status == 'refinanced') continue;
+      if (l.status == 'paid' ||
+          l.status == 'written_off' ||
+          l.status == 'refinanced')
+        continue;
 
       // Only evaluate if late fees are active
       if (l.lateFeeType == 'none' || l.lateFeeValue <= 0.0) continue;
@@ -829,7 +950,9 @@ class LoanProvider with ChangeNotifier {
 
       var currentLoan = l;
       double moraAcumulada = 0.0;
-      final updatedInstallments = List<Installment>.from(currentLoan.installments);
+      final updatedInstallments = List<Installment>.from(
+        currentLoan.installments,
+      );
       bool installmentsUpdated = false;
 
       for (int k = 0; k < updatedInstallments.length; k++) {
@@ -849,12 +972,21 @@ class LoanProvider with ChangeNotifier {
               }
             } else if (currentLoan.lateFeeType == 'percent') {
               // Apply daily percentage
-              fee = inst.remainingAmount * (currentLoan.lateFeeValue / 100) * daysLate;
+              fee =
+                  inst.remainingAmount *
+                  (currentLoan.lateFeeValue / 100) *
+                  daysLate;
               // But let's only apply the incremental amount for today
               double alreadyApplied = 0.0;
-              if (currentLoan.lastMoraAppliedDate != null && currentLoan.lastMoraAppliedDate!.isAfter(inst.dueDate)) {
-                final previouslyLateDays = currentLoan.lastMoraAppliedDate!.difference(inst.dueDate).inDays;
-                alreadyApplied = inst.remainingAmount * (currentLoan.lateFeeValue / 100) * previouslyLateDays;
+              if (currentLoan.lastMoraAppliedDate != null &&
+                  currentLoan.lastMoraAppliedDate!.isAfter(inst.dueDate)) {
+                final previouslyLateDays = currentLoan.lastMoraAppliedDate!
+                    .difference(inst.dueDate)
+                    .inDays;
+                alreadyApplied =
+                    inst.remainingAmount *
+                    (currentLoan.lateFeeValue / 100) *
+                    previouslyLateDays;
               }
               fee = max(0.0, fee - alreadyApplied);
             }
@@ -886,12 +1018,17 @@ class LoanProvider with ChangeNotifier {
         updated = true;
 
         if (moraAcumulada > 0.0) {
-          await addActivity(currentLoan.id, "Mora", "Recargo automático de mora aplicado: \$${moraAcumulada.toStringAsFixed(2)} ${currentLoan.currency} por cuotas vencidas.");
-          
+          await addActivity(
+            currentLoan.id,
+            "Mora",
+            "Recargo automático de mora aplicado: \$${moraAcumulada.toStringAsFixed(2)} ${currentLoan.currency} por cuotas vencidas.",
+          );
+
           if (currentLoan.isNotificationsEnabled) {
             await appProvider.addNotificationItem(
               title: "⚠️ Mora Aplicada: ${currentLoan.borrowerName}",
-              body: "Se ha sumado \$${moraAcumulada.toStringAsFixed(2)} ${currentLoan.currency} de penalización por atraso.",
+              body:
+                  "Se ha sumado \$${moraAcumulada.toStringAsFixed(2)} ${currentLoan.currency} de penalización por atraso.",
             );
           }
         }
@@ -916,12 +1053,17 @@ class LoanProvider with ChangeNotifier {
         _loans[i] = updatedLoan;
         updated = true;
 
-        await addActivity(l.id, "Vencido", "El plazo principal de amortización ha finalizado.");
+        await addActivity(
+          l.id,
+          "Vencido",
+          "El plazo principal de amortización ha finalizado.",
+        );
 
         if (l.isNotificationsEnabled) {
           await appProvider.addNotificationItem(
             title: "⚠️ Préstamo Vencido: ${l.borrowerName}",
-            body: "El préstamo de \$${l.amount.toStringAsFixed(2)} ${l.currency} venció el ${l.dueDate.day}/${l.dueDate.month}/${l.dueDate.year}.",
+            body:
+                "El préstamo de \$${l.amount.toStringAsFixed(2)} ${l.currency} venció el ${l.dueDate.day}/${l.dueDate.month}/${l.dueDate.year}.",
           );
         }
       }
@@ -937,63 +1079,83 @@ class LoanProvider with ChangeNotifier {
 
   String exportBackupData() {
     final data = {
-      'borrowers': _borrowers.map((b) => {
-        'id': b.id,
-        'name': b.name,
-        'lastName': b.lastName,
-        'phone': b.phone,
-        'address': b.address,
-        'writtenLocation': b.writtenLocation,
-        'riskLevel': b.riskLevel,
-        'localPhotoPath': b.localPhotoPath,
-        'personalReference': b.personalReference,
-        'notes': b.notes,
-        'registrationDate': b.registrationDate.toIso8601String(),
-      }).toList(),
-      'loans': _loans.map((l) => {
-        'id': l.id,
-        'borrowerName': l.borrowerName,
-        'borrowerId': l.borrowerId,
-        'amount': l.amount,
-        'interestRate': l.interestRate,
-        'interestType': l.interestType,
-        'frequency': l.frequency,
-        'durationValue': l.durationValue,
-        'startDate': l.startDate.toIso8601String(),
-        'dueDate': l.dueDate.toIso8601String(),
-        'isNotificationsEnabled': l.isNotificationsEnabled,
-        'notes': l.notes,
-        'remainingAmount': l.remainingAmount,
-        'status': l.status,
-        'cardId': l.cardId,
-        'currency': l.currency,
-        'lateFeeType': l.lateFeeType,
-        'lateFeeValue': l.lateFeeValue,
-        'lastMoraAppliedDate': l.lastMoraAppliedDate?.toIso8601String(),
-        'installments': l.installments.map((inst) => {
-          'number': inst.number,
-          'dueDate': inst.dueDate.toIso8601String(),
-          'amount': inst.amount,
-          'paidAmount': inst.paidAmount,
-          'status': inst.status,
-        }).toList(),
-      }).toList(),
-      'payments': _payments.map((p) => {
-        'id': p.id,
-        'loanId': p.loanId,
-        'amount': p.amount,
-        'date': p.date.toIso8601String(),
-        'notes': p.notes,
-        'cardId': p.cardId,
-        'affectedInstallmentNumbers': p.affectedInstallmentNumbers,
-      }).toList(),
-      'activities': _activities.map((a) => {
-        'id': a.id,
-        'loanId': a.loanId,
-        'timestamp': a.timestamp.toIso8601String(),
-        'action': a.action,
-        'description': a.description,
-      }).toList(),
+      'borrowers': _borrowers
+          .map(
+            (b) => {
+              'id': b.id,
+              'name': b.name,
+              'lastName': b.lastName,
+              'phone': b.phone,
+              'address': b.address,
+              'writtenLocation': b.writtenLocation,
+              'riskLevel': b.riskLevel,
+              'localPhotoPath': b.localPhotoPath,
+              'personalReference': b.personalReference,
+              'notes': b.notes,
+              'registrationDate': b.registrationDate.toIso8601String(),
+            },
+          )
+          .toList(),
+      'loans': _loans
+          .map(
+            (l) => {
+              'id': l.id,
+              'borrowerName': l.borrowerName,
+              'borrowerId': l.borrowerId,
+              'amount': l.amount,
+              'interestRate': l.interestRate,
+              'interestType': l.interestType,
+              'frequency': l.frequency,
+              'durationValue': l.durationValue,
+              'startDate': l.startDate.toIso8601String(),
+              'dueDate': l.dueDate.toIso8601String(),
+              'isNotificationsEnabled': l.isNotificationsEnabled,
+              'notes': l.notes,
+              'remainingAmount': l.remainingAmount,
+              'status': l.status,
+              'cardId': l.cardId,
+              'currency': l.currency,
+              'lateFeeType': l.lateFeeType,
+              'lateFeeValue': l.lateFeeValue,
+              'lastMoraAppliedDate': l.lastMoraAppliedDate?.toIso8601String(),
+              'installments': l.installments
+                  .map(
+                    (inst) => {
+                      'number': inst.number,
+                      'dueDate': inst.dueDate.toIso8601String(),
+                      'amount': inst.amount,
+                      'paidAmount': inst.paidAmount,
+                      'status': inst.status,
+                    },
+                  )
+                  .toList(),
+            },
+          )
+          .toList(),
+      'payments': _payments
+          .map(
+            (p) => {
+              'id': p.id,
+              'loanId': p.loanId,
+              'amount': p.amount,
+              'date': p.date.toIso8601String(),
+              'notes': p.notes,
+              'cardId': p.cardId,
+              'affectedInstallmentNumbers': p.affectedInstallmentNumbers,
+            },
+          )
+          .toList(),
+      'activities': _activities
+          .map(
+            (a) => {
+              'id': a.id,
+              'loanId': a.loanId,
+              'timestamp': a.timestamp.toIso8601String(),
+              'action': a.action,
+              'description': a.description,
+            },
+          )
+          .toList(),
     };
     return jsonEncode(data);
   }
@@ -1001,7 +1163,7 @@ class LoanProvider with ChangeNotifier {
   Future<bool> importBackupData(String jsonString) async {
     try {
       final data = jsonDecode(jsonString) as Map<String, dynamic>;
-      
+
       // 1. Clear existing boxes
       await _borrowerBox.clear();
       await _loanBox.clear();
@@ -1034,13 +1196,15 @@ class LoanProvider with ChangeNotifier {
           final List<Installment> insts = [];
           if (l.containsKey('installments')) {
             for (var inst in l['installments']) {
-              insts.add(Installment(
-                number: inst['number'],
-                dueDate: DateTime.parse(inst['dueDate']),
-                amount: (inst['amount'] as num).toDouble(),
-                paidAmount: (inst['paidAmount'] as num).toDouble(),
-                status: inst['status'],
-              ));
+              insts.add(
+                Installment(
+                  number: inst['number'],
+                  dueDate: DateTime.parse(inst['dueDate']),
+                  amount: (inst['amount'] as num).toDouble(),
+                  paidAmount: (inst['paidAmount'] as num).toDouble(),
+                  status: inst['status'],
+                ),
+              );
             }
           }
 
@@ -1063,7 +1227,9 @@ class LoanProvider with ChangeNotifier {
             currency: l['currency'],
             lateFeeType: l['lateFeeType'] ?? 'none',
             lateFeeValue: (l['lateFeeValue'] as num?)?.toDouble() ?? 0.0,
-            lastMoraAppliedDate: l['lastMoraAppliedDate'] != null ? DateTime.parse(l['lastMoraAppliedDate']) : null,
+            lastMoraAppliedDate: l['lastMoraAppliedDate'] != null
+                ? DateTime.parse(l['lastMoraAppliedDate'])
+                : null,
             installments: insts,
           );
           await _loanBox.put(loan.id, loan);
@@ -1123,7 +1289,8 @@ class LoanProvider with ChangeNotifier {
       await NotificationService().cancelInstallmentReminder(loan.id, i);
     }
 
-    if (loan.isNotificationsEnabled && (loan.status == 'active' || loan.status == 'overdue')) {
+    if (loan.isNotificationsEnabled &&
+        (loan.status == 'active' || loan.status == 'overdue')) {
       for (var inst in loan.installments) {
         if (inst.status != 'paid') {
           await NotificationService().scheduleInstallmentReminder(

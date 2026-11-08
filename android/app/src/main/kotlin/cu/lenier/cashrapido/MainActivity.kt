@@ -83,7 +83,13 @@ class MainActivity : FlutterFragmentActivity() {
      * corrige el icono si el plan venció.
      */
     private fun hasEnterpriseLicense(prefs: SharedPreferences): Boolean {
-        val type = prefs.getInt(KEY_LICENSE_TYPE, LICENSE_TYPE_FREE)
+        // shared_preferences guarda los int de Dart como Long en Android.
+        // getInt() lanzaría ClassCastException y cerraría la app al arrancar.
+        val type = when (val raw = prefs.all[KEY_LICENSE_TYPE]) {
+            is Number -> raw.toInt()
+            is String -> raw.toIntOrNull() ?: LICENSE_TYPE_FREE
+            else -> LICENSE_TYPE_FREE
+        }
         return type == LICENSE_TYPE_WEEKLY_ENTERPRISE ||
             type == LICENSE_TYPE_MONTHLY_ENTERPRISE ||
             type == LICENSE_TYPE_ANNUAL_ENTERPRISE

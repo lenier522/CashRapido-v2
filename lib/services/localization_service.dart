@@ -55,20 +55,96 @@ class AppLocalizations {
       'drive_restore': 'Restaurar desde la nube',
       'drive_disconnect': 'Desconectar',
       'drive_disconnect_confirm': '¿Desconectar Google Drive?',
-      'drive_disconnect_desc':
-          'Se cerrará la sesión de Google Drive en este dispositivo. Tus copias en la nube no se eliminan.',
+      'drive_disconnect_desc': 'Se cerrará la sesión de Google Drive en este dispositivo. Tus copias en la nube no se eliminan.',
       'drive_disconnected': 'Google Drive desconectado',
-      'drive_disconnected_message':
-          'Conecta tu cuenta de Google para guardar y restaurar copias de seguridad.',
+      'drive_disconnected_message': 'Conecta tu cuenta de Google para guardar y restaurar copias de seguridad.',
       'drive_restore_confirm_title': 'Restaurar desde Google Drive',
-      'drive_restore_warning':
-          'Los datos actuales del dispositivo se reemplazarán por los de la copia en la nube. Esta acción no se puede deshacer.',
+      'drive_restore_warning': 'Los datos actuales del dispositivo se reemplazarán por los de la copia en la nube. Esta acción no se puede deshacer.',
       'drive_backup_success': 'Copia de seguridad completada',
       'drive_backup_error': 'No se pudo completar la copia de seguridad',
       'drive_restore_success': 'Datos restaurados desde Google Drive',
       'drive_restore_error': 'No se pudieron restaurar los datos',
-      'drive_privacy_note':
-          'La copia se guarda en tu propia cuenta de Google Drive. CashRapido no accede a otros archivos.',
+      'drive_privacy_note': 'La copia se guarda en tu propia cuenta de Google Drive. CashRapido no accede a otros archivos.',
+
+      // ── Copia en la nube ─────────────────────────────────────────────────
+      'cloud_title': 'Copia en la nube',
+      'cloud_row_desc': 'Copia de tus datos en tu cuenta',
+      'cloud_subtitle': 'Tus datos se guardan en tu cuenta de CashRapido y puedes recuperarlos al instalar la app en otro dispositivo.',
+      'cloud_auto_sync': 'Sincronización automática',
+      'cloud_auto_sync_desc': 'Guarda los cambios en la nube unos segundos después de cada edición.',
+      'cloud_save_now': 'Guardar ahora',
+      'cloud_restore': 'Recuperar desde la nube',
+      'cloud_restore_confirm_title': '¿Recuperar tus datos?',
+      'cloud_restore_confirm_desc': 'Los datos de este dispositivo se reemplazarán por la última copia de tu cuenta. Esta acción no se puede deshacer.',
+      'cloud_restore_warning':
+          'La recuperación reemplaza los datos actuales de este dispositivo.',
+      'cloud_save_success': 'Datos guardados en la nube.',
+      'cloud_save_error': 'No se pudo guardar en la nube. Revisa tu conexión.',
+      'cloud_restore_success': 'Datos recuperados desde la nube.',
+      'cloud_restore_error': 'No se pudieron recuperar los datos.',
+      'cloud_last_sync': 'Última sincronización: {date}',
+      'cloud_never_synced': 'Todavía no has guardado datos en la nube.',
+      'cloud_not_connected':
+          'Conecta tu cuenta de Google para usar la copia en la nube.',
+      'cloud_connect': 'Conectar cuenta',
+
+      // ── Chat de soporte ──────────────────────────────────────────────────
+      'support_title': 'Soporte',
+      'support_row_desc': 'Chatea con el equipo de soporte',
+      'support_subtitle':
+          'Escríbenos tus dudas. Solo tú y el equipo de soporte pueden ver esta conversación.',
+      'support_empty_title': '¿En qué te ayudamos?',
+      'support_empty_desc':
+          'Escribe tu primera duda y el equipo de soporte te responderá por aquí.',
+      'support_input_hint': 'Escribe un mensaje…',
+      'support_send_error':
+          'No se pudo enviar el mensaje. Revisa tu conexión.',
+      'support_load_error': 'No se pudo cargar la conversación.',
+      'support_retry': 'Reintentar',
+      'support_need_login_title': 'Conecta tu cuenta',
+      'support_need_login_desc':
+          'El chat de soporte necesita tu cuenta de Google para identificarte. Después podrás escribirnos y recibir respuestas aquí.',
+      'support_connect': 'Conectar cuenta',
+      'support_close_ticket': 'Cerrar ticket',
+      'support_reopen_ticket': 'Reabrir ticket',
+      'support_delete_conversation': 'Eliminar conversación',
+      'support_delete_title': '¿Eliminar la conversación?',
+      'support_delete_desc':
+          'Se borrarán todos los mensajes de este ticket. Esta acción no se puede deshacer.',
+      'support_closed_badge': 'Cerrado',
+      'support_closed_desc':
+          'Ticket cerrado. Ya no se pueden enviar mensajes; inicia una conversación nueva para volver a hablar con soporte.',
+      'support_new_conversation': 'Nueva conversación',
+      'support_history': 'Historial',
+      'support_open_badge': 'Abierto',
+      'support_closed_done': 'Ticket cerrado',
+      'support_reopened_done': 'Ticket reabierto',
+      'support_action_error':
+          'No se pudo completar la acción. Inténtalo de nuevo.',
+      'admin_inbox_title': 'Soporte',
+      'admin_inbox_row_desc': 'Conversaciones de todos los clientes',
+      'admin_inbox_empty': 'Todavía no hay conversaciones.',
+      'admin_inbox_search': 'Buscar por correo o nombre',
+      'admin_campaign': 'Campaña',
+      'admin_no_access': 'Esta sección es solo para el equipo de soporte.',
+      'campaign_title': 'Nueva campaña',
+      'campaign_subtitle': 'Envía un aviso al chat de tus clientes.',
+      'campaign_name_label': 'Título (opcional)',
+      'campaign_name_hint': 'Ej. Promoción de octubre',
+      'campaign_body_label': 'Mensaje',
+      'campaign_body_hint': 'Escribe el mensaje que recibirán…',
+      'campaign_audience': 'Destinatarios',
+      'campaign_all': 'Todos los clientes',
+      'campaign_all_desc': 'Se envía a todos los usuarios registrados.',
+      'campaign_single': 'Un cliente',
+      'campaign_single_desc': 'Elige a quién quieres escribirle.',
+      'campaign_select_client': 'Selecciona un cliente',
+      'campaign_send': 'Enviar campaña',
+      'campaign_sent': 'Campaña enviada',
+      'campaign_error': 'No se pudo enviar la campaña.',
+      'campaign_empty_body': 'Escribe el mensaje de la campaña.',
+      'campaign_no_clients': 'Aún no hay clientes para elegir.',
+      'campaign_no_target': 'Selecciona un cliente.',
 
       // ── Mi Cuenta ─────────────────────────────────────────────────────────
       'account_title': 'Mi Cuenta',
@@ -80,14 +156,15 @@ class AppLocalizations {
       'account_redeem_desc': 'Introduce un código para activar ventajas',
       'app_icon_title': 'Icono de la app',
       'app_icon_desc': 'Cambia el icono de CashRapido en tu pantalla de inicio',
-      'app_icon_pick_hint': 'Elige el icono que verás en tu pantalla de inicio.',
-      'app_icon_locked_note': 'Cambiar el icono es una función del plan Empresarial.',
-      'app_icon_enterprise_note': 'Consigue el plan Empresarial para poder cambiar el icono de la app.',
+      'app_icon_pick_hint':
+          'Elige el icono que verás en tu pantalla de inicio.',
+      'app_icon_locked_note':
+          'Cambiar el icono es una función del plan Empresarial.',
+      'app_icon_enterprise_note':
+          'Consigue el plan Empresarial para poder cambiar el icono de la app.',
       'app_icon_updated_msg': 'Icono actualizado',
-      'app_icon_seasonal_active':
-          'El icono de temporada está activo ahora; tu elección se aplicará cuando termine.',
-      'app_icon_dev_note':
-          'El icono solo se cambia en la versión instalada (release); en desarrollo no se aplica.',
+      'app_icon_seasonal_active': 'El icono de temporada está activo ahora; tu elección se aplicará cuando termine.',
+      'app_icon_dev_note': 'El icono solo se cambia en la versión instalada (release); en desarrollo no se aplica.',
       'app_icon_default': 'Por defecto',
       'app_icon_playa': 'Playa',
       'app_icon_mar': 'Mar',
@@ -96,8 +173,7 @@ class AppLocalizations {
       'account_import': 'Importar datos',
       'account_import_desc': 'Restaura una copia de seguridad',
       'account_reset': 'Restablecer todos los datos',
-      'account_reset_desc':
-          'Elimina tus datos financieros de este dispositivo',
+      'account_reset_desc': 'Elimina tus datos financieros de este dispositivo',
       'account_details_title': 'Tu Cuenta',
       'account_type_label': 'Tipo de cuenta',
       'account_type_local': 'Cuenta local',
@@ -105,8 +181,7 @@ class AppLocalizations {
       'account_expires_label': 'Vence',
       'account_no_expiry': 'Sin caducidad',
       'account_currency_label': 'Moneda principal',
-      'account_local_note':
-          'CashRapido guarda tus datos en este dispositivo. No existe una cuenta en la nube con usuario y contraseña propios.',
+      'account_local_note': 'CashRapido guarda tus datos en este dispositivo. No existe una cuenta en la nube con usuario y contraseña propios.',
 
       // ── Licencias (etiquetas) ─────────────────────────────────────────────
       'license_free': 'Gratuita',
@@ -126,10 +201,8 @@ class AppLocalizations {
       'promo_redeem_action': 'Canjear',
       'promo_code_empty': 'Introduce un código.',
       'promo_not_available_title': 'Canje no disponible',
-      'promo_not_available_desc':
-          'El canje de códigos promocionales todavía no está disponible en CashRapido: necesita un servicio de validación que aún no está configurado. Si tienes un código, contacta con soporte.',
-      'promo_dependency_note':
-          'Esta función se activará cuando el servicio de validación de códigos esté configurado. Mientras tanto, no se aplicará ningún código.',
+      'promo_not_available_desc': 'El canje de códigos promocionales todavía no está disponible en CashRapido: necesita un servicio de validación que aún no está configurado. Si tienes un código, contacta con soporte.',
+      'promo_dependency_note': 'Esta función se activará cuando el servicio de validación de códigos esté configurado. Mientras tanto, no se aplicará ningún código.',
       'promo_support_subject': 'Consulta sobre código promocional',
 
       // ── Exportar / importar / restablecer ─────────────────────────────────
@@ -138,8 +211,7 @@ class AppLocalizations {
       'import_error': 'No se pudieron importar los datos',
       'backup_error': 'No se pudo crear la copia de seguridad',
       'reset_warning_title': '¿Restablecer todos los datos?',
-      'reset_warning_desc':
-          'Se eliminarán de este dispositivo tus movimientos, cuentas, categorías, transacciones recurrentes, notificaciones, conversaciones del asistente y los datos de negocio y préstamos. Se conservarán tu licencia, tus ajustes, tus credenciales y las copias en la nube.',
+      'reset_warning_desc': 'Se eliminarán de este dispositivo tus movimientos, cuentas, categorías, transacciones recurrentes, notificaciones, conversaciones del asistente y los datos de negocio y préstamos. Se conservarán tu licencia, tus ajustes, tus credenciales y las copias en la nube.',
       'reset_confirm_first': 'Continuar',
       'reset_backup_title': 'Copia de seguridad antes de borrar',
       'reset_backup_desc':
@@ -167,21 +239,18 @@ class AppLocalizations {
       'social_contact': 'Contáctanos',
       'social_contact_desc': 'Escríbenos un correo',
       'link_pending_title': 'Enlace pendiente',
-      'link_pending_desc':
-          'Este enlace todavía no está configurado. Estará disponible próximamente.',
+      'link_pending_desc': 'Este enlace todavía no está configurado. Estará disponible próximamente.',
       'link_pending_short': 'Pendiente de configurar',
       'link_open_error': 'No se pudo abrir el enlace',
 
       // ── Novedades ─────────────────────────────────────────────────────────
       'news_version_label': 'Versión instalada',
-      'news_no_changelog':
-          'Las novedades se publican en la tienda. Abre la ficha de la aplicación para consultar la información más reciente.',
+      'news_no_changelog': 'Las novedades se publican en la tienda. Abre la ficha de la aplicación para consultar la información más reciente.',
       'news_open_store': 'Abrir la tienda',
 
       // ── Funciones principales ─────────────────────────────────────────────
       'features_title': 'Funciones Principales',
-      'features_intro':
-          'Explora todo lo que CashRapido puede hacer. Cada apartado abre la pantalla real.',
+      'features_intro': 'Explora todo lo que CashRapido puede hacer. Cada apartado abre la pantalla real.',
       'features_group_personal': 'Finanzas personales',
       'features_group_tools': 'Herramientas',
       'features_group_modules': 'Módulos avanzados',
@@ -228,8 +297,7 @@ class AppLocalizations {
       // ── Invitar amigos ────────────────────────────────────────────────────
       'invite_title': 'Invitar amigos',
       'invite_headline': 'Invita a tus amigos',
-      'invite_message':
-          'Comparte CashRapido con tus amigos y ayúdales a organizar sus finanzas.',
+      'invite_message': 'Comparte CashRapido con tus amigos y ayúdales a organizar sus finanzas.',
       'invite_link_label': 'Enlace de descarga',
       'invite_copy': 'Copiar enlace',
       'invite_copied': 'Enlace copiado',
@@ -262,26 +330,19 @@ class AppLocalizations {
       // ── Privacidad ────────────────────────────────────────────────────────
       'privacy_title': 'Cómo tratamos tus datos',
       'privacy_local_title': 'Almacenamiento local',
-      'privacy_local_body':
-          'Tus movimientos, cuentas, categorías y ajustes se guardan en este dispositivo. La aplicación no requiere registro ni crea una cuenta en la nube con usuario y contraseña.',
+      'privacy_local_body': 'Tus movimientos, cuentas, categorías y ajustes se guardan en este dispositivo. La aplicación no requiere registro ni crea una cuenta en la nube con usuario y contraseña.',
       'privacy_security_title': 'Seguridad',
-      'privacy_security_body':
-          'Los datos del módulo de préstamos se almacenan cifrados en el dispositivo. El acceso a la aplicación puede protegerse con biometría, PIN o contraseña desde Configuración.',
+      'privacy_security_body': 'Los datos del módulo de préstamos se almacenan cifrados en el dispositivo. El acceso a la aplicación puede protegerse con biometría, PIN o contraseña desde Configuración.',
       'privacy_drive_title': 'Google Drive',
-      'privacy_drive_body':
-          'Solo si conectas tu cuenta, CashRapido guarda una copia en tu propio Google Drive para que puedas restaurarla. No accede a otros archivos y puedes desconectarla cuando quieras.',
+      'privacy_drive_body': 'Solo si conectas tu cuenta, CashRapido guarda una copia en tu propio Google Drive para que puedas restaurarla. No accede a otros archivos y puedes desconectarla cuando quieras.',
       'privacy_ai_title': 'Asistente IA',
-      'privacy_ai_body':
-          'Si activas el asistente, tus mensajes se procesan mediante el servicio de IA de Google para generar respuestas. Si no lo usas, no se envía nada.',
+      'privacy_ai_body': 'Si activas el asistente, tus mensajes se procesan mediante el servicio de IA de Google para generar respuestas. Si no lo usas, no se envía nada.',
       'privacy_export_title': 'Exportar e importar',
-      'privacy_export_body':
-          'Puedes exportar tus datos a Excel o PDF e importar una copia cuando lo necesites. Tú controlas esos archivos.',
+      'privacy_export_body': 'Puedes exportar tus datos a Excel o PDF e importar una copia cuando lo necesites. Tú controlas esos archivos.',
       'privacy_delete_title': 'Eliminar tus datos',
-      'privacy_delete_body':
-          'Desde Mi Cuenta puedes restablecer la aplicación y borrar tus datos de este dispositivo. Las copias en la nube se conservan hasta que las elimines tú.',
+      'privacy_delete_body': 'Desde Mi Cuenta puedes restablecer la aplicación y borrar tus datos de este dispositivo. Las copias en la nube se conservan hasta que las elimines tú.',
       'privacy_contact_title': 'Contacto',
-      'privacy_contact_body':
-          'Si tienes dudas sobre el tratamiento de tus datos, escríbenos a {email}.',
+      'privacy_contact_body': 'Si tienes dudas sobre el tratamiento de tus datos, escríbenos a {email}.',
       'privacy_contact_subject': 'Consulta sobre privacidad y datos',
       'categories': 'Categorías',
 
@@ -290,8 +351,7 @@ class AppLocalizations {
       'streak_days': '{count} días seguidos',
       'streak_calendar_month': 'Calendario - Este mes',
       'streak_reward_title': 'Recompensa Premium',
-      'streak_reward_question':
-          '¿Quieres usar 1 de tus {count} recompensas para obtener un plan de licencia al azar ahora mismo?',
+      'streak_reward_question': '¿Quieres usar 1 de tus {count} recompensas para obtener un plan de licencia al azar ahora mismo?',
       'streak_reward_success': '¡Plan Premium activado correctamente!',
       'streak_reward_hint': '¡Gana un plan Premium cada 50 días!',
       'streak_claim': 'Canjear',
@@ -316,10 +376,8 @@ class AppLocalizations {
       'notif_tips_desc': 'Recibe consejos aleatorios para mejorar tus finanzas',
       'notif_permission_granted': 'Permiso del sistema concedido',
       'notif_permission_denied_title': 'Notificaciones bloqueadas',
-      'notif_permission_denied_desc':
-          'El sistema tiene las notificaciones desactivadas para CashRapido. Actívalas para recibir recordatorios y avisos.',
-      'notif_permission_dialog_desc':
-          'No se pudieron activar porque el permiso de notificaciones está denegado. Actívalo en los ajustes del sistema.',
+      'notif_permission_denied_desc': 'El sistema tiene las notificaciones desactivadas para CashRapido. Actívalas para recibir recordatorios y avisos.',
+      'notif_permission_dialog_desc': 'No se pudieron activar porque el permiso de notificaciones está denegado. Actívalo en los ajustes del sistema.',
       'open_system_settings': 'Abrir ajustes del sistema',
       'notif_weekly_label': 'Resumen semanal',
       'notif_weekly_label_desc': 'Se envía automáticamente los domingos',
@@ -358,8 +416,7 @@ class AppLocalizations {
       'business_expense': 'Gastos',
       'add_business_transaction': 'Agregar Transacción',
       'business_locked_title': 'Módulo Empresarial',
-      'business_locked_desc':
-          'Este módulo es exclusivo para planes Empresarial. Lleva la contabilidad de tu negocio al siguiente nivel.',
+      'business_locked_desc': 'Este módulo es exclusivo para planes Empresarial. Lleva la contabilidad de tu negocio al siguiente nivel.',
       'upgrade_to_enterprise': 'Mejorar a Empresarial',
       'total_profit': 'Ganancia Total',
       'net_income': 'Ingreso Neto',
@@ -396,15 +453,13 @@ class AppLocalizations {
       'business_appearance_section': 'Apariencia',
       'business_preview': 'Vista previa',
       'business_delete_title': 'Eliminar negocio',
-      'business_delete_confirm':
-          '¿Eliminar este negocio y todos sus datos? Esta acción no se puede deshacer.',
+      'business_delete_confirm': '¿Eliminar este negocio y todos sus datos? Esta acción no se puede deshacer.',
 
       // Loans Module
       'nav_loans': 'Préstamos',
       'loans_module_title': 'Módulo de Préstamos',
       'loans_locked_title': 'Módulo de Préstamos',
-      'loans_locked_desc':
-          'Lleva el control de tus préstamos, clientes, tasas de interés, cobros y recordatorios automáticos. Exclusivo para licencias Empresariales.',
+      'loans_locked_desc': 'Lleva el control de tus préstamos, clientes, tasas de interés, cobros y recordatorios automáticos. Exclusivo para licencias Empresariales.',
       'total_loaned': 'Total Prestado',
       'remaining_balance': 'Saldo Pendiente',
       'total_collected': 'Total Cobrado',
@@ -437,10 +492,8 @@ class AppLocalizations {
       'payment_history': 'Historial de Pagos',
       'no_payments': 'Sin pagos registrados',
       'no_loans_title': 'Sin Préstamos',
-      'no_loans_desc':
-          'Aún no has registrado ningún préstamo. Toca el botón \'+\' para comenzar.',
-      'delete_loan_confirm':
-          '¿Estás seguro de que deseas eliminar este préstamo? Esto borrará también todos sus pagos asociados.',
+      'no_loans_desc': 'Aún no has registrado ningún préstamo. Toca el botón \'+\' para comenzar.',
+      'delete_loan_confirm': '¿Estás seguro de que deseas eliminar este préstamo? Esto borrará también todos sus pagos asociados.',
       'loan_deleted_msg': 'Préstamo eliminado correctamente.',
       'loan_saved_msg': 'Préstamo guardado correctamente.',
       'payment_registered_msg': 'Pago registrado correctamente.',
@@ -497,8 +550,7 @@ class AppLocalizations {
       'reports_delinquent_clients': 'Clientes Morosos',
       'reports_active_portfolio': 'Cartera Activa',
       'reports_expected_7days': 'Cobros Esperados (7 días):',
-      'reports_projections_footnote':
-          '* Este monto representa la suma de los saldos pendientes de cuotas programadas para vencer en la próxima semana.',
+      'reports_projections_footnote': '* Este monto representa la suma de los saldos pendientes de cuotas programadas para vencer en la próxima semana.',
 
       // Loans List
       'loans_search_hint': 'Buscar por nombre, teléfono o ID...',
@@ -524,8 +576,7 @@ class AppLocalizations {
       'loan_due_label': 'Vence',
       'installments_overdue_count': '{count} vencidas',
       'installments_pending_count': '{count} cuotas pend.',
-      'no_loans_desc_portfolio':
-          'Aún no has registrado ningún préstamo. Toca el botón \'+\' para comenzar a gestionar tu cartera.',
+      'no_loans_desc_portfolio': 'Aún no has registrado ningún préstamo. Toca el botón \'+\' para comenzar a gestionar tu cartera.',
 
       // Loan Detail
       'loan_detail_title': 'Detalles del Préstamo',
@@ -567,16 +618,13 @@ class AppLocalizations {
       'loan_collected_label': 'Cobrado',
       'loan_total_label': 'Total',
       'loan_refinance_title': 'Refinanciar Préstamo',
-      'loan_refinance_desc':
-          'El saldo actual de {amount} {currency} será cerrado y se abrirá un nuevo préstamo con ese monto como base. ¿Deseas continuar?',
+      'loan_refinance_desc': 'El saldo actual de {amount} {currency} será cerrado y se abrirá un nuevo préstamo con ese monto como base. ¿Deseas continuar?',
       'loan_refinance_success': 'Préstamo refinanciado correctamente',
       'loan_mark_loss_title': 'Marcar como Perdida',
-      'loan_mark_loss_desc':
-          '¿Marcar este préstamo de {name} como incobrable? El saldo de {amount} se registrará como pérdida.',
+      'loan_mark_loss_desc': '¿Marcar este préstamo de {name} como incobrable? El saldo de {amount} se registrará como pérdida.',
       'loan_mark_loss_success': 'Préstamo marcado como pérdida',
       'loan_delete_title': 'Eliminar Préstamo',
-      'loan_delete_desc':
-          '¿Estás seguro de que deseas eliminar este préstamo? Se eliminarán también todos sus cobros y actividades.',
+      'loan_delete_desc': '¿Estás seguro de que deseas eliminar este préstamo? Se eliminarán también todos sus cobros y actividades.',
       'loan_delete_success': 'Préstamo eliminado',
       'loan_delete_payment_title': 'Eliminar Cobro',
       'loan_delete_payment_desc':
@@ -645,8 +693,7 @@ class AppLocalizations {
       'borrower_list_risk_medium': 'Riesgo Medio',
       'borrower_list_risk_low': 'Riesgo Bajo',
       'borrowers_empty_title': 'Sin Clientes',
-      'borrowers_empty_desc':
-          'Aún no has agregado ningún deudor. Registra a tus clientes para poder asociarlos a los préstamos de forma ordenada.',
+      'borrowers_empty_desc': 'Aún no has agregado ningún deudor. Registra a tus clientes para poder asociarlos a los préstamos de forma ordenada.',
       'borrower_registered_on': 'Registrado el',
       'borrower_phone_label': 'Teléfono',
       'borrower_address_label': 'Dirección',
@@ -656,8 +703,7 @@ class AppLocalizations {
       'borrower_edit': 'Editar',
       'borrower_delete': 'Eliminar',
       'borrower_delete_title': '¿Eliminar Cliente?',
-      'borrower_delete_desc':
-          '¿Estás seguro de que deseas eliminar a {name}? Esto no eliminará sus préstamos existentes, pero perderás la vinculación.',
+      'borrower_delete_desc': '¿Estás seguro de que deseas eliminar a {name}? Esto no eliminará sus préstamos existentes, pero perderás la vinculación.',
 
       // Payment Form
       'payment_pay_all': 'TODO',
@@ -737,8 +783,7 @@ class AppLocalizations {
       'product_stock_low': 'Stock bajo',
       'product_stock_out': 'Agotado',
       'product_empty_title': 'Sin productos',
-      'product_empty_desc':
-          'Aún no tienes productos en tu catálogo.\nAgrega el primero para empezar a vender.',
+      'product_empty_desc': 'Aún no tienes productos en tu catálogo.\nAgrega el primero para empezar a vender.',
       'product_no_search_results': 'No se encontraron productos',
       'product_no_search_results_desc':
           'Intenta con otros términos de búsqueda.',
@@ -756,16 +801,13 @@ class AppLocalizations {
 
       'category_manager_title': 'Categorías',
       'category_empty_title': 'Sin categorías',
-      'category_empty_desc':
-          'Organiza tus productos creando categorías.\nTambién se usan para generar SKUs automáticos.',
+      'category_empty_desc': 'Organiza tus productos creando categorías.\nTambién se usan para generar SKUs automáticos.',
       'category_add_category': 'Agregar Categoría',
       'category_add_subcategory': 'Agregar Subcategoría',
       'category_edit': 'Editar',
       'category_delete': 'Eliminar',
-      'category_confirm_delete':
-          '¿Eliminar "{name}"? Se eliminarán también sus subcategorías y los productos perderán su categoría.',
-      'category_confirm_delete_sub':
-          '¿Eliminar la subcategoría "{name}"?',
+      'category_confirm_delete': '¿Eliminar "{name}"? Se eliminarán también sus subcategorías y los productos perderán su categoría.',
+      'category_confirm_delete_sub': '¿Eliminar la subcategoría "{name}"?',
       'category_sub_name_placeholder': 'Nombre de la subcategoría',
       'category_new_title': 'Nueva Categoría',
       'category_new_sub_title': 'Nueva Subcategoría',
@@ -898,8 +940,7 @@ class AppLocalizations {
       'closing_empty_title': 'Sin Reportes de Cierre',
       'closing_empty_desc': 'Genera el primer cierre para ver estadísticas.',
       'closing_import_title': 'Importar Ventas desde Archivo',
-      'closing_import_desc':
-          'Selecciona un archivo JSON con las ventas para cargarlas al negocio.',
+      'closing_import_desc': 'Selecciona un archivo JSON con las ventas para cargarlas al negocio.',
       'closing_import_error': '❌ Error: {msg}',
       'closing_profit': 'Ganancia',
       'closing_loss': 'Pérdida',
@@ -967,8 +1008,7 @@ class AppLocalizations {
           'Repartido en total: {total} / {stock} {unit}',
       'seller_assign_removed': 'Producto desasignado',
       'seller_assign_success': '{qty} unidades asignadas a {name}',
-      'seller_assign_exceeds':
-          '⚠️ No puedes asignar más de {max} unidades (ya repartidas entre otros vendedores o stock insuficiente).',
+      'seller_assign_exceeds': '⚠️ No puedes asignar más de {max} unidades (ya repartidas entre otros vendedores o stock insuficiente).',
       'seller_financial_summary': 'Resumen Financiero',
       'seller_earnings': 'Ganancias del Vendedor',
       'seller_assigned_inventory': 'Inventario Asignado',
@@ -1009,8 +1049,7 @@ class AppLocalizations {
           'Monto con el que inicia el negocio para compras y rotación de stock',
       'initial_capital_hint': 'Ej. 50000',
       'linked_account': 'Cuenta Principal Asociada',
-      'linked_account_desc':
-          'Cuenta donde se descuentan los fondos de compras y gastos, y se registran los ingresos por ventas.',
+      'linked_account_desc': 'Cuenta donde se descuentan los fondos de compras y gastos, y se registran los ingresos por ventas.',
       'select_linked_account': 'Seleccionar cuenta principal',
       'no_linked_account': 'Sin cuenta asociada',
       'assigned_capital': 'Capital Asignado',
@@ -1019,8 +1058,7 @@ class AppLocalizations {
       'edit_capital_title': 'Ajustar Capital de Inventario',
       'btn_save': 'Guardar',
       'delete_sale_confirm_title': '¿Eliminar Venta?',
-      'delete_sale_confirm_msg':
-          'Al eliminar esta venta, las unidades vendidas volverán a sumarse automáticamente al inventario disponible.',
+      'delete_sale_confirm_msg': 'Al eliminar esta venta, las unidades vendidas volverán a sumarse automáticamente al inventario disponible.',
       'sale_deleted_stock_restored':
           'Venta eliminada. Las unidades se reintegraron al inventario.',
       'available_to_renew': 'Disponible para renovar',
@@ -1051,8 +1089,7 @@ class AppLocalizations {
       'business_sell': 'Vender',
       'metrics_profit': 'Beneficio',
       'business_low_stock': 'Stock bajo',
-      'business_low_stock_desc':
-          'Productos por debajo del umbral de stock.',
+      'business_low_stock_desc': 'Productos por debajo del umbral de stock.',
       'business_view_products': 'Ver productos',
       'business_adjust_short': 'Ajustar',
       'business_units': 'unid.',
@@ -1079,8 +1116,7 @@ class AppLocalizations {
       'break_even_prices_applied':
           'Precios de venta actualizados en el inventario',
       'break_even_custom_fixed_costs': 'Costos Fijos Adicionales',
-      'break_even_negative_margin_alert':
-          '¡Alerta! El margen de contribución promedio es negativo. No se puede alcanzar el punto de equilibrio vendiendo a pérdida.',
+      'break_even_negative_margin_alert': '¡Alerta! El margen de contribución promedio es negativo. No se puede alcanzar el punto de equilibrio vendiendo a pérdida.',
       'break_even_chart_revenue': 'Ingresos Totales',
       'break_even_chart_costs': 'Costos Totales',
       'break_even_chart_fixed': 'Costos Fijos',
@@ -1121,6 +1157,20 @@ class AppLocalizations {
       'investment_date': 'Fecha de Inversión',
       'scanned_code': 'Código escaneado',
 
+      // Acceso con Google
+      'google_login_title': 'Tu cuenta, en todos tus dispositivos',
+      'google_login_subtitle': 'Inicia sesión con Google para guardar tus datos en la nube y recuperarlos cuando cambies de teléfono.',
+      'google_login_button': 'Continuar con Google',
+      'google_login_privacy': 'Usamos tu cuenta para identificarte y para guardar tus copias de seguridad en tu Google Drive. No accedemos a tu correo, contactos ni a otros archivos.',
+      'google_login_offline': 'No pudimos conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
+      'google_login_error':
+          'No se pudo iniciar sesión con Google. Inténtalo de nuevo.',
+      'google_login_cancelled': 'Inicio de sesión cancelado.',
+      'google_login_not_configured': 'Esta versión no tiene configurado el acceso con Google. Actualiza la app para continuar.',
+      'account_signed_in': 'Sesión iniciada',
+      'account_sign_out': 'Cerrar sesión',
+      'account_sign_out_desc': 'Tus datos se quedan en este dispositivo. Podrás volver a entrar con tu cuenta de Google.',
+
       // Help Center
       'help_section_start': 'Primeros pasos',
       'help_section_trial': 'Prueba y planes',
@@ -1129,89 +1179,61 @@ class AppLocalizations {
       'help_section_backup': 'Copias de seguridad',
       'help_section_business': 'Negocio y préstamos',
       'help_q_add_card': '¿Cómo creo mi primera cuenta?',
-      'help_a_add_card':
-          'Abre Billetera en la barra inferior y toca el botón «+». Elige el tipo (efectivo, banco o tarjeta), escribe el nombre, el saldo inicial y el color, y guarda.',
+      'help_a_add_card': 'Abre Billetera en la barra inferior y toca el botón «+». Elige el tipo (efectivo, banco o tarjeta), escribe el nombre, el saldo inicial y el color, y guarda.',
       'help_q_add_transaction': '¿Cómo registro un ingreso o un gasto?',
-      'help_a_add_transaction':
-          'Toca el botón «+» flotante y elige Gasto o Ingreso. Selecciona la cuenta, la categoría, el monto y la fecha; puedes añadir una nota antes de guardar.',
+      'help_a_add_transaction': 'Toca el botón «+» flotante y elige Gasto o Ingreso. Selecciona la cuenta, la categoría, el monto y la fecha; puedes añadir una nota antes de guardar.',
       'help_q_scanner': '¿Cómo uso el escáner de tarjetas?',
-      'help_a_scanner':
-          'En Acciones rápidas toca «Escanear» y alinea la tarjeta dentro del marco. La app lee el número y la fecha de vencimiento. Necesita permiso de cámara y está disponible en Enterprise y durante la prueba.',
+      'help_a_scanner': 'En Acciones rápidas toca «Escanear» y alinea la tarjeta dentro del marco. La app lee el número y la fecha de vencimiento. Necesita permiso de cámara y está disponible en Enterprise y durante la prueba.',
       'help_q_trial': '¿Qué incluye la prueba gratuita de 2 días?',
-      'help_a_trial':
-          'Al instalar la app tienes 48 horas con todo desbloqueado, excepto el Asistente IA, las copias en Google Drive y las copias de seguridad locales, que requieren un plan de pago. En Inicio ves el tiempo restante.',
+      'help_a_trial': 'Al instalar la app tienes 48 horas con todo desbloqueado, excepto el Asistente IA, las copias en Google Drive y las copias de seguridad locales, que requieren un plan de pago. En Inicio ves el tiempo restante.',
       'help_q_trial_end': '¿Qué pasa cuando termina la prueba?',
-      'help_a_trial_end':
-          'Si no hay un plan activo, se eliminan automáticamente los datos guardados en el dispositivo: movimientos, cuentas, categorías, negocio, préstamos y chats. Si compras un plan dentro de las 48 horas, tus datos se conservan aunque el plan caduque después.',
+      'help_a_trial_end': 'Si no hay un plan activo, se eliminan automáticamente los datos guardados en el dispositivo: movimientos, cuentas, categorías, negocio, préstamos y chats. Si compras un plan dentro de las 48 horas, tus datos se conservan aunque el plan caduque después.',
       'help_q_plans': '¿Qué planes hay y qué incluye cada uno?',
-      'help_a_plans':
-          'Personal: 3 cuentas, transferencias, estadísticas detalladas y monedas.\nPro: 4 cuentas, categorías propias, PIN por cuenta y exportación a Excel.\nEnterprise: cuentas ilimitadas, IA, Google Drive, Negocio, Préstamos, PDF, widgets y biometría.\nCada nivel se vende por semana, mes o año.',
+      'help_a_plans': 'Personal: 3 cuentas, transferencias, estadísticas detalladas y monedas.\nPro: 4 cuentas, categorías propias, PIN por cuenta y exportación a Excel.\nEnterprise: cuentas ilimitadas, IA, Google Drive, Negocio, Préstamos, PDF, widgets y biometría.\nCada nivel se vende por semana, mes o año.',
       'help_q_payment': '¿Cómo pago mi plan?',
-      'help_a_payment':
-          'Abre Perfil → Licencias, elige el plan y pulsa Pagar. En Cuba el pago se gestiona con Apklis. Fuera de Cuba puedes pagar con PayPal o desbloquear licencias viendo anuncios. El precio se muestra antes de confirmar.',
+      'help_a_payment': 'Abre Perfil → Licencias, elige el plan y pulsa Pagar. En Cuba el pago se gestiona con Apklis. Fuera de Cuba puedes pagar con PayPal o desbloquear licencias viendo anuncios. El precio se muestra antes de confirmar.',
       'help_q_restore_purchase': '¿Cómo restauro mi compra?',
-      'help_a_restore_purchase':
-          'En Licencias toca el icono de verificar de la barra superior: la app comprobará tu compra en Apklis. Si el plan no aparece, escríbenos desde Perfil → Ayuda y privacidad con el correo de la compra.',
+      'help_a_restore_purchase': 'En Licencias toca el icono de verificar de la barra superior: la app comprobará tu compra en Apklis. Si el plan no aparece, escríbenos desde Perfil → Ayuda y privacidad con el correo de la compra.',
       'help_q_edit_transaction': '¿Cómo edito o elimino un movimiento?',
-      'help_a_edit_transaction':
-          'Toca cualquier movimiento de la lista para abrir su detalle; desde ahí puedes editarlo o eliminarlo.',
+      'help_a_edit_transaction': 'Toca cualquier movimiento de la lista para abrir su detalle; desde ahí puedes editarlo o eliminarlo.',
       'help_q_transfer': '¿Cómo transfiero entre cuentas?',
-      'help_a_transfer':
-          'En Acciones rápidas toca «Transferir», elige la cuenta de origen, la de destino y el monto. No cuenta como gasto: solo mueve saldo entre tus cuentas.',
+      'help_a_transfer': 'En Acciones rápidas toca «Transferir», elige la cuenta de origen, la de destino y el monto. No cuenta como gasto: solo mueve saldo entre tus cuentas.',
       'help_q_recurring': '¿Qué son los movimientos recurrentes?',
-      'help_a_recurring':
-          'En Acciones rápidas → «Recurrente» defines ingresos o gastos que se repiten (semanal, mensual o anual). La app los registra sola en la fecha indicada.',
+      'help_a_recurring': 'En Acciones rápidas → «Recurrente» defines ingresos o gastos que se repiten (semanal, mensual o anual). La app los registra sola en la fecha indicada.',
       'help_q_categories': '¿Puedo crear categorías personalizadas?',
-      'help_a_categories':
-          'Sí, con Pro o Enterprise. Se crean desde el selector de categorías al registrar un movimiento. Durante la prueba también están disponibles.',
+      'help_a_categories': 'Sí, con Pro o Enterprise. Se crean desde el selector de categorías al registrar un movimiento. Durante la prueba también están disponibles.',
       'help_q_cards_limit': '¿Cuántas cuentas puedo tener?',
-      'help_a_cards_limit':
-          'Gratis: 1. Personal: 3. Pro: 4. Enterprise: ilimitadas. Durante la prueba no hay límite. Puedes ver y reordenar tus cuentas en Billetera.',
+      'help_a_cards_limit': 'Gratis: 1. Personal: 3. Pro: 4. Enterprise: ilimitadas. Durante la prueba no hay límite. Puedes ver y reordenar tus cuentas en Billetera.',
       'help_q_change_balance': '¿Cómo cambio el saldo de una cuenta?',
-      'help_a_change_balance':
-          'Ve a Billetera, toca la cuenta y entra en Editar. Ahí ajustas el saldo, el nombre, el color y el PIN de esa cuenta.',
+      'help_a_change_balance': 'Ve a Billetera, toca la cuenta y entra en Editar. Ahí ajustas el saldo, el nombre, el color y el PIN de esa cuenta.',
       'help_q_card_pin': '¿Puedo proteger una cuenta con PIN?',
-      'help_a_card_pin':
-          'Sí. Con Pro o superior, al crear o editar una cuenta puedes asignarle un PIN para ocultar sus movimientos. Al abrirla tendrás que introducirlo.',
+      'help_a_card_pin': 'Sí. Con Pro o superior, al crear o editar una cuenta puedes asignarle un PIN para ocultar sus movimientos. Al abrirla tendrás que introducirlo.',
       'help_q_money_counter': '¿Qué es el Contador de Dinero?',
-      'help_a_money_counter':
-          'Es una herramienta para contar billetes y monedas por denominación y comparar el total con el saldo de una cuenta de efectivo. Está en Billetera, en las cuentas de tipo efectivo.',
+      'help_a_money_counter': 'Es una herramienta para contar billetes y monedas por denominación y comparar el total con el saldo de una cuenta de efectivo. Está en Billetera, en las cuentas de tipo efectivo.',
       'help_q_stats': '¿Qué puedo ver en Estadísticas?',
-      'help_a_stats':
-          'Ingresos, gastos, balance, tasa de ahorro, presupuestos y gráficos por día, semana, mes, año o rango personalizado. Con Personal o superior puedes filtrar por cuenta y ver el detalle por período.',
+      'help_a_stats': 'Ingresos, gastos, balance, tasa de ahorro, presupuestos y gráficos por día, semana, mes, año o rango personalizado. Con Personal o superior puedes filtrar por cuenta y ver el detalle por período.',
       'help_q_export': '¿Puedo exportar mis datos?',
-      'help_a_export':
-          'Desde Estadísticas puedes compartir o guardar un resumen en PDF (Enterprise) y exportar los datos a Excel (Pro o superior). Durante la prueba ambas opciones están disponibles.',
+      'help_a_export': 'Desde Estadísticas puedes compartir o guardar un resumen en PDF (Enterprise) y exportar los datos a Excel (Pro o superior). Durante la prueba ambas opciones están disponibles.',
       'help_q_backup_local': '¿Cómo hago una copia de seguridad local?',
-      'help_a_backup_local':
-          'En Perfil → Mi cuenta → Respaldar datos (local) se genera un archivo que puedes guardar o compartir. Al importarlo se reemplazan los datos actuales. Requiere un plan de pago, incluso durante la prueba.',
+      'help_a_backup_local': 'En Perfil → Mi cuenta → Respaldar datos (local) se genera un archivo que puedes guardar o compartir. Al importarlo se reemplazan los datos actuales. Requiere un plan de pago, incluso durante la prueba.',
       'help_q_drive': '¿Cómo funciona la copia en Google Drive?',
-      'help_a_drive':
-          'Con Enterprise puedes conectar tu cuenta de Google y guardar una copia cifrada en tu Drive desde Perfil → Ayuda y privacidad → Copias de seguridad. El archivo queda en tu cuenta.',
+      'help_a_drive': 'Con Enterprise puedes conectar tu cuenta de Google y guardar una copia cifrada en tu Drive desde Perfil → Ayuda y privacidad → Copias de seguridad. El archivo queda en tu cuenta.',
       'help_q_delete_data': '¿Cómo borro todos mis datos?',
-      'help_a_delete_data':
-          'En Perfil → Mi cuenta → Restablecer datos puedes borrar todo y empezar de nuevo. La app ofrece crear una copia antes (requiere plan de pago) y la acción no se puede deshacer.',
+      'help_a_delete_data': 'En Perfil → Mi cuenta → Restablecer datos puedes borrar todo y empezar de nuevo. La app ofrece crear una copia antes (requiere plan de pago) y la acción no se puede deshacer.',
       'help_q_business': '¿Qué incluye el módulo Negocio?',
-      'help_a_business':
-          'Disponible en Enterprise: catálogo de productos con stock y costos, punto de venta, gastos del negocio, vendedores, cierres de caja y reportes en PDF y Excel.',
+      'help_a_business': 'Disponible en Enterprise: catálogo de productos con stock y costos, punto de venta, gastos del negocio, vendedores, cierres de caja y reportes en PDF y Excel.',
       'help_q_loans': '¿Qué incluye el módulo Préstamos?',
-      'help_a_loans':
-          'Disponible en Enterprise: registra préstamos y clientes, cobra cuotas totales o parciales, controla la mora y consulta reportes de cartera.',
+      'help_a_loans': 'Disponible en Enterprise: registra préstamos y clientes, cobra cuotas totales o parciales, controla la mora y consulta reportes de cartera.',
       'help_q_security': '¿Cómo protejo la app?',
-      'help_a_security':
-          'En Ajustes → Cuenta y seguridad defines un PIN o una contraseña de la app y, con Enterprise, activas la biometría. Los datos se guardan en el dispositivo, no en un servidor.',
+      'help_a_security': 'En Ajustes → Cuenta y seguridad defines un PIN o una contraseña de la app y, con Enterprise, activas la biometría. Los datos se guardan en el dispositivo, no en un servidor.',
       'help_q_ai': '¿Cómo funciona el Asistente IA?',
-      'help_a_ai':
-          'Disponible en Enterprise. Actívalo en Ajustes → Preferencias y pregúntale por tus finanzas desde el chat. No compartas contraseñas, PIN ni números de tarjeta con el asistente.',
+      'help_a_ai': 'Disponible en Enterprise. Actívalo en Ajustes → Preferencias y pregúntale por tus finanzas desde el chat. No compartas contraseñas, PIN ni números de tarjeta con el asistente.',
       'help_q_custom_bank': '¿Puedo agregar bancos personalizados?',
-      'help_a_custom_bank':
-          'Sí, con Pro o superior. En Ajustes → Gestionar bancos puedes añadir, editar y eliminar entidades, y luego usarlas al crear cuentas.',
+      'help_a_custom_bank': 'Sí, con Pro o superior. En Ajustes → Gestionar bancos puedes añadir, editar y eliminar entidades, y luego usarlas al crear cuentas.',
       'help_q_currency': '¿Cómo cambio la moneda principal?',
-      'help_a_currency':
-          'En Ajustes → Moneda principal eliges la moneda de los totales. En Ajustes → Tasas de cambio defines la conversión entre tus monedas.',
+      'help_a_currency': 'En Ajustes → Moneda principal eliges la moneda de los totales. En Ajustes → Tasas de cambio defines la conversión entre tus monedas.',
       'help_q_feedback': '¿Cómo envío una sugerencia o reporto un error?',
-      'help_a_feedback':
-          'Desde Perfil → Ayuda y privacidad puedes contactar con soporte, reportar un error o enviar una sugerencia. También puedes unirte a nuestra comunidad de Telegram.',
+      'help_a_feedback': 'Desde Perfil → Ayuda y privacidad puedes contactar con soporte, reportar un error o enviar una sugerencia. También puedes unirte a nuestra comunidad de Telegram.',
 
       // General
       'app_name': 'CashRapido',
@@ -1245,24 +1267,18 @@ class AppLocalizations {
 
       // Onboarding
       'onboarding_title_1': 'Control Total',
-      'onboarding_desc_1':
-          'Maneja todo tu dinero desde tu móvil, sin necesidad de conexión a internet.',
+      'onboarding_desc_1': 'Maneja todo tu dinero desde tu móvil, sin necesidad de conexión a internet.',
       'onboarding_title_2': 'Sin Complicaciones',
-      'onboarding_desc_2':
-          'Interfaz intuitiva y rápida para registrar tus gastos e ingresos al instante.',
+      'onboarding_desc_2': 'Interfaz intuitiva y rápida para registrar tus gastos e ingresos al instante.',
       'onboarding_title_3': 'Asistente IA Experto',
-      'onboarding_desc_3':
-          'Tu asesor financiero personal. Pregunta sobre tus gastos y consejos las 24/7.',
+      'onboarding_desc_3': 'Tu asesor financiero personal. Pregunta sobre tus gastos y consejos las 24/7.',
       'onboarding_get_started': 'Empezar',
       'tour_balance_title': 'Tu dinero consolidado',
-      'tour_balance_desc':
-          'Aquí verás el resumen global de todas tus tarjetas y cuentas en distintas monedas.',
+      'tour_balance_desc': 'Aquí verás el resumen global de todas tus tarjetas y cuentas en distintas monedas.',
       'tour_quick_actions_title': 'Acciones rápidas',
-      'tour_quick_actions_desc':
-          'Usa esta zona para transferir y realizar acciones sobre tu dinero al instante.',
+      'tour_quick_actions_desc': 'Usa esta zona para transferir y realizar acciones sobre tu dinero al instante.',
       'tour_finish_title': '¡Tour completado!',
-      'tour_finish_desc':
-          'Ya conoces las funciones principales de CashRapido. Empieza a gestionar tus finanzas.',
+      'tour_finish_desc': 'Ya conoces las funciones principales de CashRapido. Empieza a gestionar tus finanzas.',
       'tour_wallet_title': 'Tu Billetera',
       'tour_wallet_desc': 'Aquí ves tu saldo. Toca para cambiar de tarjeta.',
       'tour_scan_title': 'Escáner Rápido',
@@ -1272,8 +1288,7 @@ class AppLocalizations {
       'tour_transfer_title': 'Transferencias',
       'tour_transfer_desc': 'Mueve dinero o envía pagos rápidamente.',
       'tour_fab_title': 'Asistente IA',
-      'tour_fab_desc':
-          'Tu asesor financiero personal. Toca para abrir el chat y recibir consejos, análisis y ayuda al instante.',
+      'tour_fab_desc': 'Tu asesor financiero personal. Toca para abrir el chat y recibir consejos, análisis y ayuda al instante.',
       'tour_navbar_title': 'Navegación Principal',
       'tour_navbar_desc':
           'Accede a Inicio, Movimientos, Estadísticas y Perfil desde aquí.',
@@ -1287,14 +1302,12 @@ class AppLocalizations {
       'tour_home_nav_desc':
           'Tu resumen diario: saldo, accesos rápidos y movimientos recientes.',
       'tour_movements_nav_title': 'Pestaña Movimientos',
-      'tour_movements_nav_desc':
-          'Consulta tus movimientos por período, con resumen, búsqueda y filtros.',
+      'tour_movements_nav_desc': 'Consulta tus movimientos por período, con resumen, búsqueda y filtros.',
       'tour_stats_nav_title': 'Pestaña Estadísticas',
       'tour_stats_nav_desc':
           'Analiza tus gastos e ingresos con gráficos detallados.',
       'tour_profile_nav_title': 'Pestaña Perfil',
-      'tour_profile_nav_desc':
-          'Gestiona tu cuenta, la seguridad, las licencias y los ajustes de la app.',
+      'tour_profile_nav_desc': 'Gestiona tu cuenta, la seguridad, las licencias y los ajustes de la app.',
       // Scanner
       'scan_card_instruction': 'Encuadra la tarjeta',
       'align_card_instruction': 'Alinea la tarjeta con el marco',
@@ -1314,14 +1327,12 @@ class AppLocalizations {
       'backup_action': 'Respaldar',
       'restore_action': 'Restaurar',
       'restore_dialog_title': '¿Restaurar datos?',
-      'restore_dialog_desc':
-          'Esto sobrescribirá todos los datos actuales con la copia de la nube. Esta acción no se puede deshacer.',
+      'restore_dialog_desc': 'Esto sobrescribirá todos los datos actuales con la copia de la nube. Esta acción no se puede deshacer.',
       'restore_success_msg': 'Datos restaurados exitosamente',
       'backup_success_msg': 'Respaldo completado',
       'developed_by': 'Desarrollado por',
       'developer_name': 'Lenier Cruz Perez',
-      'app_desc':
-          'CashRapido es una herramienta moderna de gestión financiera diseñada para la simplicidad y rapidez.',
+      'app_desc': 'CashRapido es una herramienta moderna de gestión financiera diseñada para la simplicidad y rapidez.',
 
       // Auth
       'locked_title': 'CashRapido Bloqueado',
@@ -1502,16 +1513,15 @@ class AppLocalizations {
           'Porcentaje de tus ingresos que queda después de tus gastos.',
       // Presupuestos
       'stats_budget_chart_title': 'Presupuestos del mes',
-      'stats_budget_chart_subtitle': 'Lo configurado frente a lo gastado en {period}',
+      'stats_budget_chart_subtitle':
+          'Lo configurado frente a lo gastado en {period}',
       'stats_budget_spent': 'Gastado',
       'stats_budget_remaining': 'Restante',
       'stats_budget_exceeded': 'Excedido',
       'stats_budget_empty_title': 'Sin presupuestos configurados',
-      'stats_budget_empty_hint':
-          'Asigna un presupuesto mensual a tus categorías para compararlo con tus gastos reales.',
+      'stats_budget_empty_hint': 'Asigna un presupuesto mensual a tus categorías para compararlo con tus gastos reales.',
       'stats_budget_count': '{n} categorías con presupuesto',
-      'stats_budget_month_only':
-          'El presupuesto es mensual: cambia el período a un mes para compararlo con tus gastos.',
+      'stats_budget_month_only': 'El presupuesto es mensual: cambia el período a un mes para compararlo con tus gastos.',
       // Evolución diaria de gastos e ingresos
       'stats_expenses_chart_title': 'Gastos del período',
       'stats_income_chart_title': 'Ingresos del período',
@@ -1523,21 +1533,17 @@ class AppLocalizations {
       'stats_active_days': '{n} días con movimientos',
       // Proyección financiera
       'stats_projection_method_title': 'Cómo se calcula',
-      'stats_projection_method':
-          'Se parte del promedio diario acumulado durante {elapsed} de {total} días naturales y se extrapola al cierre del mes.',
-      'stats_projection_disclaimer':
-          'Es una estimación basada en lo ocurrido hasta hoy, no un resultado garantizado.',
+      'stats_projection_method': 'Se parte del promedio diario acumulado durante {elapsed} de {total} días naturales y se extrapola al cierre del mes.',
+      'stats_projection_disclaimer': 'Es una estimación basada en lo ocurrido hasta hoy, no un resultado garantizado.',
       'stats_accumulated': 'Acumulado real',
       'stats_projected_close': 'Estimado al cierre',
       'stats_projection_income': 'Ingresos proyectados',
       'stats_projection_expense': 'Gastos proyectados',
       'stats_projection_balance': 'Balance proyectado',
       'stats_projection_unavailable_title': 'No hay datos suficientes',
-      'stats_projection_unavailable_hint':
-          'Todavía no hay movimientos este mes, así que no procede estimar el cierre.',
+      'stats_projection_unavailable_hint': 'Todavía no hay movimientos este mes, así que no procede estimar el cierre.',
       'stats_projection_income_unavailable': 'Sin ingresos registrados',
-      'stats_projection_no_income_hint':
-          'Sin ingresos no se estima cómo cerrarán: sólo se muestran los datos reales.',
+      'stats_projection_no_income_hint': 'Sin ingresos no se estima cómo cerrarán: sólo se muestran los datos reales.',
       'stats_projection_month_complete':
           'El mes ya está completo, así que lo estimado coincide con lo real.',
       'stats_projection_current_month': 'Mes en curso',
@@ -1594,8 +1600,7 @@ class AppLocalizations {
       'monthly_amount': 'Monto mensual',
       'limit_updated': 'Límite actualizado',
       'delete_card_question': '¿Eliminar Tarjeta?',
-      'delete_card_confirmation':
-          '¿Estás seguro de que quieres eliminar esta tarjeta? Perderás el historial de saldo asociado a ella.',
+      'delete_card_confirmation': '¿Estás seguro de que quieres eliminar esta tarjeta? Perderás el historial de saldo asociado a ella.',
 
       // Card Management
       'new_card': 'Nueva Tarjeta',
@@ -1659,16 +1664,14 @@ class AppLocalizations {
       'success_backup': 'Respaldo completado',
       'success_restore': 'Datos importados correctamente',
       'confirm_import': 'Confirmar Importación',
-      'import_warning':
-          'Importar datos sobrescribirá toda la información actual. Esta acción no se puede deshacer.\n\n¿Deseas continuar?',
+      'import_warning': 'Importar datos sobrescribirá toda la información actual. Esta acción no se puede deshacer.\n\n¿Deseas continuar?',
       'share_save': 'Compartir / Guardar',
       'sync_drive': 'Sincronizar con Google Drive',
       'sync_drive_sub': 'Conectar cuenta para respaldos',
       'last_copy': 'Última Copia:',
       'never': 'Nunca',
       'restore_cloud_title': '¿Restaurar datos?',
-      'restore_cloud_warning':
-          'Esto sobrescribirá todos los datos actuales con la copia de la nube.',
+      'restore_cloud_warning': 'Esto sobrescribirá todos los datos actuales con la copia de la nube.',
       'file_saved': 'Archivo guardado en',
       'enter_amount_category_error': 'Por favor ingrese monto y categoría',
       'incorrect_pin': 'PIN Incorrecto 🚫',
@@ -1772,8 +1775,7 @@ class AppLocalizations {
       'ai_history_title': 'Historial de Chats',
       'ai_new_chat': 'Nuevo Chat',
       'ai_no_conversations': 'No hay conversaciones aún.',
-      'ai_error_message':
-          'No se pudo obtener la respuesta. Revisa tu conexión e inténtalo de nuevo.',
+      'ai_error_message': 'No se pudo obtener la respuesta. Revisa tu conexión e inténtalo de nuevo.',
       'today': 'Hoy',
       'yesterday': 'Ayer',
       'send': 'Enviar',
@@ -1825,8 +1827,7 @@ class AppLocalizations {
       'payment_error': 'Error al procesar el pago',
       'payment_disabled': 'Este método no está disponible actualmente.',
       'payment_cancelled': 'Pago cancelado',
-      'payment_pending':
-          'El pago de la licencia está pendiente en Apklis. Revise su app de Apklis.',
+      'payment_pending': 'El pago de la licencia está pendiente en Apklis. Revise su app de Apklis.',
       'processing_payment': 'Procesando pago...',
       'auth_required': 'Autenticación requerida. Inicie sesión en Apklis.',
       'connection_error': 'Error de conexión. Verifique su internet.',
@@ -1860,14 +1861,12 @@ class AppLocalizations {
 
       // Holiday Promo
       'promo_title': '¡Feliz Año Nuevo! 🎉',
-      'promo_message':
-          'Como regalo de fin de año, disfruta de todas las funciones PRO totalmente gratis hasta el 10 de Enero. ¡Gracias por usar CashRapido!',
+      'promo_message': 'Como regalo de fin de año, disfruta de todas las funciones PRO totalmente gratis hasta el 10 de Enero. ¡Gracias por usar CashRapido!',
       'promo_button': '¡Genial! 🚀',
 
       // Default License
       'default_license_title': 'Licencia Básica (Gratuita)',
-      'default_license_desc':
-          'Comienzas con nuestra licencia gratuita. Estas son tus limitaciones actuales:',
+      'default_license_desc': 'Comienzas con nuestra licencia gratuita. Estas son tus limitaciones actuales:',
       'limit_card_1': 'Máximo 1 Tarjeta / Efectivo',
       'limit_no_charts': 'Sin Gráficas Avanzadas',
       'limit_no_backup': 'Sin Respaldo en Nube',
@@ -1878,11 +1877,9 @@ class AppLocalizations {
 
       // Restrictions
       'feature_locked_title': 'Función Bloqueada 🔒',
-      'feature_locked_desc':
-          'Esta función solo está disponible en planes Premium. ¡Mejora tu licencia para desbloquearla!',
+      'feature_locked_desc': 'Esta función solo está disponible en planes Premium. ¡Mejora tu licencia para desbloquearla!',
       'limit_reached_title': 'Límite Alcanzado',
-      'limit_card_desc':
-          'La licencia gratuita solo permite 1 tarjeta. Mejora tu plan para agregar más.',
+      'limit_card_desc': 'La licencia gratuita solo permite 1 tarjeta. Mejora tu plan para agregar más.',
       'skip': 'Omitir',
 
       // Ads
@@ -1965,16 +1962,14 @@ class AppLocalizations {
       'scan_allow_camera': 'Permitir cámara',
       'scan_torch_on': 'Encender linterna',
       'scan_torch_off': 'Apagar linterna',
-      'scan_capture_error': 'No se pudo capturar la imagen. Vuelve a intentarlo.',
+      'scan_capture_error':
+          'No se pudo capturar la imagen. Vuelve a intentarlo.',
       'scan_reading_error': 'No se pudo leer la tarjeta. Vuelve a intentarlo.',
       'scan_camera_permission_title': 'Activa la cámara',
-      'scan_camera_permission_desc':
-          'CashRapido necesita la cámara para leer la tarjeta. Concede el permiso para continuar.',
-      'scan_camera_permission_settings_desc':
-          'El permiso de cámara está bloqueado. Actívalo en los ajustes del sistema y vuelve a intentarlo.',
+      'scan_camera_permission_desc': 'CashRapido necesita la cámara para leer la tarjeta. Concede el permiso para continuar.',
+      'scan_camera_permission_settings_desc': 'El permiso de cámara está bloqueado. Actívalo en los ajustes del sistema y vuelve a intentarlo.',
       'scan_camera_unavailable_title': 'Cámara no disponible',
-      'scan_camera_unavailable_desc':
-          'No encontramos una cámara disponible en este dispositivo. Puedes introducir los datos manualmente.',
+      'scan_camera_unavailable_desc': 'No encontramos una cámara disponible en este dispositivo. Puedes introducir los datos manualmente.',
       'scan_camera_error_title': 'No se pudo iniciar la cámara',
       'scan_camera_error_desc':
           'Ocurrió un problema al preparar la cámara. Vuelve a intentarlo.',
@@ -2053,11 +2048,9 @@ class AppLocalizations {
       'rec_empty_accounts': 'No hay cuentas disponibles.',
       // ── Prueba gratuita ──────────────────────────────────────────────────
       'trial_active_title': 'Prueba gratis de 2 días',
-      'trial_active_desc':
-          'Te quedan {time}. Al terminar sin un plan activo se eliminarán todos los datos.',
+      'trial_active_desc': 'Te quedan {time}. Al terminar sin un plan activo se eliminarán todos los datos.',
       'trial_ended_title': 'Prueba finalizada',
-      'trial_ended_body':
-          'Tu prueba gratuita de 2 días terminó sin un plan activo, así que se eliminaron los datos guardados en este dispositivo.',
+      'trial_ended_body': 'Tu prueba gratuita de 2 días terminó sin un plan activo, así que se eliminaron los datos guardados en este dispositivo.',
     },
     'en': {
       // ── Profile ───────────────────────────────────────────────────────────
@@ -2095,20 +2088,96 @@ class AppLocalizations {
       'drive_restore': 'Restore from cloud',
       'drive_disconnect': 'Disconnect',
       'drive_disconnect_confirm': 'Disconnect Google Drive?',
-      'drive_disconnect_desc':
-          'Google Drive will be signed out on this device. Your cloud backups are not deleted.',
+      'drive_disconnect_desc': 'Google Drive will be signed out on this device. Your cloud backups are not deleted.',
       'drive_disconnected': 'Google Drive disconnected',
       'drive_disconnected_message':
           'Connect your Google account to save and restore backups.',
       'drive_restore_confirm_title': 'Restore from Google Drive',
-      'drive_restore_warning':
-          'The current data on this device will be replaced by the cloud backup. This action cannot be undone.',
+      'drive_restore_warning': 'The current data on this device will be replaced by the cloud backup. This action cannot be undone.',
       'drive_backup_success': 'Backup completed',
       'drive_backup_error': 'Could not complete the backup',
       'drive_restore_success': 'Data restored from Google Drive',
       'drive_restore_error': 'Could not restore the data',
-      'drive_privacy_note':
-          'The backup is stored in your own Google Drive account. CashRapido does not access other files.',
+      'drive_privacy_note': 'The backup is stored in your own Google Drive account. CashRapido does not access other files.',
+
+      // ── Cloud backup ─────────────────────────────────────────────────────
+      'cloud_title': 'Cloud backup',
+      'cloud_row_desc': 'Your data backed up in your account',
+      'cloud_subtitle': 'Your data is stored in your CashRapido account and can be recovered when you install the app on another device.',
+      'cloud_auto_sync': 'Automatic sync',
+      'cloud_auto_sync_desc':
+          'Saves changes to the cloud a few seconds after each edit.',
+      'cloud_save_now': 'Save now',
+      'cloud_restore': 'Recover from cloud',
+      'cloud_restore_confirm_title': 'Recover your data?',
+      'cloud_restore_confirm_desc': 'The data on this device will be replaced by the latest backup in your account. This cannot be undone.',
+      'cloud_restore_warning':
+          'Recovery replaces the current data on this device.',
+      'cloud_save_success': 'Data saved to the cloud.',
+      'cloud_save_error': 'Could not save to the cloud. Check your connection.',
+      'cloud_restore_success': 'Data recovered from the cloud.',
+      'cloud_restore_error': 'Could not recover the data.',
+      'cloud_last_sync': 'Last sync: {date}',
+      'cloud_never_synced': 'You have not saved any data to the cloud yet.',
+      'cloud_not_connected': 'Connect your Google account to use cloud backup.',
+      'cloud_connect': 'Connect account',
+
+      // ── Support chat ─────────────────────────────────────────────────────
+      'support_title': 'Support',
+      'support_row_desc': 'Chat with the support team',
+      'support_subtitle':
+          'Send us your questions. Only you and the support team can see this conversation.',
+      'support_empty_title': 'How can we help?',
+      'support_empty_desc':
+          'Write your first question and the support team will reply here.',
+      'support_input_hint': 'Write a message…',
+      'support_send_error':
+          'Could not send the message. Check your connection.',
+      'support_load_error': 'Could not load the conversation.',
+      'support_retry': 'Retry',
+      'support_need_login_title': 'Connect your account',
+      'support_need_login_desc':
+          'Support chat needs your Google account to identify you. Then you can write to us and get replies here.',
+      'support_connect': 'Connect account',
+      'support_close_ticket': 'Close ticket',
+      'support_reopen_ticket': 'Reopen ticket',
+      'support_delete_conversation': 'Delete conversation',
+      'support_delete_title': 'Delete this conversation?',
+      'support_delete_desc':
+          'All messages in this ticket will be deleted. This cannot be undone.',
+      'support_closed_badge': 'Closed',
+      'support_closed_desc':
+          'Ticket closed. You can no longer send messages; start a new conversation to talk to support again.',
+      'support_new_conversation': 'New conversation',
+      'support_history': 'History',
+      'support_open_badge': 'Open',
+      'support_closed_done': 'Ticket closed',
+      'support_reopened_done': 'Ticket reopened',
+      'support_action_error': 'Could not complete the action. Please try again.',
+      'admin_inbox_title': 'Support',
+      'admin_inbox_row_desc': 'Conversations from all clients',
+      'admin_inbox_empty': 'No conversations yet.',
+      'admin_inbox_search': 'Search by email or name',
+      'admin_campaign': 'Campaign',
+      'admin_no_access': 'This section is for the support team only.',
+      'campaign_title': 'New campaign',
+      'campaign_subtitle': 'Send a notice to your clients’ chat.',
+      'campaign_name_label': 'Title (optional)',
+      'campaign_name_hint': 'e.g. October promotion',
+      'campaign_body_label': 'Message',
+      'campaign_body_hint': 'Write the message they will receive…',
+      'campaign_audience': 'Recipients',
+      'campaign_all': 'All clients',
+      'campaign_all_desc': 'Sent to every registered user.',
+      'campaign_single': 'One client',
+      'campaign_single_desc': 'Choose who you want to write to.',
+      'campaign_select_client': 'Select a client',
+      'campaign_send': 'Send campaign',
+      'campaign_sent': 'Campaign sent',
+      'campaign_error': 'Could not send the campaign.',
+      'campaign_empty_body': 'Write the campaign message.',
+      'campaign_no_clients': 'No clients to choose from yet.',
+      'campaign_no_target': 'Select a client.',
 
       // ── My Account ────────────────────────────────────────────────────────
       'account_title': 'My Account',
@@ -2122,12 +2191,11 @@ class AppLocalizations {
       'app_icon_desc': 'Change the CashRapido icon on your home screen',
       'app_icon_pick_hint': 'Choose the icon you will see on your home screen.',
       'app_icon_locked_note': 'Changing the icon is a Business plan feature.',
-      'app_icon_enterprise_note': 'Get the Business plan to change the app icon.',
+      'app_icon_enterprise_note':
+          'Get the Business plan to change the app icon.',
       'app_icon_updated_msg': 'Icon updated',
-      'app_icon_seasonal_active':
-          'The seasonal icon is active right now; your choice will apply when it ends.',
-      'app_icon_dev_note':
-          'The icon can only be changed in the installed release build; it is not applied in development.',
+      'app_icon_seasonal_active': 'The seasonal icon is active right now; your choice will apply when it ends.',
+      'app_icon_dev_note': 'The icon can only be changed in the installed release build; it is not applied in development.',
       'app_icon_default': 'Default',
       'app_icon_playa': 'Beach',
       'app_icon_mar': 'Sea',
@@ -2144,8 +2212,7 @@ class AppLocalizations {
       'account_expires_label': 'Expires',
       'account_no_expiry': 'No expiry',
       'account_currency_label': 'Main currency',
-      'account_local_note':
-          'CashRapido keeps your data on this device. There is no cloud account with its own username and password.',
+      'account_local_note': 'CashRapido keeps your data on this device. There is no cloud account with its own username and password.',
 
       // ── Licenses (labels) ─────────────────────────────────────────────────
       'license_free': 'Free',
@@ -2164,10 +2231,8 @@ class AppLocalizations {
       'promo_redeem_action': 'Redeem',
       'promo_code_empty': 'Enter a code.',
       'promo_not_available_title': 'Redemption not available',
-      'promo_not_available_desc':
-          'Promo code redemption is not available in CashRapido yet: it needs a validation service that is not configured. If you have a code, contact support.',
-      'promo_dependency_note':
-          'This feature will be enabled once the code validation service is configured. Meanwhile, no code will be applied.',
+      'promo_not_available_desc': 'Promo code redemption is not available in CashRapido yet: it needs a validation service that is not configured. If you have a code, contact support.',
+      'promo_dependency_note': 'This feature will be enabled once the code validation service is configured. Meanwhile, no code will be applied.',
       'promo_support_subject': 'Promo code enquiry',
 
       // ── Export / import / reset ───────────────────────────────────────────
@@ -2176,8 +2241,7 @@ class AppLocalizations {
       'import_error': 'Could not import the data',
       'backup_error': 'Could not create the backup',
       'reset_warning_title': 'Reset all data?',
-      'reset_warning_desc':
-          'Your movements, accounts, categories, recurring transactions, notifications, assistant conversations and business and loan data will be deleted from this device. Your license, settings, credentials and cloud backups will be kept.',
+      'reset_warning_desc': 'Your movements, accounts, categories, recurring transactions, notifications, assistant conversations and business and loan data will be deleted from this device. Your license, settings, credentials and cloud backups will be kept.',
       'reset_confirm_first': 'Continue',
       'reset_backup_title': 'Back up before deleting',
       'reset_backup_desc': 'Do you want to save a backup before resetting?',
@@ -2211,14 +2275,12 @@ class AppLocalizations {
 
       // ── What's new ────────────────────────────────────────────────────────
       'news_version_label': 'Installed version',
-      'news_no_changelog':
-          'News is published in the store. Open the app listing to see the latest information.',
+      'news_no_changelog': 'News is published in the store. Open the app listing to see the latest information.',
       'news_open_store': 'Open the store',
 
       // ── Main features ─────────────────────────────────────────────────────
       'features_title': 'Main Features',
-      'features_intro':
-          'Explore everything CashRapido can do. Each item opens the real screen.',
+      'features_intro': 'Explore everything CashRapido can do. Each item opens the real screen.',
       'features_group_personal': 'Personal finance',
       'features_group_tools': 'Tools',
       'features_group_modules': 'Advanced modules',
@@ -2265,8 +2327,7 @@ class AppLocalizations {
       // ── Invite friends ────────────────────────────────────────────────────
       'invite_title': 'Invite friends',
       'invite_headline': 'Invite your friends',
-      'invite_message':
-          'Share CashRapido with your friends and help them organise their finances.',
+      'invite_message': 'Share CashRapido with your friends and help them organise their finances.',
       'invite_link_label': 'Download link',
       'invite_copy': 'Copy link',
       'invite_copied': 'Link copied',
@@ -2299,34 +2360,26 @@ class AppLocalizations {
       // ── Privacy ───────────────────────────────────────────────────────────
       'privacy_title': 'How we handle your data',
       'privacy_local_title': 'Local storage',
-      'privacy_local_body':
-          'Your movements, accounts, categories and settings are stored on this device. The app does not require registration or create a cloud account with its own username and password.',
+      'privacy_local_body': 'Your movements, accounts, categories and settings are stored on this device. The app does not require registration or create a cloud account with its own username and password.',
       'privacy_security_title': 'Security',
-      'privacy_security_body':
-          'Loan module data is stored encrypted on the device. Access to the app can be protected with biometrics, PIN or password from Settings.',
+      'privacy_security_body': 'Loan module data is stored encrypted on the device. Access to the app can be protected with biometrics, PIN or password from Settings.',
       'privacy_drive_title': 'Google Drive',
-      'privacy_drive_body':
-          'Only if you connect your account, CashRapido saves a backup to your own Google Drive so you can restore it. It does not access other files and you can disconnect it whenever you want.',
+      'privacy_drive_body': 'Only if you connect your account, CashRapido saves a backup to your own Google Drive so you can restore it. It does not access other files and you can disconnect it whenever you want.',
       'privacy_ai_title': 'AI Assistant',
-      'privacy_ai_body':
-          'If you enable the assistant, your messages are processed through Google\'s AI service to generate answers. If you do not use it, nothing is sent.',
+      'privacy_ai_body': 'If you enable the assistant, your messages are processed through Google\'s AI service to generate answers. If you do not use it, nothing is sent.',
       'privacy_export_title': 'Export and import',
-      'privacy_export_body':
-          'You can export your data to Excel or PDF and import a copy whenever you need to. You control those files.',
+      'privacy_export_body': 'You can export your data to Excel or PDF and import a copy whenever you need to. You control those files.',
       'privacy_delete_title': 'Delete your data',
-      'privacy_delete_body':
-          'From My Account you can reset the app and delete your data from this device. Cloud backups are kept until you delete them yourself.',
+      'privacy_delete_body': 'From My Account you can reset the app and delete your data from this device. Cloud backups are kept until you delete them yourself.',
       'privacy_contact_title': 'Contact',
-      'privacy_contact_body':
-          'If you have doubts about how your data is handled, write to us at {email}.',
+      'privacy_contact_body': 'If you have doubts about how your data is handled, write to us at {email}.',
       'privacy_contact_subject': 'Privacy and data enquiry',
       'categories': 'Categories',
       'streak_title': 'Streaks',
       'streak_days': '{count} days in a row',
       'streak_calendar_month': 'Calendar - This month',
       'streak_reward_title': 'Premium reward',
-      'streak_reward_question':
-          'Do you want to use 1 of your {count} rewards to get a random license plan right now?',
+      'streak_reward_question': 'Do you want to use 1 of your {count} rewards to get a random license plan right now?',
       'streak_reward_success': 'Premium plan activated successfully!',
       'streak_reward_hint': 'Earn a Premium plan every 50 days!',
       'streak_claim': 'Redeem',
@@ -2351,10 +2404,8 @@ class AppLocalizations {
       'notif_tips_desc': 'Receive random tips to improve your finances',
       'notif_permission_granted': 'System permission granted',
       'notif_permission_denied_title': 'Notifications blocked',
-      'notif_permission_denied_desc':
-          'System notifications are turned off for CashRapido. Turn them on to receive reminders and alerts.',
-      'notif_permission_dialog_desc':
-          'Could not enable them because the notification permission is denied. Enable it in system settings.',
+      'notif_permission_denied_desc': 'System notifications are turned off for CashRapido. Turn them on to receive reminders and alerts.',
+      'notif_permission_dialog_desc': 'Could not enable them because the notification permission is denied. Enable it in system settings.',
       'open_system_settings': 'Open system settings',
       'notif_weekly_label': 'Weekly summary',
       'notif_weekly_label_desc': 'Sent automatically on Sundays',
@@ -2372,8 +2423,7 @@ class AppLocalizations {
       'business_expense': 'Expenses',
       'add_business_transaction': 'Add Transaction',
       'business_locked_title': 'Enterprise Module',
-      'business_locked_desc':
-          'This module is exclusive to Enterprise plans. Take your business accounting to the next level.',
+      'business_locked_desc': 'This module is exclusive to Enterprise plans. Take your business accounting to the next level.',
       'upgrade_to_enterprise': 'Upgrade to Enterprise',
       'total_profit': 'Total Profit',
       'net_income': 'Net Income',
@@ -2410,15 +2460,13 @@ class AppLocalizations {
       'business_appearance_section': 'Appearance',
       'business_preview': 'Preview',
       'business_delete_title': 'Delete Business',
-      'business_delete_confirm':
-          'Delete this business and all its data? This action cannot be undone.',
+      'business_delete_confirm': 'Delete this business and all its data? This action cannot be undone.',
 
       // Loans Module
       'nav_loans': 'Loans',
       'loans_module_title': 'Loans Module',
       'loans_locked_title': 'Loans Module',
-      'loans_locked_desc':
-          'Keep track of your loans, clients, interest rates, payments, and automatic reminders. Exclusive to Enterprise licenses.',
+      'loans_locked_desc': 'Keep track of your loans, clients, interest rates, payments, and automatic reminders. Exclusive to Enterprise licenses.',
       'total_loaned': 'Total Loaned',
       'remaining_balance': 'Remaining Balance',
       'total_collected': 'Total Collected',
@@ -2453,8 +2501,7 @@ class AppLocalizations {
       'no_loans_title': 'No Loans',
       'no_loans_desc':
           'You have not registered any loans yet. Tap \'+\' to get started.',
-      'delete_loan_confirm':
-          'Are you sure you want to delete this loan? This will also delete all associated payments.',
+      'delete_loan_confirm': 'Are you sure you want to delete this loan? This will also delete all associated payments.',
       'loan_deleted_msg': 'Loan deleted successfully.',
       'loan_saved_msg': 'Loan saved successfully.',
       'payment_registered_msg': 'Payment registered successfully.',
@@ -2511,8 +2558,7 @@ class AppLocalizations {
       'reports_delinquent_clients': 'Overdue Debtors',
       'reports_active_portfolio': 'Active Portfolio',
       'reports_expected_7days': 'Expected Payouts (Next 7 Days):',
-      'reports_projections_footnote':
-          '* This amount represents the sum of outstanding installment balances scheduled to mature in the upcoming week.',
+      'reports_projections_footnote': '* This amount represents the sum of outstanding installment balances scheduled to mature in the upcoming week.',
 
       // Loans List
       'loans_search_hint': 'Search by name, phone or ID...',
@@ -2538,8 +2584,7 @@ class AppLocalizations {
       'loan_due_label': 'Due',
       'installments_overdue_count': '{count} overdue',
       'installments_pending_count': '{count} pending inst.',
-      'no_loans_desc_portfolio':
-          'No loans registered yet. Tap \'+\' to start managing your portfolio.',
+      'no_loans_desc_portfolio': 'No loans registered yet. Tap \'+\' to start managing your portfolio.',
 
       // Loan Detail
       'loan_detail_title': 'Loan Details',
@@ -2581,16 +2626,13 @@ class AppLocalizations {
       'loan_collected_label': 'Collected',
       'loan_total_label': 'Total',
       'loan_refinance_title': 'Refinance Loan',
-      'loan_refinance_desc':
-          'The current balance of {amount} {currency} will be closed and a new loan with this amount as principal will be created. Continue?',
+      'loan_refinance_desc': 'The current balance of {amount} {currency} will be closed and a new loan with this amount as principal will be created. Continue?',
       'loan_refinance_success': 'Loan refinanced successfully',
       'loan_mark_loss_title': 'Mark as Written Off',
-      'loan_mark_loss_desc':
-          'Mark {name}\'s loan as written off? {amount} will be recorded as a loss.',
+      'loan_mark_loss_desc': 'Mark {name}\'s loan as written off? {amount} will be recorded as a loss.',
       'loan_mark_loss_success': 'Loan marked as loss',
       'loan_delete_title': 'Delete Loan',
-      'loan_delete_desc':
-          'Are you sure? This will delete all associated payments and activity logs.',
+      'loan_delete_desc': 'Are you sure? This will delete all associated payments and activity logs.',
       'loan_delete_success': 'Loan deleted',
       'loan_delete_payment_title': 'Delete Payment',
       'loan_delete_payment_desc':
@@ -2658,8 +2700,7 @@ class AppLocalizations {
       'borrower_list_risk_medium': 'Medium Risk',
       'borrower_list_risk_low': 'Low Risk',
       'borrowers_empty_title': 'No Clients',
-      'borrowers_empty_desc':
-          'You haven\'t added any debtors yet. Register your clients to associate them with loans neatly.',
+      'borrowers_empty_desc': 'You haven\'t added any debtors yet. Register your clients to associate them with loans neatly.',
       'borrower_registered_on': 'Registered on',
       'borrower_phone_label': 'Phone',
       'borrower_address_label': 'Address',
@@ -2669,8 +2710,7 @@ class AppLocalizations {
       'borrower_edit': 'Edit',
       'borrower_delete': 'Delete',
       'borrower_delete_title': 'Delete Client?',
-      'borrower_delete_desc':
-          'Are you sure you want to delete {name}? This will not delete their existing loans, but you will lose the association.',
+      'borrower_delete_desc': 'Are you sure you want to delete {name}? This will not delete their existing loans, but you will lose the association.',
 
       // Payment Form
       'payment_pay_all': 'ALL',
@@ -2749,11 +2789,9 @@ class AppLocalizations {
       'product_stock_low': 'Low stock',
       'product_stock_out': 'Out of stock',
       'product_empty_title': 'No products',
-      'product_empty_desc':
-          'You don\'t have any products in your catalog yet.\nAdd the first one to start selling.',
+      'product_empty_desc': 'You don\'t have any products in your catalog yet.\nAdd the first one to start selling.',
       'product_no_search_results': 'No products found',
-      'product_no_search_results_desc':
-          'Try different search terms.',
+      'product_no_search_results_desc': 'Try different search terms.',
       'product_sort_by': 'Sort by',
       'product_sort_name': 'Name',
       'product_sort_stock': 'Stock',
@@ -2768,16 +2806,13 @@ class AppLocalizations {
 
       'category_manager_title': 'Categories',
       'category_empty_title': 'No categories',
-      'category_empty_desc':
-          'Organize your products by creating categories.\nThey are also used for automatic SKU generation.',
+      'category_empty_desc': 'Organize your products by creating categories.\nThey are also used for automatic SKU generation.',
       'category_add_category': 'Add Category',
       'category_add_subcategory': 'Add Subcategory',
       'category_edit': 'Edit',
       'category_delete': 'Delete',
-      'category_confirm_delete':
-          'Delete "{name}"? Subcategories and product assignments will also be removed.',
-      'category_confirm_delete_sub':
-          'Delete subcategory "{name}"?',
+      'category_confirm_delete': 'Delete "{name}"? Subcategories and product assignments will also be removed.',
+      'category_confirm_delete_sub': 'Delete subcategory "{name}"?',
       'category_sub_name_placeholder': 'Subcategory name',
       'category_new_title': 'New Category',
       'category_new_sub_title': 'New Subcategory',
@@ -2880,7 +2915,8 @@ class AppLocalizations {
       'sales_income_label': 'Period Income',
       'sales_empty_title': 'No Sales',
       'sales_empty_all_desc': 'Make your first sale from the point of sale.',
-      'sales_empty_filtered_desc': 'No sales in this period. Adjust the filter.',
+      'sales_empty_filtered_desc':
+          'No sales in this period. Adjust the filter.',
       'sale_detail_title': 'Sale Details',
       'sale_receipt_label': 'Receipt',
       'sale_client_label': 'Client',
@@ -2894,8 +2930,7 @@ class AppLocalizations {
       'sale_mark_paid_label': 'Mark as Paid',
       'sale_delete_label': 'Delete',
       'sale_processing': 'Processing...',
-      'sale_error_default':
-          'Could not register the sale. Please try again.',
+      'sale_error_default': 'Could not register the sale. Please try again.',
       'reports_title': 'Reports & Closings',
       'closing_day': 'Daily Closing',
       'closing_week': 'Weekly Closing',
@@ -2975,8 +3010,7 @@ class AppLocalizations {
           'Distributed in total: {total} / {stock} {unit}',
       'seller_assign_removed': 'Product unassigned',
       'seller_assign_success': '{qty} units assigned to {name}',
-      'seller_assign_exceeds':
-          '⚠️ You cannot assign more than {max} units (already distributed among other sellers or insufficient stock).',
+      'seller_assign_exceeds': '⚠️ You cannot assign more than {max} units (already distributed among other sellers or insufficient stock).',
       'seller_financial_summary': 'Financial Summary',
       'seller_earnings': 'Seller Earnings',
       'seller_assigned_inventory': 'Assigned Inventory',
@@ -3017,8 +3051,7 @@ class AppLocalizations {
           'Starting amount for purchasing and renewing inventory',
       'initial_capital_hint': 'e.g. 50000',
       'linked_account': 'Linked Main Account',
-      'linked_account_desc':
-          'Account from which purchase and expense funds are deducted, and where sales income is registered.',
+      'linked_account_desc': 'Account from which purchase and expense funds are deducted, and where sales income is registered.',
       'select_linked_account': 'Select main account',
       'no_linked_account': 'No linked account',
       'assigned_capital': 'Assigned Capital',
@@ -3027,8 +3060,7 @@ class AppLocalizations {
       'edit_capital_title': 'Adjust Inventory Capital',
       'btn_save': 'Save',
       'delete_sale_confirm_title': 'Delete Sale?',
-      'delete_sale_confirm_msg':
-          'When deleting this sale, sold units will be automatically restored to available inventory.',
+      'delete_sale_confirm_msg': 'When deleting this sale, sold units will be automatically restored to available inventory.',
       'sale_deleted_stock_restored':
           'Sale deleted. Units returned to inventory.',
       'available_to_renew': 'Available to restock',
@@ -3059,8 +3091,7 @@ class AppLocalizations {
       'business_sell': 'Sell',
       'metrics_profit': 'Profit',
       'business_low_stock': 'Low stock',
-      'business_low_stock_desc':
-          'Products below the stock threshold.',
+      'business_low_stock_desc': 'Products below the stock threshold.',
       'business_view_products': 'View products',
       'business_adjust_short': 'Adjust',
       'business_units': 'units',
@@ -3085,8 +3116,7 @@ class AppLocalizations {
       'break_even_apply_prices': 'Apply Prices to Inventory',
       'break_even_prices_applied': 'Selling prices updated in inventory',
       'break_even_custom_fixed_costs': 'Additional Fixed Costs',
-      'break_even_negative_margin_alert':
-          'Warning! The average contribution margin is negative. You cannot break even when selling at a loss.',
+      'break_even_negative_margin_alert': 'Warning! The average contribution margin is negative. You cannot break even when selling at a loss.',
       'break_even_chart_revenue': 'Total Revenue',
       'break_even_chart_costs': 'Total Costs',
       'break_even_chart_fixed': 'Fixed Costs',
@@ -3126,6 +3156,20 @@ class AppLocalizations {
       'investment_date': 'Investment Date',
       'scanned_code': 'Scanned code',
 
+      // Google sign in
+      'google_login_title': 'Your account, on every device',
+      'google_login_subtitle': 'Sign in with Google to keep your data in the cloud and get it back when you change phones.',
+      'google_login_button': 'Continue with Google',
+      'google_login_privacy': 'We use your account to identify you and to keep your backups in your Google Drive. We do not access your email, contacts or other files.',
+      'google_login_offline':
+          'We could not reach the server. Check your connection and try again.',
+      'google_login_error': 'Google sign-in failed. Please try again.',
+      'google_login_cancelled': 'Sign-in cancelled.',
+      'google_login_not_configured': 'This build is missing the Google sign-in configuration. Update the app to continue.',
+      'account_signed_in': 'Signed in',
+      'account_sign_out': 'Sign out',
+      'account_sign_out_desc': 'Your data stays on this device. You can sign back in with your Google account.',
+
       // Help Center
       'help_section_start': 'Getting started',
       'help_section_trial': 'Trial and plans',
@@ -3134,89 +3178,61 @@ class AppLocalizations {
       'help_section_backup': 'Backups',
       'help_section_business': 'Business and loans',
       'help_q_add_card': 'How do I create my first account?',
-      'help_a_add_card':
-          'Open Wallet in the bottom bar and tap the (+) button. Choose the type (cash, bank or card), enter the name, starting balance and color, then save.',
+      'help_a_add_card': 'Open Wallet in the bottom bar and tap the (+) button. Choose the type (cash, bank or card), enter the name, starting balance and color, then save.',
       'help_q_add_transaction': 'How do I record an income or an expense?',
-      'help_a_add_transaction':
-          'Tap the floating (+) button and choose Expense or Income. Select the account, category, amount and date; you can add a note before saving.',
+      'help_a_add_transaction': 'Tap the floating (+) button and choose Expense or Income. Select the account, category, amount and date; you can add a note before saving.',
       'help_q_scanner': 'How do I use the card scanner?',
-      'help_a_scanner':
-          'In Quick actions tap "Scan" and align the card inside the frame. The app reads the number and expiry date. It needs camera permission and is available on Enterprise and during the trial.',
+      'help_a_scanner': 'In Quick actions tap "Scan" and align the card inside the frame. The app reads the number and expiry date. It needs camera permission and is available on Enterprise and during the trial.',
       'help_q_trial': 'What does the 2-day free trial include?',
-      'help_a_trial':
-          'For 48 hours after installing the app everything is unlocked, except the AI Assistant, Google Drive backups and local backups, which require a paid plan. Home shows the time remaining.',
+      'help_a_trial': 'For 48 hours after installing the app everything is unlocked, except the AI Assistant, Google Drive backups and local backups, which require a paid plan. Home shows the time remaining.',
       'help_q_trial_end': 'What happens when the trial ends?',
-      'help_a_trial_end':
-          'If there is no active plan, the data stored on the device is deleted automatically: transactions, accounts, categories, business, loans and chats. If you buy a plan within the 48 hours, your data is kept even if that plan expires later.',
+      'help_a_trial_end': 'If there is no active plan, the data stored on the device is deleted automatically: transactions, accounts, categories, business, loans and chats. If you buy a plan within the 48 hours, your data is kept even if that plan expires later.',
       'help_q_plans': 'Which plans are available and what do they include?',
-      'help_a_plans':
-          'Personal: 3 accounts, transfers, detailed statistics and currencies.\nPro: 4 accounts, custom categories, per-account PIN and Excel export.\nEnterprise: unlimited accounts, AI, Google Drive, Business, Loans, PDF, widgets and biometrics.\nEach level is sold weekly, monthly or yearly.',
+      'help_a_plans': 'Personal: 3 accounts, transfers, detailed statistics and currencies.\nPro: 4 accounts, custom categories, per-account PIN and Excel export.\nEnterprise: unlimited accounts, AI, Google Drive, Business, Loans, PDF, widgets and biometrics.\nEach level is sold weekly, monthly or yearly.',
       'help_q_payment': 'How do I pay for my plan?',
-      'help_a_payment':
-          'Open Profile → Licenses, choose the plan and tap Pay. In Cuba the payment is handled through Apklis. Outside Cuba you can pay with PayPal or unlock licenses by watching ads. The price is shown before confirming.',
+      'help_a_payment': 'Open Profile → Licenses, choose the plan and tap Pay. In Cuba the payment is handled through Apklis. Outside Cuba you can pay with PayPal or unlock licenses by watching ads. The price is shown before confirming.',
       'help_q_restore_purchase': 'How do I restore my purchase?',
-      'help_a_restore_purchase':
-          'In Licenses tap the verify icon in the top bar: the app will check your Apklis purchase. If the plan does not appear, contact us from Profile → Help and privacy with the purchase email.',
+      'help_a_restore_purchase': 'In Licenses tap the verify icon in the top bar: the app will check your Apklis purchase. If the plan does not appear, contact us from Profile → Help and privacy with the purchase email.',
       'help_q_edit_transaction': 'How do I edit or delete a transaction?',
-      'help_a_edit_transaction':
-          'Tap any transaction in the list to open its details; from there you can edit or delete it.',
+      'help_a_edit_transaction': 'Tap any transaction in the list to open its details; from there you can edit or delete it.',
       'help_q_transfer': 'How do I transfer between accounts?',
-      'help_a_transfer':
-          'In Quick actions tap "Transfer", then choose the source account, the destination and the amount. It is not counted as an expense: it only moves balance between your accounts.',
+      'help_a_transfer': 'In Quick actions tap "Transfer", then choose the source account, the destination and the amount. It is not counted as an expense: it only moves balance between your accounts.',
       'help_q_recurring': 'What are recurring transactions?',
-      'help_a_recurring':
-          'In Quick actions → "Recurring" you set incomes or expenses that repeat (weekly, monthly or yearly). The app records them automatically on the scheduled date.',
+      'help_a_recurring': 'In Quick actions → "Recurring" you set incomes or expenses that repeat (weekly, monthly or yearly). The app records them automatically on the scheduled date.',
       'help_q_categories': 'Can I create custom categories?',
-      'help_a_categories':
-          'Yes, with Pro or Enterprise. Create them from the category picker when recording a transaction. They are also available during the trial.',
+      'help_a_categories': 'Yes, with Pro or Enterprise. Create them from the category picker when recording a transaction. They are also available during the trial.',
       'help_q_cards_limit': 'How many accounts can I have?',
-      'help_a_cards_limit':
-          'Free: 1. Personal: 3. Pro: 4. Enterprise: unlimited. There is no limit during the trial. You can view and reorder your accounts in Wallet.',
+      'help_a_cards_limit': 'Free: 1. Personal: 3. Pro: 4. Enterprise: unlimited. There is no limit during the trial. You can view and reorder your accounts in Wallet.',
       'help_q_change_balance': 'How do I change an account balance?',
-      'help_a_change_balance':
-          'Go to Wallet, tap the account and open Edit. There you can adjust the balance, name, color and PIN of that account.',
+      'help_a_change_balance': 'Go to Wallet, tap the account and open Edit. There you can adjust the balance, name, color and PIN of that account.',
       'help_q_card_pin': 'Can I protect an account with a PIN?',
-      'help_a_card_pin':
-          'Yes. With Pro or higher, you can assign a PIN to an account when creating or editing it to hide its transactions. You will be asked for it when opening the account.',
+      'help_a_card_pin': 'Yes. With Pro or higher, you can assign a PIN to an account when creating or editing it to hide its transactions. You will be asked for it when opening the account.',
       'help_q_money_counter': 'What is the Money Counter?',
-      'help_a_money_counter':
-          'It is a tool to count bills and coins by denomination and compare the total with the balance of a cash account. You will find it in Wallet, on cash-type accounts.',
+      'help_a_money_counter': 'It is a tool to count bills and coins by denomination and compare the total with the balance of a cash account. You will find it in Wallet, on cash-type accounts.',
       'help_q_stats': 'What can I see in Statistics?',
-      'help_a_stats':
-          'Income, expenses, balance, savings rate, budgets and charts by day, week, month, year or custom range. With Personal or higher you can filter by account and see the detail per period.',
+      'help_a_stats': 'Income, expenses, balance, savings rate, budgets and charts by day, week, month, year or custom range. With Personal or higher you can filter by account and see the detail per period.',
       'help_q_export': 'Can I export my data?',
-      'help_a_export':
-          'From Statistics you can share or save a PDF summary (Enterprise) and export the data to Excel (Pro or higher). Both options are available during the trial.',
+      'help_a_export': 'From Statistics you can share or save a PDF summary (Enterprise) and export the data to Excel (Pro or higher). Both options are available during the trial.',
       'help_q_backup_local': 'How do I make a local backup?',
-      'help_a_backup_local':
-          'In Profile → My account → Backup data (local) the app creates a file you can save or share. Importing it replaces the current data. It requires a paid plan, even during the trial.',
+      'help_a_backup_local': 'In Profile → My account → Backup data (local) the app creates a file you can save or share. Importing it replaces the current data. It requires a paid plan, even during the trial.',
       'help_q_drive': 'How does the Google Drive backup work?',
-      'help_a_drive':
-          'With Enterprise you can connect your Google account and store an encrypted copy in your Drive from Profile → Help and privacy → Backups. The file stays in your account.',
+      'help_a_drive': 'With Enterprise you can connect your Google account and store an encrypted copy in your Drive from Profile → Help and privacy → Backups. The file stays in your account.',
       'help_q_delete_data': 'How do I delete all my data?',
-      'help_a_delete_data':
-          'In Profile → My account → Reset data you can erase everything and start over. The app offers to create a backup first (requires a paid plan) and the action cannot be undone.',
+      'help_a_delete_data': 'In Profile → My account → Reset data you can erase everything and start over. The app offers to create a backup first (requires a paid plan) and the action cannot be undone.',
       'help_q_business': 'What does the Business module include?',
-      'help_a_business':
-          'Available on Enterprise: product catalog with stock and costs, point of sale, business expenses, sellers, cash closings and reports in PDF and Excel.',
+      'help_a_business': 'Available on Enterprise: product catalog with stock and costs, point of sale, business expenses, sellers, cash closings and reports in PDF and Excel.',
       'help_q_loans': 'What does the Loans module include?',
-      'help_a_loans':
-          'Available on Enterprise: record loans and clients, collect full or partial installments, track late payments and check portfolio reports.',
+      'help_a_loans': 'Available on Enterprise: record loans and clients, collect full or partial installments, track late payments and check portfolio reports.',
       'help_q_security': 'How do I protect the app?',
-      'help_a_security':
-          'In Settings → Account and security you can set an app PIN or password and, with Enterprise, enable biometrics. Data is stored on the device, not on a server.',
+      'help_a_security': 'In Settings → Account and security you can set an app PIN or password and, with Enterprise, enable biometrics. Data is stored on the device, not on a server.',
       'help_q_ai': 'How does the AI Assistant work?',
-      'help_a_ai':
-          'Available on Enterprise. Enable it in Settings → Preferences and ask about your finances from the chat. Do not share passwords, PINs or card numbers with the assistant.',
+      'help_a_ai': 'Available on Enterprise. Enable it in Settings → Preferences and ask about your finances from the chat. Do not share passwords, PINs or card numbers with the assistant.',
       'help_q_custom_bank': 'Can I add custom banks?',
-      'help_a_custom_bank':
-          'Yes, with Pro or higher. In Settings → Manage banks you can add, edit and delete institutions, then use them when creating accounts.',
+      'help_a_custom_bank': 'Yes, with Pro or higher. In Settings → Manage banks you can add, edit and delete institutions, then use them when creating accounts.',
       'help_q_currency': 'How do I change the main currency?',
-      'help_a_currency':
-          'In Settings → Main currency you choose the currency for totals. In Settings → Exchange rates you set the conversion between your currencies.',
+      'help_a_currency': 'In Settings → Main currency you choose the currency for totals. In Settings → Exchange rates you set the conversion between your currencies.',
       'help_q_feedback': 'How do I send a suggestion or report a bug?',
-      'help_a_feedback':
-          'From Profile → Help and privacy you can contact support, report a bug or send a suggestion. You can also join our Telegram community.',
+      'help_a_feedback': 'From Profile → Help and privacy you can contact support, report a bug or send a suggestion. You can also join our Telegram community.',
 
       // Feedback
       'feedback_title': 'Your opinion matters!',
@@ -3270,24 +3286,19 @@ class AppLocalizations {
 
       // Onboarding
       'onboarding_title_1': 'Total Control',
-      'onboarding_desc_1':
-          'Manage all your money from your mobile, without internet connection.',
+      'onboarding_desc_1': 'Manage all your money from your mobile, without internet connection.',
       'onboarding_title_2': 'Hassle Free',
-      'onboarding_desc_2':
-          'Intuitive and fast interface to record your expenses and income instantly.',
+      'onboarding_desc_2': 'Intuitive and fast interface to record your expenses and income instantly.',
       'onboarding_title_3': 'Expert AI Assistant',
-      'onboarding_desc_3':
-          'Your personal financial advisor. Ask about your spending and get advice 24/7.',
+      'onboarding_desc_3': 'Your personal financial advisor. Ask about your spending and get advice 24/7.',
       'onboarding_get_started': 'Get Started',
       'tour_balance_title': 'Your consolidated money',
-      'tour_balance_desc':
-          'Here you will see the global summary of all your cards and accounts in different currencies.',
+      'tour_balance_desc': 'Here you will see the global summary of all your cards and accounts in different currencies.',
       'tour_quick_actions_title': 'Quick actions',
       'tour_quick_actions_desc':
           'Use this area to transfer and act on your money instantly.',
       'tour_finish_title': 'Tour complete!',
-      'tour_finish_desc':
-          'You have seen the main features of CashRapido. Start managing your finances.',
+      'tour_finish_desc': 'You have seen the main features of CashRapido. Start managing your finances.',
       'tour_wallet_title': 'Your Wallet',
       'tour_wallet_desc': 'Here is your balance. Tap to switch cards.',
       'tour_scan_title': 'Quick Scanner',
@@ -3308,11 +3319,9 @@ class AppLocalizations {
       'tour_transactions_desc':
           'See your latest movements here. Tap for details.',
       'tour_home_nav_title': 'Home Tab',
-      'tour_home_nav_desc':
-          'Your daily overview: balance, quick actions, and recent transactions.',
+      'tour_home_nav_desc': 'Your daily overview: balance, quick actions, and recent transactions.',
       'tour_movements_nav_title': 'Movements Tab',
-      'tour_movements_nav_desc':
-          'Browse your transactions by period, with summary, search and filters.',
+      'tour_movements_nav_desc': 'Browse your transactions by period, with summary, search and filters.',
       'tour_stats_nav_title': 'Statistics Tab',
       'tour_stats_nav_desc':
           'Analyze your spending and income with detailed charts.',
@@ -3339,14 +3348,12 @@ class AppLocalizations {
       'backup_action': 'Backup',
       'restore_action': 'Restore',
       'restore_dialog_title': 'Restore data?',
-      'restore_dialog_desc':
-          'This will overwrite all current data with the cloud backup. This action cannot be undone.',
+      'restore_dialog_desc': 'This will overwrite all current data with the cloud backup. This action cannot be undone.',
       'restore_success_msg': 'Data restored successfully',
       'backup_success_msg': 'Backup completed',
       'developed_by': 'Developed by',
       'developer_name': 'Lenier Cruz Perez',
-      'app_desc':
-          'CashRapido is a modern financial management tool designed for simplicity and speed.',
+      'app_desc': 'CashRapido is a modern financial management tool designed for simplicity and speed.',
 
       // Auth
       'locked_title': 'CashRapido Locked',
@@ -3507,8 +3514,7 @@ class AppLocalizations {
       'stats_insight_less':
           'You spent {percent} less than in the previous period.',
       'stats_insight_equal': 'You spent the same as in the previous period.',
-      'stats_other_currencies':
-          'There are movements in {n} more currency. Switch currency to see them.',
+      'stats_other_currencies': 'There are movements in {n} more currency. Switch currency to see them.',
       'stats_categories': '{n} categories',
       'stats_by_hour': 'By hour of the day',
       'stats_by_day': 'By day',
@@ -3526,16 +3532,15 @@ class AppLocalizations {
           'Percentage of your income left after your expenses.',
       // Budgets
       'stats_budget_chart_title': 'Monthly budgets',
-      'stats_budget_chart_subtitle': 'Planned versus actually spent in {period}',
+      'stats_budget_chart_subtitle':
+          'Planned versus actually spent in {period}',
       'stats_budget_spent': 'Spent',
       'stats_budget_remaining': 'Remaining',
       'stats_budget_exceeded': 'Exceeded',
       'stats_budget_empty_title': 'No budgets configured',
-      'stats_budget_empty_hint':
-          'Set a monthly budget on your categories to compare it with your real spending.',
+      'stats_budget_empty_hint': 'Set a monthly budget on your categories to compare it with your real spending.',
       'stats_budget_count': '{n} categories with a budget',
-      'stats_budget_month_only':
-          'Budgets are monthly: switch the period to a month to compare them with your spending.',
+      'stats_budget_month_only': 'Budgets are monthly: switch the period to a month to compare them with your spending.',
       // Daily trends
       'stats_expenses_chart_title': 'Expenses over the period',
       'stats_income_chart_title': 'Income over the period',
@@ -3547,23 +3552,18 @@ class AppLocalizations {
       'stats_active_days': '{n} days with movements',
       // Financial projection
       'stats_projection_method_title': 'How it is calculated',
-      'stats_projection_method':
-          'It starts from the daily average accumulated over {elapsed} of {total} natural days and extrapolates it to the end of the month.',
-      'stats_projection_disclaimer':
-          'It is an estimate based on what has happened so far, not a guaranteed result.',
+      'stats_projection_method': 'It starts from the daily average accumulated over {elapsed} of {total} natural days and extrapolates it to the end of the month.',
+      'stats_projection_disclaimer': 'It is an estimate based on what has happened so far, not a guaranteed result.',
       'stats_accumulated': 'Real accumulated',
       'stats_projected_close': 'Projected at close',
       'stats_projection_income': 'Projected income',
       'stats_projection_expense': 'Projected expenses',
       'stats_projection_balance': 'Projected balance',
       'stats_projection_unavailable_title': 'Not enough data',
-      'stats_projection_unavailable_hint':
-          'There are no movements yet this month, so there is nothing to project from.',
+      'stats_projection_unavailable_hint': 'There are no movements yet this month, so there is nothing to project from.',
       'stats_projection_income_unavailable': 'No income recorded',
-      'stats_projection_no_income_hint':
-          'With no income there is no estimate of how the month will close: only real data is shown.',
-      'stats_projection_month_complete':
-          'The month is already complete, so the projected values match the real ones.',
+      'stats_projection_no_income_hint': 'With no income there is no estimate of how the month will close: only real data is shown.',
+      'stats_projection_month_complete': 'The month is already complete, so the projected values match the real ones.',
       'stats_projection_current_month': 'Current month',
       'stats_projection_progress': 'Day {day} of {total}',
       // Financial calendar
@@ -3618,8 +3618,7 @@ class AppLocalizations {
       'monthly_amount': 'Monthly amount',
       'limit_updated': 'Limit updated',
       'delete_card_question': 'Delete Card?',
-      'delete_card_confirmation':
-          'Are you sure you want to delete this card? You will lose the balance history associated with it.',
+      'delete_card_confirmation': 'Are you sure you want to delete this card? You will lose the balance history associated with it.',
 
       // Card Management
       'new_card': 'New Card',
@@ -3683,8 +3682,7 @@ class AppLocalizations {
       'success_backup': 'Backup completed',
       'success_restore': 'Data imported successfully',
       'confirm_import': 'Confirm Import',
-      'import_warning':
-          'Importing data will overwrite all current information. This action cannot be undone.\n\nDo you wish to continue?',
+      'import_warning': 'Importing data will overwrite all current information. This action cannot be undone.\n\nDo you wish to continue?',
       'share_save': 'Share / Save',
       'sync_drive': 'Sync with Google Drive',
       'sync_drive_sub': 'Connect account for backups',
@@ -3885,8 +3883,7 @@ class AppLocalizations {
 
       // Holiday Promo
       'promo_title': 'Happy New Year! 🎉',
-      'promo_message':
-          'As a year-end gift, enjoy all PRO features completely free until January 10th. Thanks for using CashRapido!',
+      'promo_message': 'As a year-end gift, enjoy all PRO features completely free until January 10th. Thanks for using CashRapido!',
       'promo_button': 'Awesome! 🚀',
 
       // Default License
@@ -3903,8 +3900,7 @@ class AppLocalizations {
 
       // Restrictions
       'feature_locked_title': 'Feature Locked 🔒',
-      'feature_locked_desc':
-          'This feature is available on Premium plans only. Upgrade your license to unlock!',
+      'feature_locked_desc': 'This feature is available on Premium plans only. Upgrade your license to unlock!',
       'limit_reached_title': 'Limit Reached',
       'limit_card_desc':
           'The free license allows only 1 card. Upgrade your plan to add more.',
@@ -3991,13 +3987,10 @@ class AppLocalizations {
       'scan_capture_error': 'Could not capture the image. Please try again.',
       'scan_reading_error': 'Could not read the card. Please try again.',
       'scan_camera_permission_title': 'Enable the camera',
-      'scan_camera_permission_desc':
-          'CashRapido needs the camera to read the card. Grant the permission to continue.',
-      'scan_camera_permission_settings_desc':
-          'Camera permission is blocked. Enable it in the system settings and try again.',
+      'scan_camera_permission_desc': 'CashRapido needs the camera to read the card. Grant the permission to continue.',
+      'scan_camera_permission_settings_desc': 'Camera permission is blocked. Enable it in the system settings and try again.',
       'scan_camera_unavailable_title': 'Camera not available',
-      'scan_camera_unavailable_desc':
-          'No camera was found on this device. You can enter the data manually.',
+      'scan_camera_unavailable_desc': 'No camera was found on this device. You can enter the data manually.',
       'scan_camera_error_title': 'Could not start the camera',
       'scan_camera_error_desc':
           'Something went wrong while preparing the camera. Please try again.',
@@ -4076,11 +4069,9 @@ class AppLocalizations {
       'rec_empty_accounts': 'No accounts available.',
       // ── Free trial ───────────────────────────────────────────────────────
       'trial_active_title': '2-day free trial',
-      'trial_active_desc':
-          '{time} left. If the trial ends without an active plan, all your data will be deleted.',
+      'trial_active_desc': '{time} left. If the trial ends without an active plan, all your data will be deleted.',
       'trial_ended_title': 'Trial ended',
-      'trial_ended_body':
-          'Your 2-day free trial ended without an active plan, so the data stored on this device was deleted.',
+      'trial_ended_body': 'Your 2-day free trial ended without an active plan, so the data stored on this device was deleted.',
     },
     'fr': {
       // ── Profil ────────────────────────────────────────────────────────────
@@ -4090,8 +4081,7 @@ class AppLocalizations {
       'profile_drive_connected': 'Connecté',
       'profile_drive_disconnected': 'Non connecté',
       'profile_drive_syncing': 'Synchronisation',
-      'profile_drive_not_connected_desc':
-          'Connectez votre compte pour enregistrer des sauvegardes dans le cloud',
+      'profile_drive_not_connected_desc': 'Connectez votre compte pour enregistrer des sauvegardes dans le cloud',
       'profile_drive_last_backup': 'Dernière sauvegarde : {date}',
       'profile_drive_no_backup': 'Aucune sauvegarde enregistrée',
       'profile_drive_connect': 'Connecter Google Drive',
@@ -4110,7 +4100,8 @@ class AppLocalizations {
       'profile_invite': 'Inviter des amis',
       'profile_invite_desc': 'Partagez CashRapido avec d\'autres personnes',
       'profile_help_privacy': 'Aide et confidentialité',
-      'profile_help_privacy_desc': 'Support, confidentialité et données légales',
+      'profile_help_privacy_desc':
+          'Support, confidentialité et données légales',
 
       // ── Google Drive ──────────────────────────────────────────────────────
       'drive_title': 'Google Drive',
@@ -4118,20 +4109,98 @@ class AppLocalizations {
       'drive_restore': 'Restaurer depuis le cloud',
       'drive_disconnect': 'Déconnecter',
       'drive_disconnect_confirm': 'Déconnecter Google Drive ?',
-      'drive_disconnect_desc':
-          'La session Google Drive sera fermée sur cet appareil. Vos sauvegardes cloud ne sont pas supprimées.',
+      'drive_disconnect_desc': 'La session Google Drive sera fermée sur cet appareil. Vos sauvegardes cloud ne sont pas supprimées.',
       'drive_disconnected': 'Google Drive déconnecté',
-      'drive_disconnected_message':
-          'Connectez votre compte Google pour enregistrer et restaurer des sauvegardes.',
+      'drive_disconnected_message': 'Connectez votre compte Google pour enregistrer et restaurer des sauvegardes.',
       'drive_restore_confirm_title': 'Restaurer depuis Google Drive',
-      'drive_restore_warning':
-          'Les données actuelles de l\'appareil seront remplacées par la sauvegarde cloud. Cette action est irréversible.',
+      'drive_restore_warning': 'Les données actuelles de l\'appareil seront remplacées par la sauvegarde cloud. Cette action est irréversible.',
       'drive_backup_success': 'Sauvegarde terminée',
       'drive_backup_error': 'Impossible de terminer la sauvegarde',
       'drive_restore_success': 'Données restaurées depuis Google Drive',
       'drive_restore_error': 'Impossible de restaurer les données',
-      'drive_privacy_note':
-          'La sauvegarde est enregistrée dans votre propre compte Google Drive. CashRapido n\'accède pas à d\'autres fichiers.',
+      'drive_privacy_note': 'La sauvegarde est enregistrée dans votre propre compte Google Drive. CashRapido n\'accède pas à d\'autres fichiers.',
+
+      // ── Sauvegarde cloud ────────────────────────────────────────────────
+      'cloud_title': 'Sauvegarde cloud',
+      'cloud_row_desc': 'Sauvegarde de vos données dans votre compte',
+      'cloud_subtitle': 'Vos données sont enregistrées dans votre compte CashRapido et peuvent être récupérées lors de la réinstallation sur un autre appareil.',
+      'cloud_auto_sync': 'Synchronisation automatique',
+      'cloud_auto_sync_desc': 'Enregistre les modifications dans le cloud quelques secondes après chaque édition.',
+      'cloud_save_now': 'Enregistrer maintenant',
+      'cloud_restore': 'Récupérer depuis le cloud',
+      'cloud_restore_confirm_title': 'Récupérer vos données ?',
+      'cloud_restore_confirm_desc': 'Les données de cet appareil seront remplacées par la dernière sauvegarde de votre compte. Cette action est irréversible.',
+      'cloud_restore_warning':
+          'La récupération remplace les données actuelles de cet appareil.',
+      'cloud_save_success': 'Données enregistrées dans le cloud.',
+      'cloud_save_error':
+          'Impossible d\'enregistrer dans le cloud. Vérifiez votre connexion.',
+      'cloud_restore_success': 'Données récupérées depuis le cloud.',
+      'cloud_restore_error': 'Impossible de récupérer les données.',
+      'cloud_last_sync': 'Dernière synchronisation : {date}',
+      'cloud_never_synced':
+          'Vous n\'avez pas encore enregistré de données dans le cloud.',
+      'cloud_not_connected':
+          'Connectez votre compte Google pour utiliser la sauvegarde cloud.',
+      'cloud_connect': 'Connecter le compte',
+
+      // ── Chat de support ──────────────────────────────────────────────────
+      'support_title': 'Support',
+      'support_row_desc': 'Discutez avec l’équipe de support',
+      'support_subtitle':
+          'Envoyez-nous vos questions. Seuls vous et l’équipe de support pouvez voir cette conversation.',
+      'support_empty_title': 'Comment pouvons-nous vous aider ?',
+      'support_empty_desc':
+          'Écrivez votre première question et l’équipe de support vous répondra ici.',
+      'support_input_hint': 'Écrivez un message…',
+      'support_send_error':
+          'Impossible d’envoyer le message. Vérifiez votre connexion.',
+      'support_load_error': 'Impossible de charger la conversation.',
+      'support_retry': 'Réessayer',
+      'support_need_login_title': 'Connectez votre compte',
+      'support_need_login_desc':
+          'Le chat de support a besoin de votre compte Google pour vous identifier. Vous pourrez ensuite nous écrire et recevoir des réponses ici.',
+      'support_connect': 'Connecter le compte',
+      'support_close_ticket': 'Fermer le ticket',
+      'support_reopen_ticket': 'Rouvrir le ticket',
+      'support_delete_conversation': 'Supprimer la conversation',
+      'support_delete_title': 'Supprimer cette conversation ?',
+      'support_delete_desc':
+          'Tous les messages de ce ticket seront supprimés. Cette action est irréversible.',
+      'support_closed_badge': 'Fermé',
+      'support_closed_desc':
+          'Ticket fermé. Vous ne pouvez plus envoyer de messages ; démarrez une nouvelle conversation pour reparler au support.',
+      'support_new_conversation': 'Nouvelle conversation',
+      'support_history': 'Historique',
+      'support_open_badge': 'Ouvert',
+      'support_closed_done': 'Ticket fermé',
+      'support_reopened_done': 'Ticket rouvert',
+      'support_action_error':
+          'Impossible de terminer l’action. Réessayez.',
+      'admin_inbox_title': 'Support',
+      'admin_inbox_row_desc': 'Conversations de tous les clients',
+      'admin_inbox_empty': 'Aucune conversation pour le moment.',
+      'admin_inbox_search': 'Rechercher par e-mail ou nom',
+      'admin_campaign': 'Campagne',
+      'admin_no_access': 'Cette section est réservée à l’équipe de support.',
+      'campaign_title': 'Nouvelle campagne',
+      'campaign_subtitle': 'Envoyez un avis au chat de vos clients.',
+      'campaign_name_label': 'Titre (facultatif)',
+      'campaign_name_hint': 'Ex. Promotion d’octobre',
+      'campaign_body_label': 'Message',
+      'campaign_body_hint': 'Écrivez le message qu’ils recevront…',
+      'campaign_audience': 'Destinataires',
+      'campaign_all': 'Tous les clients',
+      'campaign_all_desc': 'Envoyé à tous les utilisateurs inscrits.',
+      'campaign_single': 'Un client',
+      'campaign_single_desc': 'Choisissez à qui vous voulez écrire.',
+      'campaign_select_client': 'Sélectionnez un client',
+      'campaign_send': 'Envoyer la campagne',
+      'campaign_sent': 'Campagne envoyée',
+      'campaign_error': 'Impossible d’envoyer la campagne.',
+      'campaign_empty_body': 'Écrivez le message de la campagne.',
+      'campaign_no_clients': 'Aucun client à sélectionner pour le moment.',
+      'campaign_no_target': 'Sélectionnez un client.',
 
       // ── Mon compte ────────────────────────────────────────────────────────
       'account_title': 'Mon compte',
@@ -4142,15 +4211,16 @@ class AppLocalizations {
       'account_redeem': 'Utiliser un code promo',
       'account_redeem_desc': 'Saisissez un code pour activer des avantages',
       'app_icon_title': "Icône de l'application",
-      'app_icon_desc': "Changez l'icône de CashRapido sur votre écran d'accueil",
-      'app_icon_pick_hint': "Choisissez l'icône que vous verrez sur votre écran d'accueil.",
-      'app_icon_locked_note': "Changer l'icône est une fonction du forfait Entreprise.",
+      'app_icon_desc':
+          "Changez l'icône de CashRapido sur votre écran d'accueil",
+      'app_icon_pick_hint':
+          "Choisissez l'icône que vous verrez sur votre écran d'accueil.",
+      'app_icon_locked_note':
+          "Changer l'icône est une fonction du forfait Entreprise.",
       'app_icon_enterprise_note': "Obtenez le forfait Entreprise pour changer l'icône de l'application.",
       'app_icon_updated_msg': 'Icône mise à jour',
-      'app_icon_seasonal_active':
-          "L'icône saisonnière est active en ce moment ; votre choix s'appliquera lorsqu'elle se terminera.",
-      'app_icon_dev_note':
-          "L'icône ne peut être modifiée que dans la version publiée ; elle ne s'applique pas en développement.",
+      'app_icon_seasonal_active': "L'icône saisonnière est active en ce moment ; votre choix s'appliquera lorsqu'elle se terminera.",
+      'app_icon_dev_note': "L'icône ne peut être modifiée que dans la version publiée ; elle ne s'applique pas en développement.",
       'app_icon_default': 'Par défaut',
       'app_icon_playa': 'Plage',
       'app_icon_mar': 'Mer',
@@ -4159,8 +4229,7 @@ class AppLocalizations {
       'account_import': 'Importer les données',
       'account_import_desc': 'Restaurez une sauvegarde',
       'account_reset': 'Réinitialiser toutes les données',
-      'account_reset_desc':
-          'Supprimez vos données financières de cet appareil',
+      'account_reset_desc': 'Supprimez vos données financières de cet appareil',
       'account_details_title': 'Votre compte',
       'account_type_label': 'Type de compte',
       'account_type_local': 'Compte local',
@@ -4168,8 +4237,7 @@ class AppLocalizations {
       'account_expires_label': 'Expire',
       'account_no_expiry': 'Sans expiration',
       'account_currency_label': 'Devise principale',
-      'account_local_note':
-          'CashRapido conserve vos données sur cet appareil. Il n\'existe pas de compte cloud avec un identifiant et un mot de passe propres.',
+      'account_local_note': 'CashRapido conserve vos données sur cet appareil. Il n\'existe pas de compte cloud avec un identifiant et un mot de passe propres.',
 
       // ── Licences (libellés) ───────────────────────────────────────────────
       'license_free': 'Gratuite',
@@ -4189,10 +4257,8 @@ class AppLocalizations {
       'promo_redeem_action': 'Valider',
       'promo_code_empty': 'Saisissez un code.',
       'promo_not_available_title': 'Validation indisponible',
-      'promo_not_available_desc':
-          'L\'utilisation de codes promo n\'est pas encore disponible dans CashRapido : elle nécessite un service de validation qui n\'est pas encore configuré. Si vous avez un code, contactez le support.',
-      'promo_dependency_note':
-          'Cette fonction sera activée lorsque le service de validation des codes sera configuré. En attendant, aucun code ne sera appliqué.',
+      'promo_not_available_desc': 'L\'utilisation de codes promo n\'est pas encore disponible dans CashRapido : elle nécessite un service de validation qui n\'est pas encore configuré. Si vous avez un code, contactez le support.',
+      'promo_dependency_note': 'Cette fonction sera activée lorsque le service de validation des codes sera configuré. En attendant, aucun code ne sera appliqué.',
       'promo_support_subject': 'Demande concernant un code promo',
 
       // ── Exporter / importer / réinitialiser ───────────────────────────────
@@ -4201,8 +4267,7 @@ class AppLocalizations {
       'import_error': 'Impossible d\'importer les données',
       'backup_error': 'Impossible de créer la sauvegarde',
       'reset_warning_title': 'Réinitialiser toutes les données ?',
-      'reset_warning_desc':
-          'Vos mouvements, comptes, catégories, transactions récurrentes, notifications, conversations de l\'assistant et les données de commerce et de prêts seront supprimés de cet appareil. Votre licence, vos paramètres, vos identifiants et les sauvegardes cloud seront conservés.',
+      'reset_warning_desc': 'Vos mouvements, comptes, catégories, transactions récurrentes, notifications, conversations de l\'assistant et les données de commerce et de prêts seront supprimés de cet appareil. Votre licence, vos paramètres, vos identifiants et les sauvegardes cloud seront conservés.',
       'reset_confirm_first': 'Continuer',
       'reset_backup_title': 'Sauvegarder avant de supprimer',
       'reset_backup_desc':
@@ -4237,14 +4302,12 @@ class AppLocalizations {
 
       // ── Nouveautés ────────────────────────────────────────────────────────
       'news_version_label': 'Version installée',
-      'news_no_changelog':
-          'Les nouveautés sont publiées dans le magasin. Ouvrez la fiche de l\'application pour consulter les informations les plus récentes.',
+      'news_no_changelog': 'Les nouveautés sont publiées dans le magasin. Ouvrez la fiche de l\'application pour consulter les informations les plus récentes.',
       'news_open_store': 'Ouvrir le magasin',
 
       // ── Fonctions principales ─────────────────────────────────────────────
       'features_title': 'Fonctions principales',
-      'features_intro':
-          'Découvrez tout ce que CashRapido peut faire. Chaque élément ouvre l\'écran réel.',
+      'features_intro': 'Découvrez tout ce que CashRapido peut faire. Chaque élément ouvre l\'écran réel.',
       'features_group_personal': 'Finances personnelles',
       'features_group_tools': 'Outils',
       'features_group_modules': 'Modules avancés',
@@ -4283,7 +4346,8 @@ class AppLocalizations {
       'feat_loans': 'Prêts',
       'feat_loans_desc': 'Gérez les prêts, emprunteurs et paiements',
       'feat_export_import': 'Exporter et importer des données',
-      'feat_export_import_desc': 'Générez des sauvegardes ou restaurez une copie',
+      'feat_export_import_desc':
+          'Générez des sauvegardes ou restaurez une copie',
       'feat_backup': 'Sauvegarde cloud',
       'feat_backup_desc': 'Synchroniser avec Google Drive',
       'feat_licenses': 'Licences',
@@ -4292,14 +4356,12 @@ class AppLocalizations {
       // ── Inviter des amis ──────────────────────────────────────────────────
       'invite_title': 'Inviter des amis',
       'invite_headline': 'Invitez vos amis',
-      'invite_message':
-          'Partagez CashRapido avec vos amis et aidez-les à organiser leurs finances.',
+      'invite_message': 'Partagez CashRapido avec vos amis et aidez-les à organiser leurs finances.',
       'invite_link_label': 'Lien de téléchargement',
       'invite_copy': 'Copier le lien',
       'invite_copied': 'Lien copié',
       'invite_share': 'Partager l\'invitation',
-      'invite_share_text':
-          'Découvrez CashRapido, l\'application pour organiser vos finances : {link}',
+      'invite_share_text': 'Découvrez CashRapido, l\'application pour organiser vos finances : {link}',
       'invite_share_error': 'Impossible de partager l\'invitation',
       'invite_open_link': 'Ouvrir le lien',
 
@@ -4326,34 +4388,27 @@ class AppLocalizations {
       // ── Confidentialité ───────────────────────────────────────────────────
       'privacy_title': 'Comment nous traitons vos données',
       'privacy_local_title': 'Stockage local',
-      'privacy_local_body':
-          'Vos mouvements, comptes, catégories et paramètres sont stockés sur cet appareil. L\'application ne nécessite pas d\'inscription et ne crée pas de compte cloud avec un identifiant et un mot de passe propres.',
+      'privacy_local_body': 'Vos mouvements, comptes, catégories et paramètres sont stockés sur cet appareil. L\'application ne nécessite pas d\'inscription et ne crée pas de compte cloud avec un identifiant et un mot de passe propres.',
       'privacy_security_title': 'Sécurité',
-      'privacy_security_body':
-          'Les données du module de prêts sont stockées chiffrées sur l\'appareil. L\'accès à l\'application peut être protégé par la biométrie, un code PIN ou un mot de passe depuis les Paramètres.',
+      'privacy_security_body': 'Les données du module de prêts sont stockées chiffrées sur l\'appareil. L\'accès à l\'application peut être protégé par la biométrie, un code PIN ou un mot de passe depuis les Paramètres.',
       'privacy_drive_title': 'Google Drive',
-      'privacy_drive_body':
-          'Uniquement si vous connectez votre compte, CashRapido enregistre une sauvegarde dans votre propre Google Drive afin que vous puissiez la restaurer. Il n\'accède pas à d\'autres fichiers et vous pouvez le déconnecter quand vous voulez.',
+      'privacy_drive_body': 'Uniquement si vous connectez votre compte, CashRapido enregistre une sauvegarde dans votre propre Google Drive afin que vous puissiez la restaurer. Il n\'accède pas à d\'autres fichiers et vous pouvez le déconnecter quand vous voulez.',
       'privacy_ai_title': 'Assistant IA',
-      'privacy_ai_body':
-          'Si vous activez l\'assistant, vos messages sont traités par le service d\'IA de Google pour générer des réponses. Si vous ne l\'utilisez pas, rien n\'est envoyé.',
+      'privacy_ai_body': 'Si vous activez l\'assistant, vos messages sont traités par le service d\'IA de Google pour générer des réponses. Si vous ne l\'utilisez pas, rien n\'est envoyé.',
       'privacy_export_title': 'Exporter et importer',
-      'privacy_export_body':
-          'Vous pouvez exporter vos données en Excel ou PDF et importer une copie quand vous en avez besoin. Vous contrôlez ces fichiers.',
+      'privacy_export_body': 'Vous pouvez exporter vos données en Excel ou PDF et importer une copie quand vous en avez besoin. Vous contrôlez ces fichiers.',
       'privacy_delete_title': 'Supprimer vos données',
-      'privacy_delete_body':
-          'Depuis Mon compte, vous pouvez réinitialiser l\'application et supprimer vos données de cet appareil. Les sauvegardes cloud sont conservées jusqu\'à ce que vous les supprimiez.',
+      'privacy_delete_body': 'Depuis Mon compte, vous pouvez réinitialiser l\'application et supprimer vos données de cet appareil. Les sauvegardes cloud sont conservées jusqu\'à ce que vous les supprimiez.',
       'privacy_contact_title': 'Contact',
-      'privacy_contact_body':
-          'Si vous avez des questions sur le traitement de vos données, écrivez-nous à {email}.',
-      'privacy_contact_subject': 'Demande sur la confidentialité et les données',
+      'privacy_contact_body': 'Si vous avez des questions sur le traitement de vos données, écrivez-nous à {email}.',
+      'privacy_contact_subject':
+          'Demande sur la confidentialité et les données',
       'categories': 'Catégories',
       'streak_title': 'Séries',
       'streak_days': '{count} jours d\'affilée',
       'streak_calendar_month': 'Calendrier - Ce mois',
       'streak_reward_title': 'Récompense Premium',
-      'streak_reward_question':
-          'Voulez-vous utiliser 1 de vos {count} récompenses pour obtenir un plan de licence aléatoire maintenant ?',
+      'streak_reward_question': 'Voulez-vous utiliser 1 de vos {count} récompenses pour obtenir un plan de licence aléatoire maintenant ?',
       'streak_reward_success': 'Plan Premium activé avec succès !',
       'streak_reward_hint': 'Gagnez un plan Premium tous les 50 jours !',
       'streak_claim': 'Utiliser',
@@ -4379,10 +4434,8 @@ class AppLocalizations {
           'Recevez des conseils aléatoires pour améliorer vos finances',
       'notif_permission_granted': 'Autorisation système accordée',
       'notif_permission_denied_title': 'Notifications bloquées',
-      'notif_permission_denied_desc':
-          'Les notifications système sont désactivées pour CashRapido. Activez-les pour recevoir des rappels et des alertes.',
-      'notif_permission_dialog_desc':
-          'Impossible de les activer car l\'autorisation de notification est refusée. Activez-la dans les paramètres système.',
+      'notif_permission_denied_desc': 'Les notifications système sont désactivées pour CashRapido. Activez-les pour recevoir des rappels et des alertes.',
+      'notif_permission_dialog_desc': 'Impossible de les activer car l\'autorisation de notification est refusée. Activez-la dans les paramètres système.',
       'open_system_settings': 'Ouvrir les paramètres système',
       'notif_weekly_label': 'Résumé hebdomadaire',
       'notif_weekly_label_desc': 'Envoyé automatiquement le dimanche',
@@ -4393,6 +4446,20 @@ class AppLocalizations {
       'point': 'Point (.)',
       'numeric_format_desc':
           'Choisissez le séparateur décimal pour toute l\'application',
+      // Connexion Google
+      'google_login_title': 'Votre compte, sur tous vos appareils',
+      'google_login_subtitle': 'Connectez-vous avec Google pour garder vos données dans le cloud et les retrouver en changeant de téléphone.',
+      'google_login_button': 'Continuer avec Google',
+      'google_login_privacy': 'Nous utilisons votre compte pour vous identifier et pour enregistrer vos sauvegardes dans votre Google Drive. Nous n\'accédons ni à vos e-mails, ni à vos contacts, ni à vos autres fichiers.',
+      'google_login_offline': 'Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.',
+      'google_login_error':
+          'La connexion avec Google a échoué. Veuillez réessayer.',
+      'google_login_cancelled': 'Connexion annulée.',
+      'google_login_not_configured': 'Cette version n\'a pas la configuration de connexion Google. Mettez l\'application à jour pour continuer.',
+      'account_signed_in': 'Session ouverte',
+      'account_sign_out': 'Se déconnecter',
+      'account_sign_out_desc': 'Vos données restent sur cet appareil. Vous pourrez vous reconnecter avec votre compte Google.',
+
       // Help Center
       'help_section_start': 'Premiers pas',
       'help_section_trial': 'Essai et offres',
@@ -4401,89 +4468,63 @@ class AppLocalizations {
       'help_section_backup': 'Sauvegardes',
       'help_section_business': 'Commerce et prêts',
       'help_q_add_card': 'Comment créer mon premier compte ?',
-      'help_a_add_card':
-          'Ouvrez Portefeuille dans la barre inférieure et appuyez sur (+). Choisissez le type (espèces, banque ou carte), saisissez le nom, le solde initial et la couleur, puis enregistrez.',
-      'help_q_add_transaction': 'Comment enregistrer un revenu ou une dépense ?',
-      'help_a_add_transaction':
-          'Appuyez sur le bouton flottant (+) et choisissez Dépense ou Revenu. Sélectionnez le compte, la catégorie, le montant et la date ; vous pouvez ajouter une note avant d\'enregistrer.',
+      'help_a_add_card': 'Ouvrez Portefeuille dans la barre inférieure et appuyez sur (+). Choisissez le type (espèces, banque ou carte), saisissez le nom, le solde initial et la couleur, puis enregistrez.',
+      'help_q_add_transaction':
+          'Comment enregistrer un revenu ou une dépense ?',
+      'help_a_add_transaction': 'Appuyez sur le bouton flottant (+) et choisissez Dépense ou Revenu. Sélectionnez le compte, la catégorie, le montant et la date ; vous pouvez ajouter une note avant d\'enregistrer.',
       'help_q_scanner': 'Comment utiliser le scanner de cartes ?',
-      'help_a_scanner':
-          'Dans Actions rapides, appuyez sur « Scanner » et alignez la carte dans le cadre. L\'appli lit le numéro et la date d\'expiration. Le scanner nécessite l\'autorisation caméra et est disponible en Entreprise et pendant l\'essai.',
+      'help_a_scanner': 'Dans Actions rapides, appuyez sur « Scanner » et alignez la carte dans le cadre. L\'appli lit le numéro et la date d\'expiration. Le scanner nécessite l\'autorisation caméra et est disponible en Entreprise et pendant l\'essai.',
       'help_q_trial': 'Que comprend l\'essai gratuit de 2 jours ?',
-      'help_a_trial':
-          'Pendant 48 heures après l\'installation, tout est débloqué sauf l\'Assistant IA, les sauvegardes Google Drive et les sauvegardes locales, qui exigent une offre payante. L\'accueil affiche le temps restant.',
+      'help_a_trial': 'Pendant 48 heures après l\'installation, tout est débloqué sauf l\'Assistant IA, les sauvegardes Google Drive et les sauvegardes locales, qui exigent une offre payante. L\'accueil affiche le temps restant.',
       'help_q_trial_end': 'Que se passe-t-il à la fin de l\'essai ?',
-      'help_a_trial_end':
-          'Sans offre active, les données enregistrées sur l\'appareil sont supprimées automatiquement : transactions, comptes, catégories, commerce, prêts et discussions. Si vous achetez une offre pendant les 48 heures, vos données sont conservées même si elle expire ensuite.',
+      'help_a_trial_end': 'Sans offre active, les données enregistrées sur l\'appareil sont supprimées automatiquement : transactions, comptes, catégories, commerce, prêts et discussions. Si vous achetez une offre pendant les 48 heures, vos données sont conservées même si elle expire ensuite.',
       'help_q_plans': 'Quelles offres existent et que comprennent-elles ?',
-      'help_a_plans':
-          'Personnel : 3 comptes, transferts, statistiques détaillées et devises.\nPro : 4 comptes, catégories personnalisées, PIN par compte et export Excel.\nEntreprise : comptes illimités, IA, Google Drive, Commerce, Prêts, PDF, widgets et biométrie.\nChaque niveau se vend à la semaine, au mois ou à l\'année.',
+      'help_a_plans': 'Personnel : 3 comptes, transferts, statistiques détaillées et devises.\nPro : 4 comptes, catégories personnalisées, PIN par compte et export Excel.\nEntreprise : comptes illimités, IA, Google Drive, Commerce, Prêts, PDF, widgets et biométrie.\nChaque niveau se vend à la semaine, au mois ou à l\'année.',
       'help_q_payment': 'Comment payer mon offre ?',
-      'help_a_payment':
-          'Ouvrez Profil → Licences, choisissez l\'offre et appuyez sur Payer. À Cuba, le paiement passe par Apklis. Hors de Cuba, vous pouvez payer avec PayPal ou débloquer des licences en regardant des publicités. Le prix s\'affiche avant confirmation.',
+      'help_a_payment': 'Ouvrez Profil → Licences, choisissez l\'offre et appuyez sur Payer. À Cuba, le paiement passe par Apklis. Hors de Cuba, vous pouvez payer avec PayPal ou débloquer des licences en regardant des publicités. Le prix s\'affiche avant confirmation.',
       'help_q_restore_purchase': 'Comment restaurer mon achat ?',
-      'help_a_restore_purchase':
-          'Dans Licences, appuyez sur l\'icône de vérification de la barre supérieure : l\'appli vérifiera votre achat Apklis. Si l\'offre n\'apparaît pas, écrivez-nous depuis Profil → Aide et confidentialité avec l\'e-mail d\'achat.',
-      'help_q_edit_transaction': 'Comment modifier ou supprimer une transaction ?',
-      'help_a_edit_transaction':
-          'Appuyez sur une transaction de la liste pour ouvrir son détail ; vous pouvez ensuite la modifier ou la supprimer.',
+      'help_a_restore_purchase': 'Dans Licences, appuyez sur l\'icône de vérification de la barre supérieure : l\'appli vérifiera votre achat Apklis. Si l\'offre n\'apparaît pas, écrivez-nous depuis Profil → Aide et confidentialité avec l\'e-mail d\'achat.',
+      'help_q_edit_transaction':
+          'Comment modifier ou supprimer une transaction ?',
+      'help_a_edit_transaction': 'Appuyez sur une transaction de la liste pour ouvrir son détail ; vous pouvez ensuite la modifier ou la supprimer.',
       'help_q_transfer': 'Comment transférer entre comptes ?',
-      'help_a_transfer':
-          'Dans Actions rapides, appuyez sur « Transférer », puis choisissez le compte source, le compte destination et le montant. Ce n\'est pas une dépense : cela déplace seulement le solde entre vos comptes.',
+      'help_a_transfer': 'Dans Actions rapides, appuyez sur « Transférer », puis choisissez le compte source, le compte destination et le montant. Ce n\'est pas une dépense : cela déplace seulement le solde entre vos comptes.',
       'help_q_recurring': 'Que sont les transactions récurrentes ?',
-      'help_a_recurring':
-          'Dans Actions rapides → « Récurrent », définissez des revenus ou dépenses qui se répètent (chaque semaine, mois ou année). L\'appli les enregistre automatiquement à la date prévue.',
+      'help_a_recurring': 'Dans Actions rapides → « Récurrent », définissez des revenus ou dépenses qui se répètent (chaque semaine, mois ou année). L\'appli les enregistre automatiquement à la date prévue.',
       'help_q_categories': 'Puis-je créer des catégories personnalisées ?',
-      'help_a_categories':
-          'Oui, avec Pro ou Entreprise. Créez-les depuis le sélecteur de catégories lors de l\'enregistrement d\'une transaction. Elles sont aussi disponibles pendant l\'essai.',
+      'help_a_categories': 'Oui, avec Pro ou Entreprise. Créez-les depuis le sélecteur de catégories lors de l\'enregistrement d\'une transaction. Elles sont aussi disponibles pendant l\'essai.',
       'help_q_cards_limit': 'Combien de comptes puis-je avoir ?',
-      'help_a_cards_limit':
-          'Gratuit : 1. Personnel : 3. Pro : 4. Entreprise : illimité. Aucune limite pendant l\'essai. Vous pouvez voir et réorganiser vos comptes dans Portefeuille.',
+      'help_a_cards_limit': 'Gratuit : 1. Personnel : 3. Pro : 4. Entreprise : illimité. Aucune limite pendant l\'essai. Vous pouvez voir et réorganiser vos comptes dans Portefeuille.',
       'help_q_change_balance': 'Comment changer le solde d\'un compte ?',
-      'help_a_change_balance':
-          'Allez dans Portefeuille, appuyez sur le compte et ouvrez Modifier. Vous y ajustez le solde, le nom, la couleur et le PIN du compte.',
+      'help_a_change_balance': 'Allez dans Portefeuille, appuyez sur le compte et ouvrez Modifier. Vous y ajustez le solde, le nom, la couleur et le PIN du compte.',
       'help_q_card_pin': 'Puis-je protéger un compte par PIN ?',
-      'help_a_card_pin':
-          'Oui. Avec Pro ou supérieur, vous pouvez attribuer un PIN à un compte lors de sa création ou modification pour masquer ses transactions. Il vous sera demandé à l\'ouverture.',
+      'help_a_card_pin': 'Oui. Avec Pro ou supérieur, vous pouvez attribuer un PIN à un compte lors de sa création ou modification pour masquer ses transactions. Il vous sera demandé à l\'ouverture.',
       'help_q_money_counter': 'Qu\'est-ce que le Compteur d\'Argent ?',
-      'help_a_money_counter':
-          'C\'est un outil pour compter les billets et pièces par coupure et comparer le total avec le solde d\'un compte en espèces. Il se trouve dans Portefeuille, sur les comptes de type espèces.',
+      'help_a_money_counter': 'C\'est un outil pour compter les billets et pièces par coupure et comparer le total avec le solde d\'un compte en espèces. Il se trouve dans Portefeuille, sur les comptes de type espèces.',
       'help_q_stats': 'Que puis-je voir dans Statistiques ?',
-      'help_a_stats':
-          'Revenus, dépenses, solde, taux d\'épargne, budgets et graphiques par jour, semaine, mois, année ou période personnalisée. Avec Personnel ou supérieur, vous pouvez filtrer par compte et voir le détail par période.',
+      'help_a_stats': 'Revenus, dépenses, solde, taux d\'épargne, budgets et graphiques par jour, semaine, mois, année ou période personnalisée. Avec Personnel ou supérieur, vous pouvez filtrer par compte et voir le détail par période.',
       'help_q_export': 'Puis-je exporter mes données ?',
-      'help_a_export':
-          'Depuis Statistiques, vous pouvez partager ou enregistrer un résumé PDF (Entreprise) et exporter les données vers Excel (Pro ou supérieur). Les deux options sont disponibles pendant l\'essai.',
+      'help_a_export': 'Depuis Statistiques, vous pouvez partager ou enregistrer un résumé PDF (Entreprise) et exporter les données vers Excel (Pro ou supérieur). Les deux options sont disponibles pendant l\'essai.',
       'help_q_backup_local': 'Comment faire une sauvegarde locale ?',
-      'help_a_backup_local':
-          'Dans Profil → Mon compte → Sauvegarder les données (local), l\'appli crée un fichier que vous pouvez enregistrer ou partager. L\'importer remplace les données actuelles. Une offre payante est requise, même pendant l\'essai.',
+      'help_a_backup_local': 'Dans Profil → Mon compte → Sauvegarder les données (local), l\'appli crée un fichier que vous pouvez enregistrer ou partager. L\'importer remplace les données actuelles. Une offre payante est requise, même pendant l\'essai.',
       'help_q_drive': 'Comment fonctionne la sauvegarde Google Drive ?',
-      'help_a_drive':
-          'Avec Entreprise, vous pouvez connecter votre compte Google et enregistrer une copie chiffrée dans votre Drive depuis Profil → Aide et confidentialité → Sauvegardes. Le fichier reste dans votre compte.',
+      'help_a_drive': 'Avec Entreprise, vous pouvez connecter votre compte Google et enregistrer une copie chiffrée dans votre Drive depuis Profil → Aide et confidentialité → Sauvegardes. Le fichier reste dans votre compte.',
       'help_q_delete_data': 'Comment supprimer toutes mes données ?',
-      'help_a_delete_data':
-          'Dans Profil → Mon compte → Réinitialiser les données, vous pouvez tout effacer et repartir de zéro. L\'appli propose de créer une sauvegarde avant (offre payante requise) et l\'action est irréversible.',
+      'help_a_delete_data': 'Dans Profil → Mon compte → Réinitialiser les données, vous pouvez tout effacer et repartir de zéro. L\'appli propose de créer une sauvegarde avant (offre payante requise) et l\'action est irréversible.',
       'help_q_business': 'Que comprend le module Commerce ?',
-      'help_a_business':
-          'Disponible en Entreprise : catalogue de produits avec stock et coûts, point de vente, dépenses du commerce, vendeurs, clôtures de caisse et rapports PDF et Excel.',
+      'help_a_business': 'Disponible en Entreprise : catalogue de produits avec stock et coûts, point de vente, dépenses du commerce, vendeurs, clôtures de caisse et rapports PDF et Excel.',
       'help_q_loans': 'Que comprend le module Prêts ?',
-      'help_a_loans':
-          'Disponible en Entreprise : enregistrez des prêts et des clients, encaissez des échéances totales ou partielles, suivez les retards et consultez les rapports de portefeuille.',
+      'help_a_loans': 'Disponible en Entreprise : enregistrez des prêts et des clients, encaissez des échéances totales ou partielles, suivez les retards et consultez les rapports de portefeuille.',
       'help_q_security': 'Comment protéger l\'appli ?',
-      'help_a_security':
-          'Dans Paramètres → Compte et sécurité, définissez un PIN ou un mot de passe de l\'appli et, avec Entreprise, activez la biométrie. Les données sont stockées sur l\'appareil, pas sur un serveur.',
+      'help_a_security': 'Dans Paramètres → Compte et sécurité, définissez un PIN ou un mot de passe de l\'appli et, avec Entreprise, activez la biométrie. Les données sont stockées sur l\'appareil, pas sur un serveur.',
       'help_q_ai': 'Comment fonctionne l\'Assistant IA ?',
-      'help_a_ai':
-          'Disponible en Entreprise. Activez-le dans Paramètres → Préférences et posez vos questions sur vos finances depuis le chat. Ne partagez pas de mots de passe, PIN ni numéros de carte avec l\'assistant.',
+      'help_a_ai': 'Disponible en Entreprise. Activez-le dans Paramètres → Préférences et posez vos questions sur vos finances depuis le chat. Ne partagez pas de mots de passe, PIN ni numéros de carte avec l\'assistant.',
       'help_q_custom_bank': 'Puis-je ajouter des banques personnalisées ?',
-      'help_a_custom_bank':
-          'Oui, avec Pro ou supérieur. Dans Paramètres → Gérer les banques, vous pouvez ajouter, modifier et supprimer des établissements, puis les utiliser lors de la création de comptes.',
+      'help_a_custom_bank': 'Oui, avec Pro ou supérieur. Dans Paramètres → Gérer les banques, vous pouvez ajouter, modifier et supprimer des établissements, puis les utiliser lors de la création de comptes.',
       'help_q_currency': 'Comment changer la devise principale ?',
-      'help_a_currency':
-          'Dans Paramètres → Devise principale, choisissez la devise des totaux. Dans Paramètres → Taux de change, définissez la conversion entre vos devises.',
+      'help_a_currency': 'Dans Paramètres → Devise principale, choisissez la devise des totaux. Dans Paramètres → Taux de change, définissez la conversion entre vos devises.',
       'help_q_feedback': 'Comment envoyer une suggestion ou signaler un bug ?',
-      'help_a_feedback':
-          'Depuis Profil → Aide et confidentialité, vous pouvez contacter le support, signaler un bug ou envoyer une suggestion. Vous pouvez aussi rejoindre notre communauté Telegram.',
+      'help_a_feedback': 'Depuis Profil → Aide et confidentialité, vous pouvez contacter le support, signaler un bug ou envoyer une suggestion. Vous pouvez aussi rejoindre notre communauté Telegram.',
 
       // Business Module
       'nav_business': 'Commerce',
@@ -4493,8 +4534,7 @@ class AppLocalizations {
       'business_expense': 'Dépenses',
       'add_business_transaction': 'Ajouter Transaction',
       'business_locked_title': 'Module Entreprise',
-      'business_locked_desc':
-          'Ce module est exclusif aux plans Entreprise. Passez au niveau supérieur.',
+      'business_locked_desc': 'Ce module est exclusif aux plans Entreprise. Passez au niveau supérieur.',
       'upgrade_to_enterprise': 'Passer à Entreprise',
       'total_profit': 'Profit Total',
       'net_income': 'Revenu Net',
@@ -4531,8 +4571,7 @@ class AppLocalizations {
       'business_appearance_section': 'Apparence',
       'business_preview': 'Aperçu',
       'business_delete_title': 'Supprimer le commerce',
-      'business_delete_confirm':
-          'Supprimer ce commerce et toutes ses données ? Cette action est irréversible.',
+      'business_delete_confirm': 'Supprimer ce commerce et toutes ses données ? Cette action est irréversible.',
 
       // Sellers
       'no_sellers': 'Aucun vendeur',
@@ -4582,8 +4621,7 @@ class AppLocalizations {
           'Distribué au total : {total} / {stock} {unit}',
       'seller_assign_removed': 'Produit désassigné',
       'seller_assign_success': '{qty} unités assignées à {name}',
-      'seller_assign_exceeds':
-          '⚠️ Vous ne pouvez pas assigner plus de {max} unités (déjà distribuées entre d\'autres vendeurs ou stock insuffisant).',
+      'seller_assign_exceeds': '⚠️ Vous ne pouvez pas assigner plus de {max} unités (déjà distribuées entre d\'autres vendeurs ou stock insuffisant).',
       'seller_view_report': 'Voir le Rapport',
       'seller_without': 'Sans vendeur',
       'seller_optional': 'Vendeur (Optionnel)',
@@ -4596,8 +4634,7 @@ class AppLocalizations {
       'nav_loans': 'Prêts',
       'loans_module_title': 'Module de Prêts',
       'loans_locked_title': 'Module de Prêts',
-      'loans_locked_desc':
-          'Suivez vos prêts, clients, taux d\'intérêt, paiements et rappels automatiques. Exclusif aux licences Entreprise.',
+      'loans_locked_desc': 'Suivez vos prêts, clients, taux d\'intérêt, paiements et rappels automatiques. Exclusif aux licences Entreprise.',
       'total_loaned': 'Total Prêté',
       'remaining_balance': 'Solde Restant',
       'total_collected': 'Total Perçu',
@@ -4630,10 +4667,8 @@ class AppLocalizations {
       'payment_history': 'Historique de Paiements',
       'no_payments': 'Aucun paiement enregistré',
       'no_loans_title': 'Aucun Prêt',
-      'no_loans_desc':
-          'Vous n\'avez pas encore enregistré de prêt. Appuyez sur \'+\' pour commencer.',
-      'delete_loan_confirm':
-          'Êtes-vous sûr de vouloir supprimer ce prêt ? Cela supprimera également tous les paiements associés.',
+      'no_loans_desc': 'Vous n\'avez pas encore enregistré de prêt. Appuyez sur \'+\' pour commencer.',
+      'delete_loan_confirm': 'Êtes-vous sûr de vouloir supprimer ce prêt ? Cela supprimera également tous les paiements associés.',
       'loan_deleted_msg': 'Prêt supprimé avec succès.',
       'loan_saved_msg': 'Prêt enregistré avec succès.',
       'payment_registered_msg': 'Paiement enregistré avec succès.',
@@ -4690,8 +4725,7 @@ class AppLocalizations {
       'reports_delinquent_clients': 'Clients en Retard',
       'reports_active_portfolio': 'Portefeuille Actif',
       'reports_expected_7days': 'Encaissements Attendus (7 jours) :',
-      'reports_projections_footnote':
-          '* Ce montant représente la somme des soldes impayés des échéances programmées à échoir la semaine prochaine.',
+      'reports_projections_footnote': '* Ce montant représente la somme des soldes impayés des échéances programmées à échoir la semaine prochaine.',
 
       // Loans List
       'no_search_results': 'Aucun résultat pour la recherche',
@@ -4725,8 +4759,7 @@ class AppLocalizations {
       'loan_status_pending': 'En attente',
       'loan_total_repayment': 'Total à Encaisser',
       'loan_estimated_installment': 'Échéance Estimée',
-      'no_loans_desc_portfolio':
-          'Aucun prêt enregistré pour l\'instant. Touchez le bouton \'+\' pour commencer à gérer votre portefeuille.',
+      'no_loans_desc_portfolio': 'Aucun prêt enregistré pour l\'instant. Touchez le bouton \'+\' pour commencer à gérer votre portefeuille.',
 
       // Loan Detail
       'loan_detail_title': 'Détails du Prêt',
@@ -4762,16 +4795,13 @@ class AppLocalizations {
       'loan_collected_label': 'Encaissé',
       'loan_total_label': 'Total',
       'loan_refinance_title': 'Refinancer le Prêt',
-      'loan_refinance_desc':
-          'Le solde actuel de {amount} {currency} sera clôturé et un nouveau prêt avec ce montant comme base sera créé. Voulez-vous continuer ?',
+      'loan_refinance_desc': 'Le solde actuel de {amount} {currency} sera clôturé et un nouveau prêt avec ce montant comme base sera créé. Voulez-vous continuer ?',
       'loan_refinance_success': 'Prêt refinancé avec succès',
       'loan_mark_loss_title': 'Marquer comme Perte',
-      'loan_mark_loss_desc':
-          'Marquer le prêt de {name} comme irrécouvrable ? Le solde de {amount} sera enregistré comme perte.',
+      'loan_mark_loss_desc': 'Marquer le prêt de {name} comme irrécouvrable ? Le solde de {amount} sera enregistré comme perte.',
       'loan_mark_loss_success': 'Prêt marqué comme perte',
       'loan_delete_title': 'Supprimer le Prêt',
-      'loan_delete_desc':
-          'Êtes-vous sûr de vouloir supprimer ce prêt ? Tous ses encaissements et activités seront également supprimés.',
+      'loan_delete_desc': 'Êtes-vous sûr de vouloir supprimer ce prêt ? Tous ses encaissements et activités seront également supprimés.',
       'loan_delete_success': 'Prêt supprimé',
       'loan_delete_payment_title': 'Supprimer l\'Encaissement',
       'loan_delete_payment_desc':
@@ -4838,8 +4868,7 @@ class AppLocalizations {
       'borrower_list_risk_medium': 'Risque Moyen',
       'borrower_list_risk_low': 'Risque Faible',
       'borrowers_empty_title': 'Aucun Client',
-      'borrowers_empty_desc':
-          'Vous n\'avez pas encore ajouté de débiteur. Enregistrez vos clients pour les associer aux prêts de manière ordonnée.',
+      'borrowers_empty_desc': 'Vous n\'avez pas encore ajouté de débiteur. Enregistrez vos clients pour les associer aux prêts de manière ordonnée.',
       'borrower_registered_on': 'Enregistré le',
       'borrower_phone_label': 'Téléphone',
       'borrower_address_label': 'Adresse',
@@ -4849,8 +4878,7 @@ class AppLocalizations {
       'borrower_edit': 'Modifier',
       'borrower_delete': 'Supprimer',
       'borrower_delete_title': 'Supprimer le Client ?',
-      'borrower_delete_desc':
-          'Êtes-vous sûr de vouloir supprimer {name} ? Cela ne supprimera pas ses prêts existants, mais vous perdrez le lien.',
+      'borrower_delete_desc': 'Êtes-vous sûr de vouloir supprimer {name} ? Cela ne supprimera pas ses prêts existants, mais vous perdrez le lien.',
 
       // Payment Form
       'payment_pay_all': 'TOUT',
@@ -4931,8 +4959,7 @@ class AppLocalizations {
       'product_stock_low': 'Stock faible',
       'product_stock_out': 'Rupture de stock',
       'product_empty_title': 'Aucun produit',
-      'product_empty_desc':
-          'Vous n\'avez pas encore de produits dans votre catalogue.\nAjoutez le premier pour commencer à vendre.',
+      'product_empty_desc': 'Vous n\'avez pas encore de produits dans votre catalogue.\nAjoutez le premier pour commencer à vendre.',
       'product_no_search_results': 'Aucun produit trouvé',
       'product_no_search_results_desc':
           'Essayez d\'autres termes de recherche.',
@@ -4950,16 +4977,13 @@ class AppLocalizations {
 
       'category_manager_title': 'Catégories',
       'category_empty_title': 'Aucune catégorie',
-      'category_empty_desc':
-          'Organisez vos produits en créant des catégories.\nElles servent aussi pour la génération automatique de SKU.',
+      'category_empty_desc': 'Organisez vos produits en créant des catégories.\nElles servent aussi pour la génération automatique de SKU.',
       'category_add_category': 'Ajouter Catégorie',
       'category_add_subcategory': 'Ajouter Sous-catégorie',
       'category_edit': 'Modifier',
       'category_delete': 'Supprimer',
-      'category_confirm_delete':
-          'Supprimer "{name}" ? Les sous-catégories et assignations de produits seront aussi supprimées.',
-      'category_confirm_delete_sub':
-          'Supprimer la sous-catégorie "{name}" ?',
+      'category_confirm_delete': 'Supprimer "{name}" ? Les sous-catégories et assignations de produits seront aussi supprimées.',
+      'category_confirm_delete_sub': 'Supprimer la sous-catégorie "{name}" ?',
       'category_sub_name_placeholder': 'Nom de la sous-catégorie',
       'category_new_title': 'Nouvelle Catégorie',
       'category_new_sub_title': 'Nouvelle Sous-catégorie',
@@ -5030,7 +5054,8 @@ class AppLocalizations {
       'pos_qty_label': 'Quantité ({unit})',
       'pos_remove_from_cart': 'Retirer du panier',
       'pos_valid_qty': 'Saisissez une quantité valide',
-      'pos_insufficient_stock': 'Stock insuffisant. Disponible : {stock} {unit}',
+      'pos_insufficient_stock':
+          'Stock insuffisant. Disponible : {stock} {unit}',
       'pos_product_not_found': 'Produit introuvable pour le code : {code}',
       'pos_discount': 'Remise ({currency}) (Optionnel)',
       'pos_client_name': 'Nom du client (Optionnel)',
@@ -5078,8 +5103,7 @@ class AppLocalizations {
       'sale_mark_paid_label': 'Marquer Payée',
       'sale_delete_label': 'Supprimer',
       'sale_processing': 'Traitement...',
-      'sale_error_default':
-          'Impossible d\'enregistrer la vente. Réessayez.',
+      'sale_error_default': 'Impossible d\'enregistrer la vente. Réessayez.',
       'reports_title': 'Rapports',
       'closing_day': 'Clôture Journalière',
       'closing_week': 'Clôture Hebdo',
@@ -5091,8 +5115,7 @@ class AppLocalizations {
       'closing_empty_desc':
           'Générez la première clôture pour voir les statistiques.',
       'closing_import_title': 'Importer des Ventes depuis un Fichier',
-      'closing_import_desc':
-          'Sélectionnez un fichier JSON avec les ventes pour les charger dans le négociant.',
+      'closing_import_desc': 'Sélectionnez un fichier JSON avec les ventes pour les charger dans le négociant.',
       'closing_import_error': '❌ Erreur : {msg}',
       'closing_profit': 'Profit',
       'closing_loss': 'Perte',
@@ -5147,8 +5170,7 @@ class AppLocalizations {
           'Montant initial pour l\'achat et le renouvellement des stocks',
       'initial_capital_hint': 'ex. 50000',
       'linked_account': 'Compte Principal Associé',
-      'linked_account_desc':
-          'Compte sur lequel les fonds d\'achat et de dépense sont débités et les revenus des ventes sont enregistrés.',
+      'linked_account_desc': 'Compte sur lequel les fonds d\'achat et de dépense sont débités et les revenus des ventes sont enregistrés.',
       'select_linked_account': 'Sélectionner le compte principal',
       'no_linked_account': 'Aucun compte associé',
       'assigned_capital': 'Capital Attribué',
@@ -5157,8 +5179,7 @@ class AppLocalizations {
       'edit_capital_title': 'Ajuster le Capital des Stocks',
       'btn_save': 'Enregistrer',
       'delete_sale_confirm_title': 'Supprimer la Vente ?',
-      'delete_sale_confirm_msg':
-          'En supprimant cette vente, les unités vendues seront automatiquement réintégrées au stock disponible.',
+      'delete_sale_confirm_msg': 'En supprimant cette vente, les unités vendues seront automatiquement réintégrées au stock disponible.',
       'sale_deleted_stock_restored':
           'Vente supprimée. Les unités ont été réintégrées au stock.',
       'available_to_renew': 'Disponible pour réapprovisionner',
@@ -5189,8 +5210,7 @@ class AppLocalizations {
       'business_sell': 'Vendre',
       'metrics_profit': 'Bénéfice',
       'business_low_stock': 'Stock faible',
-      'business_low_stock_desc':
-          'Produits sous le seuil de stock.',
+      'business_low_stock_desc': 'Produits sous le seuil de stock.',
       'business_view_products': 'Voir les produits',
       'business_adjust_short': 'Ajuster',
       'business_units': 'u.',
@@ -5216,8 +5236,7 @@ class AppLocalizations {
       'break_even_prices_applied':
           'Prix de vente mis à jour dans l\'inventaire',
       'break_even_custom_fixed_costs': 'Coûts Fixes Additionnels',
-      'break_even_negative_margin_alert':
-          'Avertissement! La marge de contribution moyenne est négative. Vous ne pouvez pas atteindre le seuil de rentabilité en vendant à perte.',
+      'break_even_negative_margin_alert': 'Avertissement! La marge de contribution moyenne est négative. Vous ne pouvez pas atteindre le seuil de rentabilité en vendant à perte.',
       'break_even_chart_revenue': 'Revenus Totaux',
       'break_even_chart_costs': 'Coûts Totaux',
       'break_even_chart_fixed': 'Coûts Fixes',
@@ -5318,24 +5337,18 @@ class AppLocalizations {
 
       // Onboarding
       'onboarding_title_1': 'Contrôle Total',
-      'onboarding_desc_1':
-          'Gérez tout votre argent depuis votre mobile, sans connexion internet.',
+      'onboarding_desc_1': 'Gérez tout votre argent depuis votre mobile, sans connexion internet.',
       'onboarding_title_2': 'Sans Tracas',
-      'onboarding_desc_2':
-          'Interface intuitive et rapide pour enregistrer vos dépenses et revenus instantanément.',
+      'onboarding_desc_2': 'Interface intuitive et rapide pour enregistrer vos dépenses et revenus instantanément.',
       'onboarding_title_3': 'Assistant IA Expert',
-      'onboarding_desc_3':
-          'Votre conseiller financier personnel. Posez des questions sur vos dépenses 24/7.',
+      'onboarding_desc_3': 'Votre conseiller financier personnel. Posez des questions sur vos dépenses 24/7.',
       'onboarding_get_started': 'Commencer',
       'tour_balance_title': 'Votre argent consolidé',
-      'tour_balance_desc':
-          'Ici, vous verrez le résumé global de toutes vos cartes et comptes dans différentes devises.',
+      'tour_balance_desc': 'Ici, vous verrez le résumé global de toutes vos cartes et comptes dans différentes devises.',
       'tour_quick_actions_title': 'Actions rapides',
-      'tour_quick_actions_desc':
-          'Utilisez cette zone pour transférer et agir instantanément sur votre argent.',
+      'tour_quick_actions_desc': 'Utilisez cette zone pour transférer et agir instantanément sur votre argent.',
       'tour_finish_title': 'Visite terminée !',
-      'tour_finish_desc':
-          'Vous connaissez les principales fonctions de CashRapido. Commencez à gérer vos finances.',
+      'tour_finish_desc': 'Vous connaissez les principales fonctions de CashRapido. Commencez à gérer vos finances.',
       'tour_wallet_title': 'Votre Portefeuille',
       'tour_wallet_desc': 'Voici votre solde. Appuyez pour changer de carte.',
       'tour_scan_title': 'Scanner Rapide',
@@ -5347,8 +5360,7 @@ class AppLocalizations {
       'tour_transfer_desc':
           'Déplacez de l\'argent ou envoyez des paiements rapidement.',
       'tour_fab_title': 'Assistant IA',
-      'tour_fab_desc':
-          'Votre conseiller financier personnel. Appuyez pour ouvrir le chat et obtenir des conseils, analyses et aide instantanés.',
+      'tour_fab_desc': 'Votre conseiller financier personnel. Appuyez pour ouvrir le chat et obtenir des conseils, analyses et aide instantanés.',
       'tour_navbar_title': 'Navigation Principale',
       'tour_navbar_desc':
           'Accédez à Accueil, Mouvements, Statistiques et Profil d\'ici.',
@@ -5359,17 +5371,14 @@ class AppLocalizations {
       'tour_transactions_desc':
           'Voyez vos derniers mouvements ici. Appuyez pour les détails.',
       'tour_home_nav_title': 'Onglet Accueil',
-      'tour_home_nav_desc':
-          'Votre résumé quotidien : solde, actions rapides et mouvements récents.',
+      'tour_home_nav_desc': 'Votre résumé quotidien : solde, actions rapides et mouvements récents.',
       'tour_movements_nav_title': 'Onglet Mouvements',
-      'tour_movements_nav_desc':
-          'Consultez vos mouvements par période, avec résumé, recherche et filtres.',
+      'tour_movements_nav_desc': 'Consultez vos mouvements par période, avec résumé, recherche et filtres.',
       'tour_stats_nav_title': 'Onglet Statistiques',
       'tour_stats_nav_desc':
           'Analysez vos dépenses et revenus avec des graphiques détaillés.',
       'tour_profile_nav_title': 'Onglet Profil',
-      'tour_profile_nav_desc':
-          'Gérez votre compte, la sécurité, les licences et les réglages de l\'app.',
+      'tour_profile_nav_desc': 'Gérez votre compte, la sécurité, les licences et les réglages de l\'app.',
 
       // Scanner
       'scan_card_instruction': 'Encadrer la carte',
@@ -5386,15 +5395,13 @@ class AppLocalizations {
       'backup_action': 'Sauvegarder',
       'restore_action': 'Restaurer',
       'restore_dialog_title': 'Restaurer les données ?',
-      'restore_dialog_desc':
-          'Cela écrasera toutes les données actuelles avec la sauvegarde cloud. Cette action est irréversible.',
+      'restore_dialog_desc': 'Cela écrasera toutes les données actuelles avec la sauvegarde cloud. Cette action est irréversible.',
       'restore_success_msg': 'Données restaurées avec succès',
       'backup_success_msg': 'Sauvegarde terminée',
 
       'developed_by': 'Développé par',
       'developer_name': 'Lenier Cruz Perez',
-      'app_desc':
-          'CashRapido est un outil de gestion financière moderne conçu pour la simplicité et la rapidité.',
+      'app_desc': 'CashRapido est un outil de gestion financière moderne conçu pour la simplicité et la rapidité.',
 
       // Auth
       'locked_title': 'CashRapido Verrouillé',
@@ -5424,8 +5431,7 @@ class AppLocalizations {
       'recent_transactions': 'Récents',
       'view_all': 'Voir tout',
       'no_recent_transactions': 'Aucune transaction récente',
-      'home_empty_hint':
-          'Enregistrez votre premier mouvement pour suivre votre progression ici.',
+      'home_empty_hint': 'Enregistrez votre premier mouvement pour suivre votre progression ici.',
       'tooltip_notifications': 'Notifications',
       'tooltip_ai': 'Assistant IA',
       'tooltip_streak': 'Série',
@@ -5471,8 +5477,7 @@ class AppLocalizations {
       'clear_filters': 'Effacer les filtres',
       'clear_search': 'Effacer la recherche',
       'no_results_title': 'Aucun résultat',
-      'no_results_message':
-          'Aucune transaction ne correspond à votre recherche ou à vos filtres.',
+      'no_results_message': 'Aucune transaction ne correspond à votre recherche ou à vos filtres.',
       'history_hint':
           'Touchez une transaction pour la modifier ou la supprimer',
 
@@ -5560,8 +5565,7 @@ class AppLocalizations {
           'Vous avez dépensé {percent} de moins que sur la période précédente.',
       'stats_insight_equal':
           'Vous avez dépensé la même chose que sur la période précédente.',
-      'stats_other_currencies':
-          'Il y a des mouvements dans {n} devise de plus. Changez de devise pour les voir.',
+      'stats_other_currencies': 'Il y a des mouvements dans {n} devise de plus. Changez de devise pour les voir.',
       'stats_categories': '{n} catégories',
       'stats_by_hour': 'Par heure de la journée',
       'stats_by_day': 'Par jour',
@@ -5584,39 +5588,31 @@ class AppLocalizations {
       'stats_budget_remaining': 'Restant',
       'stats_budget_exceeded': 'Dépassé',
       'stats_budget_empty_title': 'Aucun budget configuré',
-      'stats_budget_empty_hint':
-          "Attribuez un budget mensuel à vos catégories pour le comparer à vos dépenses réelles.",
+      'stats_budget_empty_hint': "Attribuez un budget mensuel à vos catégories pour le comparer à vos dépenses réelles.",
       'stats_budget_count': '{n} catégories avec budget',
-      'stats_budget_month_only':
-          "Le budget est mensuel : passez à une période d'un mois pour le comparer à vos dépenses.",
+      'stats_budget_month_only': "Le budget est mensuel : passez à une période d'un mois pour le comparer à vos dépenses.",
       // Évolution quotidienne
       'stats_expenses_chart_title': 'Dépenses de la période',
       'stats_income_chart_title': 'Revenus de la période',
       'stats_daily_average': 'Moyenne quotidienne',
       'stats_peak_day': "Jour d'activité maximale",
       'stats_chart_empty_title': 'Aucun mouvement sur la période',
-      'stats_chart_empty_hint':
-          'Dès que vous enregistrerez des mouvements, leur évolution quotidienne apparaîtra ici.',
+      'stats_chart_empty_hint': 'Dès que vous enregistrerez des mouvements, leur évolution quotidienne apparaîtra ici.',
       'stats_active_days': '{n} jours avec des mouvements',
       // Projection financière
       'stats_projection_method_title': 'Comment est-ce calculé',
-      'stats_projection_method':
-          "On part de la moyenne quotidienne accumulée sur {elapsed} des {total} jours calendaires et on l'extrapole à la fin du mois.",
-      'stats_projection_disclaimer':
-          "C'est une estimation basée sur ce qui s'est passé jusqu'à aujourd'hui, pas un résultat garanti.",
+      'stats_projection_method': "On part de la moyenne quotidienne accumulée sur {elapsed} des {total} jours calendaires et on l'extrapole à la fin du mois.",
+      'stats_projection_disclaimer': "C'est une estimation basée sur ce qui s'est passé jusqu'à aujourd'hui, pas un résultat garanti.",
       'stats_accumulated': 'Réel accumulé',
       'stats_projected_close': 'Estimé à la clôture',
       'stats_projection_income': 'Revenus projetés',
       'stats_projection_expense': 'Dépenses projetées',
       'stats_projection_balance': 'Solde projeté',
       'stats_projection_unavailable_title': 'Données insuffisantes',
-      'stats_projection_unavailable_hint':
-          "Il n'y a pas encore de mouvements ce mois-ci, il n'y a donc rien à projeter.",
+      'stats_projection_unavailable_hint': "Il n'y a pas encore de mouvements ce mois-ci, il n'y a donc rien à projeter.",
       'stats_projection_income_unavailable': 'Aucun revenu enregistré',
-      'stats_projection_no_income_hint':
-          "Sans revenus, on n'estime pas la clôture : seules les données réelles sont affichées.",
-      'stats_projection_month_complete':
-          'Le mois est déjà complet, les valeurs estimées coïncident donc avec les réelles.',
+      'stats_projection_no_income_hint': "Sans revenus, on n'estime pas la clôture : seules les données réelles sont affichées.",
+      'stats_projection_month_complete': 'Le mois est déjà complet, les valeurs estimées coïncident donc avec les réelles.',
       'stats_projection_current_month': 'Mois en cours',
       'stats_projection_progress': 'Jour {day} sur {total}',
       // Calendrier financier
@@ -5671,8 +5667,7 @@ class AppLocalizations {
       'monthly_amount': 'Montant mensuel',
       'limit_updated': 'Limite mise à jour',
       'delete_card_question': 'Supprimer la carte?',
-      'delete_card_confirmation':
-          'Êtes-vous sûr de vouloir supprimer cette carte? Vous perdrez l\'historique du solde qui lui est associé.',
+      'delete_card_confirmation': 'Êtes-vous sûr de vouloir supprimer cette carte? Vous perdrez l\'historique du solde qui lui est associé.',
 
       // Card Management
       'new_card': 'Nouvelle Carte',
@@ -5736,16 +5731,14 @@ class AppLocalizations {
       'success_backup': 'Sauvegarde terminée',
       'success_restore': 'Données importées avec succès',
       'confirm_import': 'Confirmer l\'importation',
-      'import_warning':
-          'L\'importation écrasera toutes les données actuelles. Cette action est irréversible.\n\nVoulez-vous continuer ?',
+      'import_warning': 'L\'importation écrasera toutes les données actuelles. Cette action est irréversible.\n\nVoulez-vous continuer ?',
       'share_save': 'Partager / Enregistrer',
       'sync_drive': 'Sync avec Google Drive',
       'sync_drive_sub': 'Connecter compte pour sauvegardes',
       'last_copy': 'Dernière Copie :',
       'never': 'Jamais',
       'restore_cloud_title': 'Restaurer les données ?',
-      'restore_cloud_warning':
-          'Cela écrasera toutes les données actuelles avec la sauvegarde cloud.',
+      'restore_cloud_warning': 'Cela écrasera toutes les données actuelles avec la sauvegarde cloud.',
       'file_saved': 'Fichier enregistré sous',
       'enter_amount_category_error':
           'Veuillez saisir le montant et la catégorie',
@@ -5854,16 +5847,14 @@ class AppLocalizations {
       'ai_history_title': 'Historique des chats',
       'ai_new_chat': 'Nouveau chat',
       'ai_no_conversations': 'Aucune conversation pour l\'instant.',
-      'ai_error_message':
-          'Impossible d\'obtenir une réponse. Vérifiez votre connexion et réessayez.',
+      'ai_error_message': 'Impossible d\'obtenir une réponse. Vérifiez votre connexion et réessayez.',
       'today': 'Aujourd\'hui',
       'yesterday': 'Hier',
       'send': 'Envoyer',
 
       // Licenses Info
       'current_license': 'Licence Actuelle',
-      'current_license_free':
-          'Utilisation du plan gratuit. Activez un plan pour plus de fonctionnalités.',
+      'current_license_free': 'Utilisation du plan gratuit. Activez un plan pour plus de fonctionnalités.',
       'expires': 'Expire',
       'days': 'jours',
       'renew': 'Renouveler',
@@ -5904,8 +5895,7 @@ class AppLocalizations {
       'payment_error': 'Erreur lors du traitement du paiement',
       'payment_disabled': 'Cette méthode n\'est pas disponible actuellement.',
       'payment_cancelled': 'Paiement annulé',
-      'payment_pending':
-          'Le paiement de la licence est en attente dans Apklis. Vérifiez votre application Apklis.',
+      'payment_pending': 'Le paiement de la licence est en attente dans Apklis. Vérifiez votre application Apklis.',
       'auth_required':
           'Authentification requise. Veuillez vous connecter à Apklis.',
       'connection_error': 'Erreur de connexion. Vérifiez votre internet.',
@@ -5937,14 +5927,12 @@ class AppLocalizations {
 
       // Holiday Promo
       'promo_title': 'Bonne Année ! 🎉',
-      'promo_message':
-          'En cadeau de fin d\'année, profitez de toutes les fonctionnalités PRO gratuitement jusqu\'au 10 janvier. Merci d\'utiliser CashRapido !',
+      'promo_message': 'En cadeau de fin d\'année, profitez de toutes les fonctionnalités PRO gratuitement jusqu\'au 10 janvier. Merci d\'utiliser CashRapido !',
       'promo_button': 'Génial ! 🚀',
 
       // Default License
       'default_license_title': 'Licence de Base (Gratuite)',
-      'default_license_desc':
-          'Vous commencez avec notre licence gratuite. Voici vos limitations actuelles :',
+      'default_license_desc': 'Vous commencez avec notre licence gratuite. Voici vos limitations actuelles :',
       'limit_card_1': 'Max 1 Carte / Espèces',
       'limit_no_charts': 'Pas de Graphiques Avancés',
       'limit_no_backup': 'Pas de Sauvegarde Cloud',
@@ -5955,11 +5943,9 @@ class AppLocalizations {
 
       // Restrictions
       'feature_locked_title': 'Fonction Verrouillée 🔒',
-      'feature_locked_desc':
-          'Cette fonctionnalité est disponible uniquement sur les plans Premium. Mettez à niveau pour débloquer !',
+      'feature_locked_desc': 'Cette fonctionnalité est disponible uniquement sur les plans Premium. Mettez à niveau pour débloquer !',
       'limit_reached_title': 'Limite Atteinte',
-      'limit_card_desc':
-          'La licence gratuite permet seulement 1 carte. Mettez à niveau pour en ajouter plus.',
+      'limit_card_desc': 'La licence gratuite permet seulement 1 carte. Mettez à niveau pour en ajouter plus.',
       'skip': 'Passer',
 
       // Ads
@@ -5967,8 +5953,7 @@ class AppLocalizations {
       'plan_renew': 'Renouveler',
       'plan_change': 'Changer de Plan',
       'dialog_watch_ads_title': 'Regarder Pubs',
-      'dialog_watch_ads_desc':
-          'Regardez {target} pubs pour activer la Licence {license} gratuitement.',
+      'dialog_watch_ads_desc': 'Regardez {target} pubs pour activer la Licence {license} gratuitement.',
       'btn_watch_video': 'Regarder Vidéo',
       'btn_loading_ad': 'Chargement...',
       'msg_license_activated': 'Licence {license} activée avec succès !',
@@ -6046,16 +6031,12 @@ class AppLocalizations {
           'Impossible de capturer l’image. Veuillez réessayer.',
       'scan_reading_error': 'Impossible de lire la carte. Veuillez réessayer.',
       'scan_camera_permission_title': 'Activez la caméra',
-      'scan_camera_permission_desc':
-          'CashRapido a besoin de la caméra pour lire la carte. Accordez l’autorisation pour continuer.',
-      'scan_camera_permission_settings_desc':
-          'L’autorisation de la caméra est bloquée. Activez-la dans les réglages du système puis réessayez.',
+      'scan_camera_permission_desc': 'CashRapido a besoin de la caméra pour lire la carte. Accordez l’autorisation pour continuer.',
+      'scan_camera_permission_settings_desc': 'L’autorisation de la caméra est bloquée. Activez-la dans les réglages du système puis réessayez.',
       'scan_camera_unavailable_title': 'Caméra indisponible',
-      'scan_camera_unavailable_desc':
-          'Aucune caméra n’a été trouvée sur cet appareil. Vous pouvez saisir les données manuellement.',
+      'scan_camera_unavailable_desc': 'Aucune caméra n’a été trouvée sur cet appareil. Vous pouvez saisir les données manuellement.',
       'scan_camera_error_title': 'Impossible de démarrer la caméra',
-      'scan_camera_error_desc':
-          'Un problème est survenu lors de la préparation de la caméra. Réessayez.',
+      'scan_camera_error_desc': 'Un problème est survenu lors de la préparation de la caméra. Réessayez.',
 
       // =====================================================================
       // FORMULARIOS Y FLUJOS FINANCIEROS (FASE 5)
@@ -6132,11 +6113,9 @@ class AppLocalizations {
       'rec_empty_accounts': 'Aucun compte disponible.',
       // ── Essai gratuit ────────────────────────────────────────────────────
       'trial_active_title': 'Essai gratuit de 2 jours',
-      'trial_active_desc':
-          'Il reste {time}. Si l’essai se termine sans offre active, toutes vos données seront supprimées.',
+      'trial_active_desc': 'Il reste {time}. Si l’essai se termine sans offre active, toutes vos données seront supprimées.',
       'trial_ended_title': 'Essai terminé',
-      'trial_ended_body':
-          'Votre essai gratuit de 2 jours s’est terminé sans offre active : les données enregistrées sur cet appareil ont été supprimées.',
+      'trial_ended_body': 'Votre essai gratuit de 2 jours s’est terminé sans offre active : les données enregistrées sur cet appareil ont été supprimées.',
     },
   };
 

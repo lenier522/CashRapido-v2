@@ -5,6 +5,8 @@ import '../../providers/app_provider.dart';
 import '../../providers/business_provider.dart';
 import '../../providers/loan_provider.dart';
 import '../../services/localization_service.dart';
+import '../../services/supabase_service.dart';
+import '../../services/support_chat_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
 import '../../theme/app_spacing.dart';
@@ -13,8 +15,11 @@ import '../../widgets/design/cash_dialog.dart';
 import '../../widgets/design/cash_nav_group.dart';
 import '../../widgets/design/cash_snack.dart';
 import '../licenses_screen.dart';
+import '../support/support_chat_screen.dart';
+import '../support/support_inbox_screen.dart';
 import 'account_details_screen.dart';
 import 'app_icon_screen.dart';
+import 'cloud_backup_screen.dart';
 import 'profile_helpers.dart';
 import 'promo_code_screen.dart';
 
@@ -33,6 +38,28 @@ class MyAccountScreen extends StatefulWidget {
 class _MyAccountScreenState extends State<MyAccountScreen> {
   /// Identificador de la operación de datos en curso (evita reentradas).
   String? _busy;
+
+  /// `true` cuando la cuenta conectada pertenece al equipo de soporte.
+  bool _isSupport = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkSupport();
+  }
+
+  /// Pregunta al servidor si la cuenta es de soporte para mostrar la bandeja.
+  ///
+  /// Si falla (sin red) la fila simplemente no aparece: la app sigue igual.
+  Future<void> _checkSupport() async {
+    if (!SupabaseService.isSignedIn) return;
+    try {
+      final bool isSupport = await SupportChatService.isSupportAdmin();
+      if (mounted) setState(() => _isSupport = isSupport);
+    } catch (_) {
+      // Sin conexión no se muestra la bandeja; no es un error para el usuario.
+    }
+  }
 
   Future<void> _pickExportFormat() async {
     final AppProvider provider = context.read<AppProvider>();
@@ -60,9 +87,8 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                     padding: const EdgeInsets.all(AppSpacing.lg),
                     child: Text(
                       context.t('export_choose_title'),
-                      style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: Theme.of(ctx).textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w700),
                     ),
                   ),
                   CashNavRow(
@@ -250,11 +276,45 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
     }
   }
 
+  /// Cierra la sesión de Google. La app vuelve a la pantalla de acceso.
+  Future<void> _signOut() async {
+    final bool? confirm = await showCashConfirmDialog(
+      context,
+      title: context.t('account_sign_out'),
+      message: context.t('account_sign_out_desc'),
+      confirmLabel: context.t('account_sign_out'),
+      cancelLabel: context.t('cancel'),
+      icon: Icons.logout_rounded,
+    );
+    if (confirm != true) return;
+
+    try {
+      if (mounted) await context.read<AppProvider>().signOutFromGoogle();
+      await SupabaseService.signOut();
+    } catch (_) {
+      if (mounted) {
+        CashSnack.error(context, context.t('operation_failed'));
+      }
+    }
+  }
+
+  /// Conecta la cuenta de Google (misma sesión para la nube y para Drive).
+  Future<void> _connect() async {
+    final AppProvider provider = context.read<AppProvider>();
+    final bool connected = await connectGoogleAccount(context);
+    if (!connected || !mounted) return;
+    await provider.syncGoogleProfile();
+    await _checkSupport();
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool busy = _busy != null;
     final AppProvider appProvider = context.watch<AppProvider>();
     final bool canChangeIcon = appProvider.isEnterpriseActive;
+    final bool hasSession = SupabaseService.currentUser != null;
+    final String accountEmail =
+        SupabaseService.currentUser?.email ?? context.t('google_login_button');
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -270,6 +330,28 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
           vertical: AppSpacing.screenVertical,
         ),
         children: [
+          // Cuenta de Google con la que se accede a la nube.
+          CashNavGroup(
+            children: [
+              CashNavRow(
+                icon: Icons.account_circle_outlined,
+                title: accountEmail,
+                subtitle: hasSession
+                    ? context.t('account_signed_in')
+                    : context.t('profile_drive_not_connected_desc'),
+                onTap: hasSession || busy ? null : () => _connect(),
+              ),
+              if (hasSession)
+                CashNavRow(
+                  icon: Icons.logout_rounded,
+                  iconColor: AppColors.error,
+                  title: context.t('account_sign_out'),
+                  subtitle: context.t('account_sign_out_desc'),
+                  onTap: busy ? null : _signOut,
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
           CashNavGroup(
             children: [
               CashNavRow(
@@ -283,8 +365,14 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                 icon: Icons.workspace_premium_outlined,
                 title: context.t('account_licenses'),
                 subtitle: context.t('account_licenses_desc'),
+                onTap: () => pushProfileScreen(context, const LicensesScreen()),
+              ),
+              CashNavRow(
+                icon: Icons.cloud_outlined,
+                title: context.t('cloud_title'),
+                subtitle: context.t('cloud_row_desc'),
                 onTap: () =>
-                    pushProfileScreen(context, const LicensesScreen()),
+                    pushProfileScreen(context, const CloudBackupScreen()),
               ),
               CashNavRow(
                 icon: Icons.image_rounded,
@@ -315,13 +403,31 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
           CashNavGroup(
             children: [
               CashNavRow(
+                icon: Icons.support_agent_rounded,
+                title: context.t('support_title'),
+                subtitle: context.t('support_row_desc'),
+                onTap: () =>
+                    pushProfileScreen(context, const SupportChatScreen()),
+              ),
+              if (_isSupport)
+                CashNavRow(
+                  icon: Icons.forum_outlined,
+                  title: context.t('admin_inbox_title'),
+                  subtitle: context.t('admin_inbox_row_desc'),
+                  onTap: () =>
+                      pushProfileScreen(context, const SupportInboxScreen()),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          CashNavGroup(
+            children: [
+              CashNavRow(
                 icon: Icons.ios_share_rounded,
                 title: context.t('account_export'),
                 subtitle: context.t('account_export_desc'),
                 onTap: busy ? null : _pickExportFormat,
-                trailing: _busy == 'export'
-                    ? const _RowSpinner()
-                    : null,
+                trailing: _busy == 'export' ? const _RowSpinner() : null,
               ),
               CashNavRow(
                 icon: Icons.save_alt_rounded,
@@ -329,18 +435,14 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                 subtitle: context.t('backup_local_sub'),
                 muted: !appProvider.canBackupLocal,
                 onTap: busy ? null : _backupLocal,
-                trailing: _busy == 'backup'
-                    ? const _RowSpinner()
-                    : null,
+                trailing: _busy == 'backup' ? const _RowSpinner() : null,
               ),
               CashNavRow(
                 icon: Icons.file_download_outlined,
                 title: context.t('account_import'),
                 subtitle: context.t('account_import_desc'),
                 onTap: busy ? null : _import,
-                trailing: _busy == 'import'
-                    ? const _RowSpinner()
-                    : null,
+                trailing: _busy == 'import' ? const _RowSpinner() : null,
               ),
             ],
           ),
@@ -353,9 +455,7 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                 title: context.t('account_reset'),
                 subtitle: context.t('account_reset_desc'),
                 onTap: busy ? null : _reset,
-                trailing: _busy == 'reset'
-                    ? const _RowSpinner()
-                    : null,
+                trailing: _busy == 'reset' ? const _RowSpinner() : null,
               ),
             ],
           ),

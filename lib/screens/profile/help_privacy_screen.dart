@@ -7,6 +7,7 @@ import '../../theme/app_spacing.dart';
 import '../../widgets/design/cash_nav_group.dart';
 import '../../widgets/design/cash_section.dart';
 import '../info_screens.dart';
+import '../support/support_chat_screen.dart';
 import 'google_drive_screen.dart';
 import 'privacy_info_screen.dart';
 import 'profile_helpers.dart';
@@ -49,14 +50,11 @@ class HelpPrivacyScreen extends StatelessWidget {
                       pushProfileScreen(context, const HelpCenterScreen()),
                 ),
                 CashNavRow(
-                  icon: Icons.mail_outline_rounded,
+                  icon: Icons.chat_bubble_outline_rounded,
                   title: context.t('help_contact'),
-                  subtitle: OfficialLinks.supportEmail,
-                  onTap: () => openOfficialEmail(
-                    context,
-                    to: OfficialLinks.supportEmail,
-                    subject: context.t('help_contact_subject'),
-                  ),
+                  subtitle: context.t('support_row_desc'),
+                  onTap: () =>
+                      pushProfileScreen(context, const SupportChatScreen()),
                 ),
                 CashNavRow(
                   icon: Icons.bug_report_outlined,

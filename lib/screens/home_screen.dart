@@ -37,8 +37,11 @@ import 'licenses_screen.dart';
 import 'loans/loans_gatekeeper.dart';
 import 'notifications_screen.dart';
 import 'profile/google_drive_screen.dart';
+import 'profile/my_account_screen.dart';
+import 'profile/profile_helpers.dart';
 import 'recurring_transactions_screen.dart';
 import 'streak_calendar_screen.dart';
+import 'support/support_toolbar_button.dart';
 import 'transfermovil_screen.dart';
 import 'wallet_screen.dart';
 
@@ -106,7 +109,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHeader(context, provider),
-                  if (provider.isTrialActive) ...[
+                  if (provider.showsTrialBanner) ...[
                     const SizedBox(height: AppSpacing.md),
                     _buildTrialBanner(context, provider),
                   ],
@@ -157,6 +160,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 MaterialPageRoute(builder: (_) => const StreakCalendarScreen()),
               ),
             ),
+            const SizedBox(width: AppSpacing.sm),
+            const SupportToolbarButton(),
             const SizedBox(width: AppSpacing.sm),
             _NotificationsButton(
               count: provider.unreadNotificationsCount,
@@ -315,32 +320,24 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _onAccountTap(BuildContext context, AppProvider provider) async {
-    // Con sesión: abre la gestión de la copia en Drive.
-    if (provider.currentUser != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const GoogleDriveScreen()),
-      );
-      return;
+    // La cuenta de Google es la sesión de la app: si aún no hay ninguna se
+    // pide una sola vez (sirve para la nube y para Drive) y se abre Drive.
+    if (provider.currentUser == null) {
+      final bool connected = await connectGoogleAccount(context);
+      if (!connected || !context.mounted) return;
+      await provider.syncGoogleProfile();
     }
-
-    // Sin sesión: primero comprueba que la función esté disponible.
+    if (!context.mounted) return;
+    // La cuenta se crea con cualquier plan; las copias son lo de pago. Sin
+    // plan de Drive, el acceso directo abre Mi cuenta en vez de bloquear.
     if (!provider.canSyncDrive) {
-      _showLockedFeatureDialog(context);
+      pushProfileScreen(context, const MyAccountScreen());
       return;
     }
-
-    try {
-      await provider.signInToGoogle();
-      if (!context.mounted) return;
-      if (provider.currentUser != null) {
-        CashSnack.success(context, context.t('profile_drive_connected_msg'));
-      }
-    } catch (_) {
-      if (context.mounted) {
-        CashSnack.error(context, context.t('profile_drive_error'));
-      }
-    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const GoogleDriveScreen()),
+    );
   }
 
   String _greeting() {

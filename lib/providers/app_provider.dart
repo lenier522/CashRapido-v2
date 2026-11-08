@@ -3,6 +3,9 @@ import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+
+import '../services/cloud_sync_service.dart';
+
 import 'package:local_auth/local_auth.dart';
 
 import 'dart:convert';
@@ -230,6 +233,12 @@ class AppProvider with ChangeNotifier {
     final DateTime? start = _trialStart;
     return start != null && TrialService.isWithinWindow(start);
   }
+
+  /// `true` si toca avisar de la prueba de 48 h.
+  ///
+  /// Con una licencia de pago vigente el aviso sobra: el usuario ya tiene plan
+  /// y sus datos no se borran al terminar la prueba.
+  bool get showsTrialBanner => isTrialActive && licenseType == LicenseType.free;
 
   /// Tiempo restante de prueba (cero si ya terminó).
   Duration get trialRemaining {
@@ -794,6 +803,13 @@ class AppProvider with ChangeNotifier {
         'recurring_transactions',
       );
       _notificationBox = await Hive.openBox<NotificationItem>('notifications');
+      CloudSyncService.registerBoxes(<String, Box<dynamic>>{
+        'transactions': _transactionBox,
+        'categories': _categoryBox,
+        'cards': _cardBox,
+        'recurring_transactions': _recurringBox,
+        'notifications': _notificationBox,
+      });
 
       // Ensure Default Categories exist
       await _seedDefaultCategories();
@@ -1008,6 +1024,12 @@ class AppProvider with ChangeNotifier {
 
     // 4. Reconexión silenciosa de Google Drive (no bloquea, timeout 4s)
     await _restoreDriveSession();
+  }
+
+  /// Recarga las listas desde Hive tras recuperar la copia de la nube.
+  void refreshFromBoxes() {
+    _fetchData();
+    notifyListeners();
   }
 
   void _fetchData() {
@@ -1886,7 +1908,6 @@ class AppProvider with ChangeNotifier {
     _categories = _categoryBox.values.toList().cast<Category>();
   }
 
-
   // --- Getters ---
 
   double getTotalBalance(String currency) {
@@ -2311,19 +2332,16 @@ class AppProvider with ChangeNotifier {
     await prefs.setBool('google_user_is_connected', true);
   }
 
-  Future<void> signInToGoogle() async {
-    try {
-      if (kIsWeb) return; // Not supported properly in this flow yet
-      final user = await _driveService.signInToGoogle();
-      if (user != null) {
-        await _persistGoogleProfile(user);
-        await _checkLastBackup();
-      }
-      notifyListeners();
-    } catch (e) {
-      print('Sign In Error: $e');
-      rethrow;
-    }
+  /// Guarda el perfil de la cuenta con la que se acaba de entrar.
+  ///
+  /// La autenticación es única (app y Drive comparten sesión de Google), así
+  /// que al entrar ya hay cuenta: se cachea para mostrarla al instante y sin
+  /// conexión en el siguiente arranque.
+  Future<void> syncGoogleProfile() async {
+    final GoogleSignInAccount? account = _driveService.currentUser;
+    if (account == null) return;
+    await _persistGoogleProfile(account);
+    notifyListeners();
   }
 
   Future<void> signOutFromGoogle() async {
@@ -2375,6 +2393,9 @@ class AppProvider with ChangeNotifier {
   }
 
   Future<void> backupToCloud() async {
+    if (!canSyncDrive) {
+      throw Exception('La copia en Google Drive requiere el plan Enterprise.');
+    }
     _isSyncing = true;
     notifyListeners();
     try {
@@ -2393,6 +2414,9 @@ class AppProvider with ChangeNotifier {
   }
 
   Future<void> restoreFromCloud() async {
+    if (!canSyncDrive) {
+      throw Exception('La copia en Google Drive requiere el plan Enterprise.');
+    }
     _isSyncing = true;
     notifyListeners();
     try {
@@ -2487,6 +2511,11 @@ class AppProvider with ChangeNotifier {
     _transactionBox = await Hive.openBox<InternalTransaction>('transactions');
     _categoryBox = await Hive.openBox<Category>('categories');
     _cardBox = await Hive.openBox<AccountCard>('cards');
+    CloudSyncService.registerBoxes(<String, Box<dynamic>>{
+      'transactions': _transactionBox,
+      'categories': _categoryBox,
+      'cards': _cardBox,
+    });
     _fetchData();
   }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -5,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'
+    show AuthChangeEvent, AuthState;
 
 import 'screens/onboarding_screen.dart';
 import 'screens/main_screen.dart';
@@ -30,6 +34,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:intl/date_symbol_data_local.dart';
 
+import 'services/cloud_sync_service.dart';
 import 'services/localization_service.dart';
 import 'services/supabase_service.dart';
 import 'services/trial_service.dart';
@@ -85,7 +90,10 @@ void main() async {
   final bool trialDataWiped = await TrialService.enforceAtStartup();
 
   // Open Boxes
-  await Hive.openBox<ChatConversation>('ai_chats');
+  final Box<ChatConversation> chatBox = await Hive.openBox<ChatConversation>(
+    'ai_chats',
+  );
+  CloudSyncService.registerBoxes(<String, Box<dynamic>>{'ai_chats': chatBox});
 
   final prefs = await SharedPreferences.getInstance();
   final bool seenOnboarding = prefs.getBool('seenOnboarding') ?? false;
@@ -189,8 +197,7 @@ class AuthWrapper extends StatefulWidget {
   State<AuthWrapper> createState() => _AuthWrapperState();
 }
 
-class _AuthWrapperState extends State<AuthWrapper>
-    with WidgetsBindingObserver {
+class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
   bool _isAuthenticated = false;
   bool _isLoading = true;
   String _authMethod = ''; // 'biometric', 'pin', 'password', or ''
@@ -198,6 +205,10 @@ class _AuthWrapperState extends State<AuthWrapper>
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _activationCodeController =
       TextEditingController();
+
+  /// Escucha el retorno del consentimiento de Google para entrar sin pedir
+  /// ninguna otra acción al usuario.
+  StreamSubscription<AuthState>? _authSubscription;
 
   // Hardware Lock State
   bool _isMacValid = true;
@@ -229,12 +240,43 @@ class _AuthWrapperState extends State<AuthWrapper>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _listenToAuthChanges();
     _checkAuthentication();
+    // Copia en la nube: escucha los cambios de los tres proveedores para
+    // guardar el paquete del usuario unos segundos después de cada edición.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      CloudSyncService.attach(<Listenable>[
+        context.read<AppProvider>(),
+        context.read<BusinessProvider>(),
+        context.read<LoanProvider>(),
+      ]);
+    });
     if (widget.trialDataWiped) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showTrialEndedNotice();
       });
     }
+  }
+
+  /// Se suscribe al flujo de sesión de Supabase.
+  ///
+  /// La sesión se crea al conectar la cuenta de Google desde Perfil (Drive),
+  /// así que aquí solo se refresca la pantalla y se guarda el perfil.
+  Future<void> _listenToAuthChanges() async {
+    if (!SupabaseService.isInitialized) {
+      await SupabaseService.initialize();
+    }
+    if (!SupabaseService.isInitialized || !mounted) return;
+
+    _authSubscription = SupabaseService.authStateChanges.listen((state) {
+      if (!mounted) return;
+      setState(() {});
+      if (state.event == AuthChangeEvent.signedIn) {
+        // Misma cuenta de Google para la app y para Drive.
+        unawaited(context.read<AppProvider>().syncGoogleProfile());
+      }
+    });
   }
 
   @override
@@ -674,6 +716,7 @@ class _AuthWrapperState extends State<AuthWrapper>
 
   @override
   void dispose() {
+    _authSubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _pinController.dispose();
     _passwordController.dispose();

@@ -9,7 +9,6 @@ import '../../theme/app_radius.dart';
 import '../../theme/app_shadows.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/design/cash_account_avatar.dart';
-import '../../widgets/design/cash_snack.dart';
 import 'google_drive_screen.dart';
 import 'profile_helpers.dart';
 
@@ -29,26 +28,16 @@ class GoogleDriveCard extends StatefulWidget {
 class _GoogleDriveCardState extends State<GoogleDriveCard> {
   bool _connecting = false;
 
-  Future<void> _connect() async {
-    final AppProvider provider = context.read<AppProvider>();
-    if (!provider.canSyncDrive) {
-      showFeatureLockedDialog(context);
-      return;
-    }
+  /// Conecta la cuenta de Google: es la misma sesión para la app y para Drive.
+  ///
+  /// La cuenta no está limitada por plan; lo de pago son las copias, que se
+  /// comprueban al abrir la gestión de Drive.
+  Future<void> _connect(AppProvider provider) async {
     setState(() => _connecting = true);
-    try {
-      await provider.signInToGoogle();
-      if (!mounted) return;
-      if (provider.currentUser != null) {
-        CashSnack.success(context, context.t('profile_drive_connected_msg'));
-      }
-    } catch (_) {
-      if (mounted) {
-        CashSnack.error(context, context.t('profile_drive_error'));
-      }
-    } finally {
-      if (mounted) setState(() => _connecting = false);
-    }
+    final bool connected = await connectGoogleAccount(context);
+    if (!mounted) return;
+    setState(() => _connecting = false);
+    if (connected) await provider.syncGoogleProfile();
   }
 
   @override
@@ -116,10 +105,7 @@ class _GoogleDriveCardState extends State<GoogleDriveCard> {
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
-              _StatusPill(
-                label: statusText,
-                syncing: provider.isSyncing,
-              ),
+              _StatusPill(label: statusText, syncing: provider.isSyncing),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
@@ -137,10 +123,13 @@ class _GoogleDriveCardState extends State<GoogleDriveCard> {
                 Expanded(
                   child: Text(
                     lastBackup != null
-                        ? context.t('profile_drive_last_backup').replaceAll(
-                            '{date}',
-                            DateFormat('dd/MM/yyyy HH:mm').format(lastBackup),
-                          )
+                        ? context
+                              .t('profile_drive_last_backup')
+                              .replaceAll(
+                                '{date}',
+                                DateFormat('dd/MM/yyyy HH:mm')
+                                    .format(lastBackup),
+                              )
                         : context.t('profile_drive_no_backup'),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.onLime.withValues(alpha: 0.85),
@@ -152,17 +141,25 @@ class _GoogleDriveCardState extends State<GoogleDriveCard> {
             ),
           ],
           const SizedBox(height: AppSpacing.lg),
+          // Único punto de acceso con Google: conectar aquí crea la cuenta de
+          // la nube y deja lista la copia en Drive con una sola autorización.
           _DriveActionButton(
-            label: !connected
-                ? (_connecting
+            label: connected
+                ? context.t('profile_drive_manage')
+                : (_connecting
                       ? context.t('profile_drive_connecting')
-                      : context.t('profile_drive_connect'))
-                : context.t('profile_drive_manage'),
-            icon: !connected ? Icons.login_rounded : Icons.tune_rounded,
+                      : context.t('profile_drive_connect')),
+            icon: connected ? Icons.tune_rounded : Icons.login_rounded,
             busy: _connecting,
-            onPressed: !connected
-                ? _connect
-                : () => pushProfileScreen(context, const GoogleDriveScreen()),
+            onPressed: connected
+                ? () {
+                    if (!provider.canSyncDrive) {
+                      showFeatureLockedDialog(context);
+                      return;
+                    }
+                    pushProfileScreen(context, const GoogleDriveScreen());
+                  }
+                : () => _connect(provider),
           ),
         ],
       ),

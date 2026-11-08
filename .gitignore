@@ -44,3 +44,6 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 .env
+
+# Web de CashRapido (no se publica en el repositorio)
+/website/
