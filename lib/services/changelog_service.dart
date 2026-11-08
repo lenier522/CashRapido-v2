@@ -13,7 +13,7 @@ class ChangelogEntry {
   });
 }
 
-/// Lee y parsea `assets/CHANGELOG.md` en una lista de [ChangelogEntry].
+/// Lee y parsea `CHANGELOG.md` (raíz del proyecto, registrado como asset) en una lista de [ChangelogEntry].
 ///
 /// Formato esperado (Markdown):
 /// ```
@@ -28,7 +28,7 @@ abstract final class ChangelogService {
   static Future<List<ChangelogEntry>> load() async {
     if (_cache != null) return _cache!;
     try {
-      final raw = await rootBundle.loadString('assets/CHANGELOG.md');
+      final raw = await rootBundle.loadString('CHANGELOG.md');
       _cache = _parse(raw);
     } catch (_) {
       _cache = [];
@@ -78,3 +78,4 @@ abstract final class ChangelogService {
     return entries;
   }
 }
+
