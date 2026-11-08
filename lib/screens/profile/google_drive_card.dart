@@ -33,6 +33,10 @@ class _GoogleDriveCardState extends State<GoogleDriveCard> {
   /// La cuenta no está limitada por plan; lo de pago son las copias, que se
   /// comprueban al abrir la gestión de Drive.
   Future<void> _connect(AppProvider provider) async {
+    if (!provider.canSyncDrive) {
+      showFeatureLockedDialog(context);
+      return;
+    }
     setState(() => _connecting = true);
     final bool connected = await connectGoogleAccount(context);
     if (!mounted) return;

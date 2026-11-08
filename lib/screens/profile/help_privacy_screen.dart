@@ -1,8 +1,11 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:provider/provider.dart';
 
+import '../../providers/app_provider.dart';
 import '../../services/app_info.dart';
 import '../../services/localization_service.dart';
 import '../../services/official_links.dart';
+import '../../theme/app_colors.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/design/cash_nav_group.dart';
 import '../../widgets/design/cash_section.dart';
@@ -23,6 +26,8 @@ class HelpPrivacyScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppProvider provider = context.watch<AppProvider>();
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -52,9 +57,26 @@ class HelpPrivacyScreen extends StatelessWidget {
                 CashNavRow(
                   icon: Icons.chat_bubble_outline_rounded,
                   title: context.t('help_contact'),
-                  subtitle: context.t('support_row_desc'),
-                  onTap: () =>
-                      pushProfileScreen(context, const SupportChatScreen()),
+                  subtitle: provider.canSyncDrive
+                      ? context.t('support_row_desc')
+                      : '${context.t('support_row_desc')} • ${context.t('feat_requires_license')}',
+                  trailing: provider.canSyncDrive
+                      ? null
+                      : Icon(
+                          Icons.lock_rounded,
+                          size: 18,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AppColors.textTertiaryDark
+                              : AppColors.textTertiary,
+                        ),
+                  muted: !provider.canSyncDrive,
+                  onTap: () {
+                    if (!provider.canSyncDrive) {
+                      showFeatureLockedDialog(context);
+                      return;
+                    }
+                    pushProfileScreen(context, const SupportChatScreen());
+                  },
                 ),
                 CashNavRow(
                   icon: Icons.bug_report_outlined,
@@ -95,9 +117,26 @@ class HelpPrivacyScreen extends StatelessWidget {
                 CashNavRow(
                   icon: Icons.cloud_outlined,
                   title: context.t('privacy_backup'),
-                  subtitle: context.t('privacy_backup_desc'),
-                  onTap: () =>
-                      pushProfileScreen(context, const GoogleDriveScreen()),
+                  subtitle: provider.canSyncDrive
+                      ? context.t('privacy_backup_desc')
+                      : '${context.t('privacy_backup_desc')} • ${context.t('feat_requires_license')}',
+                  trailing: provider.canSyncDrive
+                      ? null
+                      : Icon(
+                          Icons.lock_rounded,
+                          size: 18,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? AppColors.textTertiaryDark
+                              : AppColors.textTertiary,
+                        ),
+                  muted: !provider.canSyncDrive,
+                  onTap: () {
+                    if (!provider.canSyncDrive) {
+                      showFeatureLockedDialog(context);
+                      return;
+                    }
+                    pushProfileScreen(context, const GoogleDriveScreen());
+                  },
                 ),
               ],
             ),

@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
+import 'package:provider/provider.dart';
 
+import '../../providers/app_provider.dart';
 import '../../services/localization_service.dart';
 import '../../services/support_chat_service.dart';
 import '../../services/supabase_service.dart';
@@ -9,6 +11,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
 import '../../theme/app_spacing.dart';
 import '../../widgets/design/cash_icon_button.dart';
+import '../profile/profile_helpers.dart';
 import 'support_chat_screen.dart';
 import 'support_inbox_screen.dart';
 
@@ -113,6 +116,12 @@ class _SupportToolbarButtonState extends State<SupportToolbarButton> {
   }
 
   Future<void> _open() async {
+    final provider = context.read<AppProvider>();
+    if (!SupabaseService.isSignedIn && !provider.canSyncDrive) {
+      showFeatureLockedDialog(context);
+      return;
+    }
+
     // Sin sesión se abre el chat, que pide conectar Google. Con sesión se
     // comprueba de nuevo contra el servidor: un cliente nunca debe caer en la
     // bandeja del soporte. Si la comprobación falla, se usa el chat.

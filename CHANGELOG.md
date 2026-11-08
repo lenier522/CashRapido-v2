@@ -8,32 +8,6 @@
   - Este archivo se lee directamente desde la app: respeta el formato exacto.
 -->
 
-## [1.26.62] – 2026-11-08
-
-- Mejoras de rendimiento
-- Correccion de errores
-
-
-## [1.26.60] – 2026-11-01
-
-- Foto del desarrollador en la página web.
-- Mejoras de navegación móvil en el sitio web.
-- Icono de licencia requerida en «Copia de seguridad en la nube».
-- Corrección del error de lanzamiento en modo release.
-
-## [1.25.0] – 2026-10-01
-
-- Primera versión pública en Apklis.
-- Gestión de cuentas, ingresos y gastos.
-- Billetera con múltiples tarjetas.
-- Estadísticas y gráficos financieros.
-- Módulo de préstamos con cuotas.
-- Punto de venta para negocios.
-- Asistente IA financiero.
-- Soporte multimoneda y tasas de cambio.
-- Recordatorios y notificaciones programadas.
-- Modo oscuro y personalización de icono.
-
 ## [1.26.61] – 2026-10-12
 
 - Error en permisos de transfermovil corregido.
@@ -179,7 +153,7 @@
 
 ## [1.7.8] – 2026-01-09
 
--Bugs
+- Bugs
 
 ## [1.7.5] – 2026-01-05
 

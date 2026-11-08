@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
+import 'package:provider/provider.dart';
 
+import '../../providers/app_provider.dart';
 import '../../services/localization_service.dart';
 import '../../services/support_chat_service.dart';
 import '../../services/supabase_service.dart';
@@ -354,6 +356,11 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   }
 
   Future<void> _connect() async {
+    final provider = context.read<AppProvider>();
+    if (!provider.canSyncDrive) {
+      showFeatureLockedDialog(context);
+      return;
+    }
     final bool connected = await connectGoogleAccount(context);
     if (!connected || !mounted) return;
     setState(() {

@@ -267,7 +267,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final String label = connected ? accountName : context.t('home_guest');
     final String subtitle = connected
         ? context.t('profile_drive_title')
-        : context.t('profile_drive_connect');
+        : (provider.canSyncDrive
+            ? context.t('profile_drive_connect')
+            : '${context.t('profile_drive_connect')} • ${context.t('feat_requires_license')}');
 
     return Semantics(
       button: true,
@@ -301,13 +303,28 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xxs),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: secondary,
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            subtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: secondary,
+                            ),
+                          ),
+                        ),
+                        if (!connected && !provider.canSyncDrive) ...[
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.lock_rounded,
+                            size: 13,
+                            color: secondary,
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),
@@ -320,6 +337,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _onAccountTap(BuildContext context, AppProvider provider) async {
+    if (!provider.canSyncDrive) {
+      showFeatureLockedDialog(context);
+      return;
+    }
     // La cuenta de Google es la sesión de la app: si aún no hay ninguna se
     // pide una sola vez (sirve para la nube y para Drive) y se abre Drive.
     if (provider.currentUser == null) {
@@ -328,12 +349,6 @@ class _HomeScreenState extends State<HomeScreen> {
       await provider.syncGoogleProfile();
     }
     if (!context.mounted) return;
-    // La cuenta se crea con cualquier plan; las copias son lo de pago. Sin
-    // plan de Drive, el acceso directo abre Mi cuenta en vez de bloquear.
-    if (!provider.canSyncDrive) {
-      pushProfileScreen(context, const MyAccountScreen());
-      return;
-    }
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const GoogleDriveScreen()),

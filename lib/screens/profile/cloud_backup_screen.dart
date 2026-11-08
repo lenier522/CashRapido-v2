@@ -33,6 +33,10 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
 
   Future<void> _connect() async {
     final AppProvider provider = context.read<AppProvider>();
+    if (!provider.canSyncDrive) {
+      showFeatureLockedDialog(context);
+      return;
+    }
     final bool connected = await connectGoogleAccount(context);
     if (!connected || !mounted) return;
     await provider.syncGoogleProfile();
@@ -41,6 +45,11 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
   }
 
   Future<void> _save() async {
+    final AppProvider provider = context.read<AppProvider>();
+    if (!provider.canSyncDrive) {
+      showFeatureLockedDialog(context);
+      return;
+    }
     setState(() => _busy = true);
     final bool ok = await CloudSyncService.pushNow();
     if (!mounted) return;
@@ -53,6 +62,11 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
   }
 
   Future<void> _restore() async {
+    final AppProvider app = context.read<AppProvider>();
+    if (!app.canSyncDrive) {
+      showFeatureLockedDialog(context);
+      return;
+    }
     final bool? confirm = await showCashConfirmDialog(
       context,
       title: context.t('cloud_restore_confirm_title'),

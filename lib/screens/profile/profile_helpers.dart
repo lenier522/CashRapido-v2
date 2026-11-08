@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
+import 'package:provider/provider.dart';
 
 import '../../licences/license_type.dart';
+import '../../providers/app_provider.dart';
 import '../../services/cloud_sync_service.dart';
 import '../../services/localization_service.dart';
 import '../../services/official_links.dart';
@@ -51,6 +53,11 @@ Future<void> pushProfileScreen(BuildContext context, Widget screen) {
 /// deja la misma cuenta lista para Google Drive. Devuelve `true` si quedó
 /// conectada y avisa al usuario si canceló o falló.
 Future<bool> connectGoogleAccount(BuildContext context) async {
+  final provider = Provider.of<AppProvider>(context, listen: false);
+  if (!provider.canSyncDrive) {
+    showFeatureLockedDialog(context);
+    return false;
+  }
   try {
     await SupabaseService.signInWithGoogle();
     // La cuenta recién conectada guarda su paquete sin esperar a la siguiente

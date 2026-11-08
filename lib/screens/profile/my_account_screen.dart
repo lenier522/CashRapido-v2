@@ -301,6 +301,10 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
   /// Conecta la cuenta de Google (misma sesión para la nube y para Drive).
   Future<void> _connect() async {
     final AppProvider provider = context.read<AppProvider>();
+    if (!provider.canSyncDrive) {
+      showFeatureLockedDialog(context);
+      return;
+    }
     final bool connected = await connectGoogleAccount(context);
     if (!connected || !mounted) return;
     await provider.syncGoogleProfile();
@@ -338,8 +342,28 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
                 title: accountEmail,
                 subtitle: hasSession
                     ? context.t('account_signed_in')
-                    : context.t('profile_drive_not_connected_desc'),
-                onTap: hasSession || busy ? null : () => _connect(),
+                    : (appProvider.canSyncDrive
+                        ? context.t('profile_drive_not_connected_desc')
+                        : '${context.t('profile_drive_not_connected_desc')} • ${context.t('feat_requires_license')}'),
+                trailing: (!hasSession && !appProvider.canSyncDrive)
+                    ? Icon(
+                        Icons.lock_rounded,
+                        size: 18,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? AppColors.textTertiaryDark
+                            : AppColors.textTertiary,
+                      )
+                    : null,
+                muted: !hasSession && !appProvider.canSyncDrive,
+                onTap: hasSession || busy
+                    ? null
+                    : () {
+                        if (!appProvider.canSyncDrive) {
+                          showFeatureLockedDialog(context);
+                          return;
+                        }
+                        _connect();
+                      },
               ),
               if (hasSession)
                 CashNavRow(
@@ -370,9 +394,26 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
               CashNavRow(
                 icon: Icons.cloud_outlined,
                 title: context.t('cloud_title'),
-                subtitle: context.t('cloud_row_desc'),
-                onTap: () =>
-                    pushProfileScreen(context, const CloudBackupScreen()),
+                subtitle: appProvider.canSyncDrive
+                    ? context.t('cloud_row_desc')
+                    : '${context.t('cloud_row_desc')} • ${context.t('feat_requires_license')}',
+                trailing: appProvider.canSyncDrive
+                    ? null
+                    : Icon(
+                        Icons.lock_rounded,
+                        size: 18,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? AppColors.textTertiaryDark
+                            : AppColors.textTertiary,
+                      ),
+                muted: !appProvider.canSyncDrive,
+                onTap: () {
+                  if (!appProvider.canSyncDrive) {
+                    showFeatureLockedDialog(context);
+                    return;
+                  }
+                  pushProfileScreen(context, const CloudBackupScreen());
+                },
               ),
               CashNavRow(
                 icon: Icons.image_rounded,
@@ -405,9 +446,26 @@ class _MyAccountScreenState extends State<MyAccountScreen> {
               CashNavRow(
                 icon: Icons.support_agent_rounded,
                 title: context.t('support_title'),
-                subtitle: context.t('support_row_desc'),
-                onTap: () =>
-                    pushProfileScreen(context, const SupportChatScreen()),
+                subtitle: appProvider.canSyncDrive
+                    ? context.t('support_row_desc')
+                    : '${context.t('support_row_desc')} • ${context.t('feat_requires_license')}',
+                trailing: appProvider.canSyncDrive
+                    ? null
+                    : Icon(
+                        Icons.lock_rounded,
+                        size: 18,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? AppColors.textTertiaryDark
+                            : AppColors.textTertiary,
+                      ),
+                muted: !appProvider.canSyncDrive,
+                onTap: () {
+                  if (!appProvider.canSyncDrive) {
+                    showFeatureLockedDialog(context);
+                    return;
+                  }
+                  pushProfileScreen(context, const SupportChatScreen());
+                },
               ),
               if (_isSupport)
                 CashNavRow(
