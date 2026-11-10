@@ -87,6 +87,18 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
       if (!_admin) {
         _admin = await SupportChatService.isSupportAdmin();
       }
+      if (!mounted) return;
+
+      // El equipo de soporte entra siempre. Un cliente necesita licencia,
+      // aunque ya tenga una sesión de Google abierta desde antes.
+      if (!_admin && !context.read<AppProvider>().canSyncDrive) {
+        setState(() {
+          _loading = false;
+          _failed = false;
+        });
+        showFeatureLockedDialog(context);
+        return;
+      }
 
       // El cliente abre su ticket más reciente, aunque esté cerrado: el
       // historial no desaparece. Solo se crea otro al pedirlo.

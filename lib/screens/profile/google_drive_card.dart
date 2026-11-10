@@ -30,8 +30,8 @@ class _GoogleDriveCardState extends State<GoogleDriveCard> {
 
   /// Conecta la cuenta de Google: es la misma sesión para la app y para Drive.
   ///
-  /// La cuenta no está limitada por plan; lo de pago son las copias, que se
-  /// comprueban al abrir la gestión de Drive.
+  /// Requiere licencia vigente, igual que el resto de la nube: sin plan no se
+  /// puede iniciar sesión ni crear la cuenta.
   Future<void> _connect(AppProvider provider) async {
     if (!provider.canSyncDrive) {
       showFeatureLockedDialog(context);

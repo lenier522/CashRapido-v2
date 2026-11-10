@@ -45,6 +45,12 @@ class _GoogleDriveScreenState extends State<GoogleDriveScreen> {
   }
 
   Future<void> _restore() async {
+    final AppProvider provider = context.read<AppProvider>();
+    if (!provider.canSyncDrive) {
+      showFeatureLockedDialog(context);
+      return;
+    }
+
     final bool? confirm = await showCashConfirmDialog(
       context,
       title: context.t('drive_restore_confirm_title'),
@@ -55,11 +61,6 @@ class _GoogleDriveScreenState extends State<GoogleDriveScreen> {
     );
     if (confirm != true || !mounted) return;
 
-    final AppProvider provider = context.read<AppProvider>();
-    if (!provider.canSyncDrive) {
-      showFeatureLockedDialog(context);
-      return;
-    }
     try {
       await provider.restoreFromCloud();
       if (mounted) {

@@ -37,7 +37,6 @@ import 'licenses_screen.dart';
 import 'loans/loans_gatekeeper.dart';
 import 'notifications_screen.dart';
 import 'profile/google_drive_screen.dart';
-import 'profile/my_account_screen.dart';
 import 'profile/profile_helpers.dart';
 import 'recurring_transactions_screen.dart';
 import 'streak_calendar_screen.dart';

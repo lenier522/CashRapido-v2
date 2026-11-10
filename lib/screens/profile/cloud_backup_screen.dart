@@ -62,8 +62,8 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
   }
 
   Future<void> _restore() async {
-    final AppProvider app = context.read<AppProvider>();
-    if (!app.canSyncDrive) {
+    final AppProvider provider = context.read<AppProvider>();
+    if (!provider.canSyncDrive) {
       showFeatureLockedDialog(context);
       return;
     }
@@ -78,13 +78,12 @@ class _CloudBackupScreenState extends State<CloudBackupScreen> {
     if (confirm != true || !mounted) return;
 
     setState(() => _busy = true);
-    final AppProvider app = context.read<AppProvider>();
     final BusinessProvider business = context.read<BusinessProvider>();
     final LoanProvider loans = context.read<LoanProvider>();
 
     final bool ok = await CloudSyncService.pullNow();
     if (ok) {
-      app.refreshFromBoxes();
+      provider.refreshFromBoxes();
       business.refreshFromBoxes();
       loans.refreshFromBoxes();
     }

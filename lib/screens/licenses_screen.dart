@@ -7,6 +7,7 @@ import 'package:cashrapido/providers/app_provider.dart';
 import 'package:cashrapido/licences/license_type.dart';
 import 'package:cashrapido/licences/art_pay.dart';
 import 'package:cashrapido/licences/payment_config.dart';
+import 'package:cashrapido/screens/qvapay_checkout_screen.dart';
 import 'package:cashrapido/theme/app_colors.dart';
 import 'package:cashrapido/services/paypal_service.dart';
 import 'package:flutter_paypal_payment/flutter_paypal_payment.dart';
@@ -928,12 +929,42 @@ class _LicensesScreenState extends State<LicensesScreen> {
     }
 
     // ----------------------------------------------------------------
+    // QvaPay (Cuba y resto del mundo)
+    // ----------------------------------------------------------------
+    if (method.id == 'qvapay') {
+      _handleQvaPay(licenseType);
+      return;
+    }
+
+    // ----------------------------------------------------------------
     // PayPal
     // ----------------------------------------------------------------
     if (method.id == 'paypal') {
       _handlePayPal(licenseType, provider);
       return;
     }
+  }
+
+  /// Abre el checkout de QvaPay y muestra el resultado al volver.
+  ///
+  /// La licencia se activa dentro de [QvaPayCheckoutScreen] solo cuando el
+  /// servidor confirma el pago; aquí únicamente se informa del resultado.
+  Future<void> _handleQvaPay(LicenseType licenseType) async {
+    final bool? paid = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => QvaPayCheckoutScreen(licenseType: licenseType),
+      ),
+    );
+    if (!mounted || paid != true) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '${context.t('license_active_success')} (${ArtPayService.getLicenseName(licenseType)})',
+        ),
+        backgroundColor: AppColors.income,
+      ),
+    );
   }
 
   /// Abre el checkout de PayPal para la [licenseType] elegida.

@@ -248,6 +248,11 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
     // guardar el paquete del usuario unos segundos después de cada edición.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      // La copia en la nube es de pago: el servicio consulta la licencia antes
+      // de subir o recuperar, no solo la UI que lo muestra.
+      CloudSyncService.bindLicenseCheck(
+        () => context.read<AppProvider>().canSyncDrive,
+      );
       CloudSyncService.attach(<Listenable>[
         context.read<AppProvider>(),
         context.read<BusinessProvider>(),

@@ -393,6 +393,13 @@ class AppProvider with ChangeNotifier {
           isEnabled: false,
           isVisible: false,
         ),
+        PaymentMethod(
+          id: 'qvapay',
+          name: 'QvaPay',
+          iconAsset: 'assets/icons/qvapay.png',
+          isEnabled: true,
+          isVisible: true,
+        ),
       ];
       if (kIsWeb || Platform.isWindows) {
         cubaMethods.removeWhere(
@@ -406,8 +413,8 @@ class AppProvider with ChangeNotifier {
           id: 'watch_ads',
           name: 'Ver Anuncios (Gratis)',
           iconAsset: 'assets/icons/video_ads.png',
-          isEnabled: true,
-          isVisible: true,
+          isEnabled: false,
+          isVisible: false,
         ),
         PaymentMethod(
           id: 'stripe',
@@ -420,6 +427,13 @@ class AppProvider with ChangeNotifier {
           id: 'paypal',
           name: 'PayPal',
           iconAsset: 'assets/icons/paypal.png',
+          isEnabled: false,
+          isVisible: false,
+        ),
+        PaymentMethod(
+          id: 'qvapay',
+          name: 'QvaPay',
+          iconAsset: 'assets/icons/qvapay.png',
           isEnabled: true,
           isVisible: true,
         ),
@@ -1045,7 +1059,10 @@ class AppProvider with ChangeNotifier {
       final entry = await ChangelogService.entryFor(current);
       if (entry == null) return;
 
-      final changesSummary = entry.changes.take(5).map((c) => '• $c').join('\n');
+      final changesSummary = entry.changes
+          .take(5)
+          .map((c) => '• $c')
+          .join('\n');
 
       await addNotificationItem(
         title: '🎉 CashRapido ${AppInfo.version} disponible',

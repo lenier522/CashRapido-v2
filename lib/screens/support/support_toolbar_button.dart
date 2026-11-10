@@ -117,14 +117,10 @@ class _SupportToolbarButtonState extends State<SupportToolbarButton> {
 
   Future<void> _open() async {
     final provider = context.read<AppProvider>();
-    if (!SupabaseService.isSignedIn && !provider.canSyncDrive) {
-      showFeatureLockedDialog(context);
-      return;
-    }
 
-    // Sin sesión se abre el chat, que pide conectar Google. Con sesión se
-    // comprueba de nuevo contra el servidor: un cliente nunca debe caer en la
-    // bandeja del soporte. Si la comprobación falla, se usa el chat.
+    // Con sesión se comprueba de nuevo contra el servidor: un cliente nunca
+    // debe caer en la bandeja del soporte. Si la comprobación falla, se usa el
+    // chat.
     bool admin = false;
     if (SupabaseService.isSignedIn) {
       try {
@@ -136,6 +132,14 @@ class _SupportToolbarButtonState extends State<SupportToolbarButton> {
       if (mounted) setState(() => _admin = admin);
     }
     if (!mounted) return;
+
+    // El equipo de soporte entra siempre a su bandeja. Un cliente necesita
+    // licencia, tenga o no la cuenta de Google ya conectada: si no, podría
+    // saltarse el bloqueo conservando una sesión anterior.
+    if (!admin && !provider.canSyncDrive) {
+      showFeatureLockedDialog(context);
+      return;
+    }
 
     await Navigator.push<void>(
       context,

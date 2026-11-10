@@ -48,6 +48,20 @@ abstract final class CloudSyncService {
   static Timer? _debounce;
   static final List<Listenable> _sources = <Listenable>[];
 
+  /// Comprobación de licencia de la app. La nube es de pago: si el plan no
+  /// está vigente, ni la subida automática ni las manuales deben ejecutarse.
+  static bool Function()? _licenseCheck;
+
+  /// Vincula la sincronización a la licencia actual.
+  ///
+  /// Sin este enlace (por ejemplo en pruebas) se permite sincronizar, para no
+  /// acoplar el servicio a la UI ni romper los tests existentes.
+  static void bindLicenseCheck(bool Function() check) {
+    _licenseCheck = check;
+  }
+
+  static bool get _canUseCloud => _licenseCheck?.call() ?? true;
+
   /// Cajas abiertas por los proveedores. Se guardan aquí porque Hive no deja
   /// obtener una caja ya abierta con otro tipo genérico (`Box<dynamic>`).
   static final Map<String, Box<dynamic>> _boxes = <String, Box<dynamic>>{};
@@ -94,7 +108,7 @@ abstract final class CloudSyncService {
   }
 
   static void _schedulePush() {
-    if (!_autoSync || !isSignedIn) return;
+    if (!_autoSync || !isSignedIn || !_canUseCloud) return;
     _debounce?.cancel();
     // Se espera a que el usuario termine de editar para no subir en cada tecla.
     _debounce = Timer(const Duration(seconds: 6), () {
@@ -110,6 +124,10 @@ abstract final class CloudSyncService {
   static Future<bool> pushNow() async {
     if (!isSignedIn) {
       _lastError = 'no_session';
+      return false;
+    }
+    if (!_canUseCloud) {
+      _lastError = 'license_required';
       return false;
     }
     if (_running) return false;
@@ -163,6 +181,10 @@ abstract final class CloudSyncService {
   static Future<bool> pullNow() async {
     if (!isSignedIn) {
       _lastError = 'no_session';
+      return false;
+    }
+    if (!_canUseCloud) {
+      _lastError = 'license_required';
       return false;
     }
     if (_running) return false;

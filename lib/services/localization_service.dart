@@ -1860,6 +1860,36 @@ class AppLocalizations {
       'change_plan': 'Cambiar Plan',
       'month_short': '/ mes',
 
+      // QvaPay
+      'qvapay_title': 'Pago con QvaPay',
+      'qvapay_creating': 'Creando factura segura en QvaPay…',
+      'qvapay_waiting': 'Esperando la confirmación de QvaPay…',
+      'qvapay_checking': 'Comprobando el estado del pago…',
+      'qvapay_pending_title': 'Pago pendiente',
+      'qvapay_success_title': 'Pago confirmado',
+      'qvapay_error_title': 'No se pudo completar el pago',
+      'qvapay_polling': 'Comprobación {n} de {max}',
+      'qvapay_polling_timeout':
+          'No pudimos confirmar el pago automáticamente. Pulsa «Ya pagué, verificar» en unos minutos.',
+      'qvapay_open': 'Abrir pago en QvaPay',
+      'qvapay_open_error':
+          'No se pudo abrir el enlace de pago. Inténtalo de nuevo desde el navegador.',
+      'qvapay_check': 'Ya pagué, verificar',
+      'qvapay_new_order': 'Crear nueva factura',
+      'qvapay_done': 'Listo',
+      'qvapay_paid': '¡Pago confirmado! Tu licencia se activó correctamente.',
+      'qvapay_paid_waiting_license':
+          'Pago confirmado. Esperando el código de licencia…',
+      'qvapay_cancelled':
+          'El pedido fue cancelado. Puedes crear una factura nueva.',
+      'qvapay_failed': 'El pago no se completó. Puedes intentarlo de nuevo.',
+      'qvapay_plan_mismatch':
+          'El plan pagado no coincide con la licencia seleccionada. Contacta con soporte.',
+      'qvapay_error':
+          'No se pudo conectar con el servidor de pagos. Revisa tu internet e inténtalo de nuevo.',
+      'qvapay_secure':
+          'El pago se procesa en QvaPay. CashRapido no guarda los datos de tu tarjeta.',
+
       // Holiday Promo
       'promo_title': '¡Feliz Año Nuevo! 🎉',
       'promo_message': 'Como regalo de fin de año, disfruta de todas las funciones PRO totalmente gratis hasta el 10 de Enero. ¡Gracias por usar CashRapido!',
@@ -3882,6 +3912,36 @@ class AppLocalizations {
       'active_plan_banner': 'ACTIVE PLAN',
       'change_plan': 'Change Plan',
       'month_short': '/ month',
+
+      // QvaPay
+      'qvapay_title': 'Pay with QvaPay',
+      'qvapay_creating': 'Creating a secure QvaPay invoice…',
+      'qvapay_waiting': 'Waiting for QvaPay confirmation…',
+      'qvapay_checking': 'Checking payment status…',
+      'qvapay_pending_title': 'Payment pending',
+      'qvapay_success_title': 'Payment confirmed',
+      'qvapay_error_title': 'Payment could not be completed',
+      'qvapay_polling': 'Check {n} of {max}',
+      'qvapay_polling_timeout':
+          'We could not confirm the payment automatically. Tap “I already paid” in a few minutes.',
+      'qvapay_open': 'Open payment in QvaPay',
+      'qvapay_open_error':
+          'Could not open the payment link. Please try again from the browser.',
+      'qvapay_check': 'I already paid, verify',
+      'qvapay_new_order': 'Create new invoice',
+      'qvapay_done': 'Done',
+      'qvapay_paid': 'Payment confirmed! Your license was activated.',
+      'qvapay_paid_waiting_license':
+          'Payment confirmed. Waiting for the license code…',
+      'qvapay_cancelled':
+          'The order was cancelled. You can create a new invoice.',
+      'qvapay_failed': 'The payment was not completed. You can try again.',
+      'qvapay_plan_mismatch':
+          'The paid plan does not match the selected license. Please contact support.',
+      'qvapay_error':
+          'Could not connect to the payment server. Check your internet and try again.',
+      'qvapay_secure':
+          'Payment is processed by QvaPay. CashRapido does not store your card details.',
 
       // Holiday Promo
       'promo_title': 'Happy New Year! 🎉',
@@ -5927,6 +5987,36 @@ class AppLocalizations {
       'change_plan': 'Changer de Plan',
       'popular': 'POPULAIRE',
       'month_short': '/ mois',
+
+      // QvaPay
+      'qvapay_title': 'Paiement avec QvaPay',
+      'qvapay_creating': 'Création d\'une facture sécurisée QvaPay…',
+      'qvapay_waiting': 'En attente de la confirmation QvaPay…',
+      'qvapay_checking': 'Vérification du statut du paiement…',
+      'qvapay_pending_title': 'Paiement en attente',
+      'qvapay_success_title': 'Paiement confirmé',
+      'qvapay_error_title': 'Le paiement n\'a pas pu être effectué',
+      'qvapay_polling': 'Vérification {n} sur {max}',
+      'qvapay_polling_timeout':
+          'Nous n\'avons pas pu confirmer le paiement automatiquement. Touchez « J\'ai déjà payé » dans quelques minutes.',
+      'qvapay_open': 'Ouvrir le paiement dans QvaPay',
+      'qvapay_open_error':
+          'Impossible d\'ouvrir le lien de paiement. Réessayez depuis le navigateur.',
+      'qvapay_check': 'J\'ai déjà payé, vérifier',
+      'qvapay_new_order': 'Créer une nouvelle facture',
+      'qvapay_done': 'Terminé',
+      'qvapay_paid': 'Paiement confirmé ! Votre licence a été activée.',
+      'qvapay_paid_waiting_license':
+          'Paiement confirmé. En attente du code de licence…',
+      'qvapay_cancelled':
+          'La commande a été annulée. Vous pouvez créer une nouvelle facture.',
+      'qvapay_failed': 'Le paiement n\'a pas été effectué. Réessayez.',
+      'qvapay_plan_mismatch':
+          'Le plan payé ne correspond pas à la licence sélectionnée. Contactez le support.',
+      'qvapay_error':
+          'Impossible de joindre le serveur de paiement. Vérifiez votre connexion et réessayez.',
+      'qvapay_secure':
+          'Le paiement est traité par QvaPay. CashRapido ne conserve pas les données de votre carte.',
 
       // Holiday Promo
       'promo_title': 'Bonne Année ! 🎉',
