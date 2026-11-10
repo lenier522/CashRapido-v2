@@ -15,6 +15,8 @@ import '../services/widget_service.dart';
 import 'package:crypto/crypto.dart';
 
 import '../models/models.dart';
+import '../models/currency_conversion.dart';
+import '../services/currency_conversion_service.dart';
 
 import 'dart:async';
 
@@ -27,8 +29,12 @@ import '../services/ad_service.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import '../services/backup_service.dart';
@@ -397,8 +403,8 @@ class AppProvider with ChangeNotifier {
           id: 'qvapay',
           name: 'QvaPay',
           iconAsset: 'assets/icons/qvapay.png',
-          isEnabled: true,
-          isVisible: true,
+          isEnabled: false,
+          isVisible: false,
         ),
       ];
       if (kIsWeb || Platform.isWindows) {
@@ -770,17 +776,204 @@ class AppProvider with ChangeNotifier {
   String _mainCurrency = 'CUP';
   String get mainCurrency => _mainCurrency;
 
+  /// Tasas directas contra la moneda principal.
+  ///
+  /// Se mantiene como caché para las exportaciones y para [BusinessProvider],
+  /// que trabajan con el formato histórico `moneda -> principal`.
   Map<String, double> _exchangeRates = {};
   Map<String, double> get exchangeRates => _exchangeRates;
 
-  double getExchangeRate(String currencyCode) =>
-      _exchangeRates[currencyCode] ?? 1.0;
+  /// Tasas configuradas por el usuario, una fila por par de monedas.
+  List<CurrencyConversion> _currencyConversions = <CurrencyConversion>[];
+  List<CurrencyConversion> get currencyConversions =>
+      List<CurrencyConversion>.unmodifiable(_currencyConversions);
 
-  Future<void> setExchangeRate(String currencyCode, double rate) async {
-    _exchangeRates[currencyCode] = rate;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('exchange_rates', jsonEncode(_exchangeRates));
+  double getExchangeRate(String currencyCode) =>
+      _exchangeRates[currencyCode.trim().toUpperCase()] ?? 1.0;
+
+  /// Tasa entre dos monedas cualquiera, incluyendo la inversa y los cruces.
+  double? getConversionRate(String fromCode, String toCode) =>
+      CurrencyConversionService.findRate(
+        _currencyConversions,
+        fromCode,
+        toCode,
+      );
+
+  /// Convierte [amount] de una moneda a otra usando las tasas configuradas.
+  double convertCurrency(double amount, String fromCode, String toCode) =>
+      CurrencyConversionService.convert(
+        _currencyConversions,
+        amount,
+        fromCode,
+        toCode,
+      );
+
+  /// Mantiene la firma histórica: [currencyCode] -> moneda principal.
+  Future<void> setExchangeRate(String currencyCode, double rate) =>
+      setCurrencyConversion(currencyCode, _mainCurrency, rate);
+
+  /// Agrega o actualiza una tasa entre dos monedas.
+  ///
+  /// Solo se guarda una fila por par: si se introduce la dirección inversa,
+  /// la fila existente se reemplaza por la nueva dirección y tasa. La
+  /// conversión en el sentido contrario se calcula automáticamente.
+  Future<void> setCurrencyConversion(
+    String fromCode,
+    String toCode,
+    double rate,
+  ) async {
+    final String from = fromCode.trim().toUpperCase();
+    final String to = toCode.trim().toUpperCase();
+    if (from.isEmpty ||
+        to.isEmpty ||
+        from == to ||
+        !rate.isFinite ||
+        rate <= 0) {
+      return;
+    }
+
+    final CurrencyConversion conversion = CurrencyConversion(
+      fromCode: from,
+      toCode: to,
+      rate: rate,
+    );
+    final int index = _currencyConversions.indexWhere(
+      (CurrencyConversion item) => item.samePair(conversion),
+    );
+    if (index == -1) {
+      _currencyConversions.add(conversion);
+    } else {
+      _currencyConversions[index] = conversion;
+    }
+
+    _rebuildExchangeRates();
     notifyListeners();
+    await _persistExchangeRates();
+  }
+
+  /// Elimina una tasa; deja de existir también su conversión inversa.
+  Future<void> removeCurrencyConversion(CurrencyConversion conversion) async {
+    _currencyConversions.removeWhere(
+      (CurrencyConversion item) => item.samePair(conversion),
+    );
+    _rebuildExchangeRates();
+    notifyListeners();
+    await _persistExchangeRates();
+  }
+
+  /// Reemplaza todas las tasas de una vez.
+  ///
+  /// Se usa desde el diálogo de configuración para que los cambios solo se
+  /// apliquen al pulsar Guardar y no al cancelar.
+  Future<void> replaceCurrencyConversions(
+    List<CurrencyConversion> conversions,
+  ) async {
+    final List<CurrencyConversion> next = <CurrencyConversion>[];
+    for (final CurrencyConversion conversion in conversions) {
+      if (!conversion.isValid) continue;
+      final int index = next.indexWhere(
+        (CurrencyConversion item) => item.samePair(conversion),
+      );
+      if (index == -1) {
+        next.add(conversion);
+      } else {
+        next[index] = conversion;
+      }
+    }
+
+    _currencyConversions = next;
+    _rebuildExchangeRates();
+    notifyListeners();
+    await _persistExchangeRates();
+  }
+
+  /// Recalcula las tasas contra la moneda principal a partir de los pares.
+  ///
+  /// Esto conserva el formato antiguo para exportaciones y para el módulo de
+  /// negocios, pero ahora incluye también conversiones cruzadas.
+  void _rebuildExchangeRates() {
+    final Set<String> codes = <String>{
+      ...availableCurrencies.map((c) => c.code),
+      ..._currencyConversions.expand(
+        (CurrencyConversion c) => <String>[c.fromCode, c.toCode],
+      ),
+    };
+
+    final Map<String, double> next = <String, double>{};
+    for (final String rawCode in codes) {
+      final String code = rawCode.trim().toUpperCase();
+      if (code.isEmpty || code == _mainCurrency) continue;
+      final double? rate = getConversionRate(code, _mainCurrency);
+      if (rate != null && rate.isFinite && rate > 0) {
+        next[code] = rate;
+      }
+    }
+    _exchangeRates = next;
+  }
+
+  /// Persiste el formato nuevo y, a la vez, el mapa histórico.
+  Future<void> _persistExchangeRates() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      'exchange_rate_pairs',
+      _currencyConversions
+          .map((CurrencyConversion c) => jsonEncode(c.toJson()))
+          .toList(),
+    );
+    await prefs.setString('exchange_rates', jsonEncode(_exchangeRates));
+  }
+
+  /// Carga el formato nuevo o migra el mapa antiguo `moneda -> principal`.
+  void _loadCurrencyConversions(SharedPreferences prefs) {
+    final List<String>? pairsJson = prefs.getStringList('exchange_rate_pairs');
+    if (pairsJson != null) {
+      _currencyConversions = pairsJson
+          .map((String raw) {
+            try {
+              final dynamic decoded = jsonDecode(raw);
+              if (decoded is Map<String, dynamic>) {
+                return CurrencyConversion.fromJson(decoded);
+              }
+            } catch (_) {
+              // Se ignora una fila corrupta y se conservan las demás.
+            }
+            return null;
+          })
+          .whereType<CurrencyConversion>()
+          .where((CurrencyConversion c) => c.isValid)
+          .toList();
+      return;
+    }
+
+    Map<String, double> legacy = <String, double>{};
+    final String? ratesJson = prefs.getString('exchange_rates');
+    if (ratesJson != null) {
+      try {
+        final dynamic decoded = jsonDecode(ratesJson);
+        if (decoded is Map<String, dynamic>) {
+          legacy = decoded.map(
+            (key, value) => MapEntry(
+              key,
+              value is num ? value.toDouble() : double.tryParse('$value') ?? 0,
+            ),
+          );
+        }
+      } catch (_) {
+        legacy = <String, double>{};
+      }
+    } else {
+      final double? oldRate = prefs.getDouble('exchange_rate');
+      if (oldRate != null) {
+        legacy = <String, double>{'USD': oldRate};
+      } else {
+        legacy = <String, double>{'USD': 320.0, 'EUR': 340.0, 'MLC': 270.0};
+      }
+    }
+
+    _currencyConversions = CurrencyConversionService.fromLegacyRates(
+      legacy,
+      _mainCurrency,
+    );
   }
 
   List<Currency> _customCurrencies = [];
@@ -858,8 +1051,37 @@ class AppProvider with ChangeNotifier {
       _cachedGoogleDisplayName = prefs.getString('google_user_display_name');
       _cachedGoogleEmail = prefs.getString('google_user_email');
       _cachedGooglePhotoUrl = prefs.getString('google_user_photo_url');
+      _cachedGooglePhotoPath = prefs.getString('google_user_photo_path');
       _cachedGoogleIsConnected =
           prefs.getBool('google_user_is_connected') ?? false;
+
+      // Carga la foto cacheada en memoria. Así se muestra de inmediato al
+      // abrir la app y no depende de tener conexión.
+      if (!kIsWeb && _cachedGooglePhotoPath != null) {
+        if (!_cachedGoogleIsConnected || _cachedGoogleEmail == null) {
+          _cachedGooglePhotoPath = null;
+          _cachedGooglePhotoBytes = null;
+          await prefs.remove('google_user_photo_path');
+        } else {
+          try {
+            final file = File(_cachedGooglePhotoPath!);
+            if (await file.exists()) {
+              final bytes = await file.readAsBytes();
+              if (bytes.isNotEmpty) {
+                _cachedGooglePhotoBytes = bytes;
+              } else {
+                _cachedGooglePhotoPath = null;
+                await prefs.remove('google_user_photo_path');
+              }
+            } else {
+              _cachedGooglePhotoPath = null;
+              await prefs.remove('google_user_photo_path');
+            }
+          } catch (_) {
+            // Si la caché está dañada se ignora; la URL remota es el respaldo.
+          }
+        }
+      }
 
       // Handle daily streak
       _streakDays = prefs.getInt('streak_days') ?? 0;
@@ -890,37 +1112,26 @@ class AppProvider with ChangeNotifier {
       } // else ... existing fallback logic
 
       // Load Currency
-      _mainCurrency = prefs.getString('main_currency') ?? 'CUP';
-      // Load Custom Exchange Rates
-      final ratesJson = prefs.getString('exchange_rates');
-      if (ratesJson != null) {
-        try {
-          final decoded = jsonDecode(ratesJson) as Map<String, dynamic>;
-          _exchangeRates = decoded.map(
-            (key, value) => MapEntry(key, (value as num).toDouble()),
-          );
-        } catch (e) {
-          _exchangeRates = {};
-        }
-      } else {
-        // Fallback for previous single setting or defaults
-        final oldRate = prefs.getDouble('exchange_rate');
-        if (oldRate != null) {
-          _exchangeRates = {'USD': oldRate};
-        } else {
-          _exchangeRates = {
-            'USD': 320.0,
-            'EUR': 340.0,
-            'MLC': 270.0,
-          }; // Default example rates
-        }
-      }
+      final String storedMainCurrency =
+          prefs.getString('main_currency') ?? 'CUP';
+      _mainCurrency = storedMainCurrency.trim().toUpperCase();
+      if (_mainCurrency.isEmpty) _mainCurrency = 'CUP';
+      final bool hadConversionPrefs = prefs.containsKey('exchange_rate_pairs');
+      _loadCurrencyConversions(prefs);
 
       final customCurrenciesJson = prefs.getStringList('custom_currencies');
       if (customCurrenciesJson != null) {
         _customCurrencies = customCurrenciesJson
             .map((e) => Currency.fromJson(jsonDecode(e)))
             .toList();
+      }
+
+      // La caché de tasas contra la moneda principal se calcula después de
+      // cargar las monedas personalizadas.
+      _rebuildExchangeRates();
+      if (!hadConversionPrefs || prefs.getString('exchange_rates') == null) {
+        // Migración del formato antiguo al nuevo; deja ambos formatos listos.
+        await _persistExchangeRates();
       }
 
       // Load License
@@ -1968,6 +2179,62 @@ class AppProvider with ChangeNotifier {
         .fold(0.0, (sum, item) => sum + item.balance);
   }
 
+  /// Suma el saldo de todas las tarjetas en la moneda principal.
+  ///
+  /// Cada saldo se convierte con las tasas configuradas por el usuario. Si una
+  /// moneda no tiene un camino de conversión, se conserva su valor tal cual,
+  /// igual que en [convertCurrency].
+  double getTotalBalanceInMainCurrency() {
+    return _cards.fold(
+      0.0,
+      (sum, card) =>
+          sum + convertCurrency(card.balance, card.currency, _mainCurrency),
+    );
+  }
+
+  /// Gastos del mes de todas las tarjetas, convertidos a la moneda principal.
+  ///
+  /// [cardId] permite limitar la suma a una sola cuenta sin cambiar la moneda
+  /// de destino.
+  double getSpentThisMonthInMainCurrency({String? cardId}) {
+    final DateTime now = DateTime.now();
+    return _transactions
+        .where(
+          (t) =>
+              (cardId == null || t.cardId == cardId) &&
+              t.amount < 0 &&
+              t.date.month == now.month &&
+              t.date.year == now.year,
+        )
+        .fold(
+          0.0,
+          (sum, item) =>
+              sum +
+              convertCurrency(item.amount.abs(), item.currency, _mainCurrency),
+        );
+  }
+
+  /// Ingresos del mes de todas las tarjetas, convertidos a la moneda principal.
+  ///
+  /// [cardId] permite limitar la suma a una sola cuenta sin cambiar la moneda
+  /// de destino.
+  double getIncomeThisMonthInMainCurrency({String? cardId}) {
+    final DateTime now = DateTime.now();
+    return _transactions
+        .where(
+          (t) =>
+              (cardId == null || t.cardId == cardId) &&
+              t.amount > 0 &&
+              t.date.month == now.month &&
+              t.date.year == now.year,
+        )
+        .fold(
+          0.0,
+          (sum, item) =>
+              sum + convertCurrency(item.amount, item.currency, _mainCurrency),
+        );
+  }
+
   double getSpentThisMonth(String currency, {String? cardId}) {
     final cacheKey = "\${currency}_\${cardId ?? 'all'}";
     if (_spentCache.containsKey(cacheKey)) {
@@ -2044,10 +2311,13 @@ class AppProvider with ChangeNotifier {
   // --- Currency ---
 
   Future<void> setMainCurrency(String code) async {
-    _mainCurrency = code;
+    final String next = code.trim().toUpperCase();
+    _mainCurrency = next.isEmpty ? 'CUP' : next;
+    _rebuildExchangeRates();
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('main_currency', code);
+    await prefs.setString('main_currency', _mainCurrency);
+    await prefs.setString('exchange_rates', jsonEncode(_exchangeRates));
   }
 
   Future<void> addCustomCurrency(Currency currency) async {
@@ -2071,16 +2341,25 @@ class AppProvider with ChangeNotifier {
       throw 'Currency In Use';
     }
 
+    final String deletedCode = code.trim().toUpperCase();
     _customCurrencies.removeWhere((c) => c.code == code);
 
     // If deleted currency was selected as main, revert to CUP
-    if (_mainCurrency == code) {
+    if (_mainCurrency == deletedCode) {
       _mainCurrency = 'CUP';
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('main_currency', 'CUP');
     }
 
+    // Las tasas de una moneda eliminada ya no tienen sentido.
+    _currencyConversions.removeWhere(
+      (CurrencyConversion c) =>
+          c.fromCode == deletedCode || c.toCode == deletedCode,
+    );
+    _rebuildExchangeRates();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('main_currency', _mainCurrency);
     await _saveCustomCurrencies();
+    await _persistExchangeRates();
     notifyListeners();
   }
 
@@ -2102,6 +2381,24 @@ class AppProvider with ChangeNotifier {
     final index = _customCurrencies.indexWhere((c) => c.code == oldCode);
     if (index != -1) {
       _customCurrencies[index] = newCurrency;
+
+      final String oldUpper = oldCode.trim().toUpperCase();
+      final String newUpper = newCurrency.code.trim().toUpperCase();
+      if (oldUpper != newUpper) {
+        for (int i = 0; i < _currencyConversions.length; i++) {
+          final CurrencyConversion c = _currencyConversions[i];
+          if (c.fromCode == oldUpper || c.toCode == oldUpper) {
+            _currencyConversions[i] = CurrencyConversion(
+              fromCode: c.fromCode == oldUpper ? newUpper : c.fromCode,
+              toCode: c.toCode == oldUpper ? newUpper : c.toCode,
+              rate: c.rate,
+            );
+          }
+        }
+        _rebuildExchangeRates();
+        await _persistExchangeRates();
+      }
+
       await _saveCustomCurrencies();
       notifyListeners();
     }
@@ -2309,6 +2606,7 @@ class AppProvider with ChangeNotifier {
       cards: _cards,
       exchangeRates: _exchangeRates,
       mainCurrency: _mainCurrency,
+      currencyConversions: _currencyConversions,
       businesses: businesses,
       products: products,
       sales: sales,
@@ -2328,6 +2626,7 @@ class AppProvider with ChangeNotifier {
       cards: _cards,
       exchangeRates: _exchangeRates,
       mainCurrency: _mainCurrency,
+      currencyConversions: _currencyConversions,
       businesses: businesses,
       products: products,
       sales: sales,
@@ -2347,7 +2646,12 @@ class AppProvider with ChangeNotifier {
   String? _cachedGoogleDisplayName;
   String? _cachedGoogleEmail;
   String? _cachedGooglePhotoUrl;
+  String? _cachedGooglePhotoPath;
+  Uint8List? _cachedGooglePhotoBytes;
   bool _cachedGoogleIsConnected = false;
+
+  /// Foto de perfil cacheada y lista para mostrarse sin conexión.
+  Uint8List? get googleProfilePhotoBytes => _cachedGooglePhotoBytes;
 
   GoogleSignInAccount? get currentUser {
     final live = _driveService.currentUser;
@@ -2367,20 +2671,107 @@ class AppProvider with ChangeNotifier {
 
   Future<void> _persistGoogleProfile(GoogleSignInAccount? account) async {
     if (account == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    final String? previousEmail = _cachedGoogleEmail;
+    final String? previousUrl = prefs.getString('google_user_photo_url');
+
+    // Si se cambió de cuenta, no se debe mostrar la foto de la cuenta anterior
+    // mientras se descarga la nueva.
+    if (previousEmail != account.email) {
+      await _deleteCachedGoogleProfilePhoto(prefs);
+    }
+
     _cachedGoogleDisplayName = account.displayName;
     _cachedGoogleEmail = account.email;
     _cachedGooglePhotoUrl = account.photoUrl;
     _cachedGoogleIsConnected = true;
 
-    final prefs = await SharedPreferences.getInstance();
     if (account.displayName != null && account.displayName!.isNotEmpty) {
       await prefs.setString('google_user_display_name', account.displayName!);
     }
     await prefs.setString('google_user_email', account.email);
     if (account.photoUrl != null && account.photoUrl!.isNotEmpty) {
       await prefs.setString('google_user_photo_url', account.photoUrl!);
+    } else {
+      await prefs.remove('google_user_photo_url');
     }
     await prefs.setBool('google_user_is_connected', true);
+
+    // Cachea la foto en disco para que esté disponible sin conexión y sin
+    // parpadear al reabrir la app.
+    if (account.photoUrl != null && account.photoUrl!.isNotEmpty) {
+      final bool needsRefresh =
+          _cachedGooglePhotoPath == null ||
+          !File(_cachedGooglePhotoPath!).existsSync() ||
+          previousUrl != account.photoUrl;
+      if (needsRefresh) {
+        unawaited(_cacheGoogleProfilePhoto(account.photoUrl!, account.email));
+      }
+    } else {
+      await _deleteCachedGoogleProfilePhoto(prefs);
+    }
+  }
+
+  Future<void> _cacheGoogleProfilePhoto(String photoUrl, String email) async {
+    if (kIsWeb) return;
+    try {
+      final response = await http
+          .get(Uri.parse(photoUrl))
+          .timeout(const Duration(seconds: 8));
+      if (response.statusCode != 200 || response.bodyBytes.isEmpty) return;
+
+      // Si mientras se descargaba se cambió de cuenta, se descarta la imagen.
+      if (_cachedGoogleEmail != email) return;
+
+      final dir = await getApplicationSupportDirectory();
+      final String signature = sha256.convert(utf8.encode(photoUrl)).toString();
+      final file = File(
+        p.join(dir.path, 'google_profile_avatar_$signature.jpg'),
+      );
+      await file.writeAsBytes(response.bodyBytes, flush: true);
+
+      // La sesión pudo cerrarse mientras se escribía la imagen.
+      if (_cachedGoogleEmail != email) {
+        try {
+          await file.delete();
+        } catch (_) {}
+        return;
+      }
+
+      final String? previousPath = _cachedGooglePhotoPath;
+      _cachedGooglePhotoPath = file.path;
+      _cachedGooglePhotoBytes = response.bodyBytes;
+      if (previousPath != null &&
+          previousPath.isNotEmpty &&
+          previousPath != file.path) {
+        try {
+          final oldFile = File(previousPath);
+          if (await oldFile.exists()) await oldFile.delete();
+        } catch (_) {}
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('google_user_photo_path', file.path);
+      notifyListeners();
+    } catch (_) {
+      // Sin red o fallo de descarga: se conserva la caché anterior.
+    }
+  }
+
+  Future<void> _deleteCachedGoogleProfilePhoto(SharedPreferences prefs) async {
+    final path =
+        _cachedGooglePhotoPath ?? prefs.getString('google_user_photo_path');
+    _cachedGooglePhotoPath = null;
+    _cachedGooglePhotoBytes = null;
+    await prefs.remove('google_user_photo_path');
+    if (path != null && path.isNotEmpty && !kIsWeb) {
+      try {
+        final file = File(path);
+        if (await file.exists()) {
+          await file.delete();
+        }
+      } catch (_) {}
+    }
   }
 
   /// Guarda el perfil de la cuenta con la que se acaba de entrar.
@@ -2408,6 +2799,7 @@ class AppProvider with ChangeNotifier {
     await prefs.remove('google_user_email');
     await prefs.remove('google_user_photo_url');
     await prefs.setBool('google_user_is_connected', false);
+    await _deleteCachedGoogleProfilePhoto(prefs);
 
     notifyListeners();
   }

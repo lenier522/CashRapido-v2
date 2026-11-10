@@ -16,6 +16,8 @@ import '../models/closing.dart';
 import '../models/seller.dart';
 import '../models/seller_inventory.dart';
 import '../models/models.dart';
+import '../models/currency_conversion.dart';
+import '../services/currency_conversion_service.dart';
 import 'app_provider.dart';
 
 class BusinessProvider with ChangeNotifier {
@@ -45,6 +47,7 @@ class BusinessProvider with ChangeNotifier {
   // Currency Settings
   String _mainCurrency = 'CUP';
   Map<String, double> _exchangeRates = {};
+  List<CurrencyConversion> _currencyConversions = <CurrencyConversion>[];
 
   bool _isLoading = true;
 
@@ -136,7 +139,8 @@ class BusinessProvider with ChangeNotifier {
     });
 
     final prefs = await SharedPreferences.getInstance();
-    _mainCurrency = prefs.getString('main_currency') ?? 'CUP';
+    _mainCurrency =
+        (prefs.getString('main_currency') ?? 'CUP').trim().toUpperCase();
     final ratesJson = prefs.getString('exchange_rates');
     if (ratesJson != null) {
       try {
@@ -155,6 +159,7 @@ class BusinessProvider with ChangeNotifier {
         _exchangeRates = {'USD': 320.0, 'EUR': 340.0, 'MLC': 270.0};
       }
     }
+    _loadCurrencyConversions(prefs);
 
     _fetchData();
     _isLoading = false;
@@ -202,9 +207,44 @@ class BusinessProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void updateCurrencyConfig(String currency, Map<String, double> rates) {
-    _mainCurrency = currency;
+  void _loadCurrencyConversions(SharedPreferences prefs) {
+    final List<String>? pairsJson = prefs.getStringList('exchange_rate_pairs');
+    if (pairsJson != null) {
+      _currencyConversions = pairsJson
+          .map((String raw) {
+            try {
+              final dynamic decoded = jsonDecode(raw);
+              if (decoded is Map<String, dynamic>) {
+                return CurrencyConversion.fromJson(decoded);
+              }
+            } catch (_) {
+              // Se ignora una fila corrupta y se conservan las demás.
+            }
+            return null;
+          })
+          .whereType<CurrencyConversion>()
+          .where((CurrencyConversion c) => c.isValid)
+          .toList();
+      return;
+    }
+
+    // Migración del formato anterior.
+    _currencyConversions = CurrencyConversionService.fromLegacyRates(
+      _exchangeRates,
+      _mainCurrency,
+    );
+  }
+
+  void updateCurrencyConfig(
+    String currency,
+    Map<String, double> rates, [
+    List<CurrencyConversion>? conversions,
+  ]) {
+    _mainCurrency = currency.trim().toUpperCase();
     _exchangeRates = rates;
+    if (conversions != null) {
+      _currencyConversions = List<CurrencyConversion>.of(conversions);
+    }
     notifyListeners();
   }
 
@@ -212,9 +252,19 @@ class BusinessProvider with ChangeNotifier {
       _convertAmount(amount, currency);
 
   double _convertAmount(double amount, String currency) {
-    if (currency == _mainCurrency) return amount;
+    final String from = currency.trim().toUpperCase();
+    if (from == _mainCurrency) return amount;
 
-    final rateToMain = _exchangeRates[currency];
+    final double? pairRate = CurrencyConversionService.findRate(
+      _currencyConversions,
+      from,
+      _mainCurrency,
+    );
+    if (pairRate != null && pairRate.isFinite && pairRate > 0) {
+      return amount * pairRate;
+    }
+
+    final rateToMain = _exchangeRates[from];
     if (rateToMain != null && rateToMain > 0) {
       return amount * rateToMain;
     }

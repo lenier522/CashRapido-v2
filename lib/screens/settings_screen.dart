@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../providers/business_provider.dart';
 import '../models/models.dart';
+import '../models/currency_conversion.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
 import '../theme/app_spacing.dart';
@@ -329,80 +330,424 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showExchangeRatesDialog(BuildContext context) {
-    final provider = Provider.of<AppProvider>(context, listen: false);
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
     final businessProvider = Provider.of<BusinessProvider>(
       context,
       listen: false,
     );
-
-    final currencies = provider.availableCurrencies
-        .where((c) => c.code != provider.mainCurrency)
-        .toList();
-    final controllers = <String, TextEditingController>{};
-    for (var c in currencies) {
-      controllers[c.code] = TextEditingController(
-        text: provider.getExchangeRate(c.code).toString(),
-      );
-    }
+    final List<CurrencyConversion> pending = List<CurrencyConversion>.of(
+      appProvider.currencyConversions,
+    );
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: const RoundedRectangleBorder(borderRadius: AppRadius.radiusXxl),
-        title: Text(context.t('exchange_rates_title')),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: currencies.length,
-            itemBuilder: (context, index) {
-              final code = currencies[index].code;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                child: CashInput(
-                  controller: controllers[code],
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  prefix: const Icon(Icons.currency_exchange),
-                  label: context
-                      .t('exchange_rate_for')
-                      .replaceAll('{currency}', code)
-                      .replaceAll('{main}', provider.mainCurrency),
-                ),
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(context.t('cancel')),
-          ),
-          CashButton(
-            label: context.t('save'),
-            fullWidth: false,
-            height: 44,
-            onPressed: () {
-              // Se conserva exactamente la lógica original: solo se guardan
-              // tasas parseables y mayores que cero.
-              for (var entry in controllers.entries) {
-                final rate = double.tryParse(entry.value.text);
-                if (rate != null && rate > 0) {
-                  provider.setExchangeRate(entry.key, rate);
-                }
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) {
+          void upsert(CurrencyConversion conversion) {
+            final int index = pending.indexWhere(
+              (CurrencyConversion item) => item.samePair(conversion),
+            );
+            setDialogState(() {
+              if (index == -1) {
+                pending.add(conversion);
+              } else {
+                pending[index] = conversion;
               }
-              businessProvider.updateCurrencyConfig(
-                provider.mainCurrency,
-                provider.exchangeRates,
+            });
+          }
+
+          Future<void> addOrEdit([CurrencyConversion? existing]) async {
+            final CurrencyConversion? result =
+                await _showExchangeRateFormDialog(
+                  dialogContext,
+                  existing: existing,
+                );
+            if (result == null || !dialogContext.mounted) return;
+            upsert(result);
+          }
+
+          Future<void> remove(CurrencyConversion conversion) async {
+            final bool? confirmed = await showCashConfirmDialog(
+              dialogContext,
+              title: dialogContext.t('delete_exchange_rate'),
+              message:
+                  '1 ${conversion.fromCode} = '
+                  '${_formatExchangeRate(conversion.rate)} '
+                  '${conversion.toCode}',
+              confirmLabel: dialogContext.t('delete'),
+              cancelLabel: dialogContext.t('cancel'),
+              icon: Icons.delete_outline_rounded,
+            );
+            if (confirmed != true || !dialogContext.mounted) return;
+            setDialogState(() {
+              pending.removeWhere(
+                (CurrencyConversion item) => item.samePair(conversion),
               );
-              Navigator.pop(ctx);
-              _showSnack(context, context.t('rates_updated'));
-            },
-          ),
-        ],
+            });
+          }
+
+          return AlertDialog(
+            shape: const RoundedRectangleBorder(
+              borderRadius: AppRadius.radiusXxl,
+            ),
+            title: Text(context.t('exchange_rates_title')),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: AppSpacing.sm),
+                  if (pending.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.lg,
+                      ),
+                      child: Text(
+                        dialogContext.t('exchange_rates_empty'),
+                        textAlign: TextAlign.center,
+                        style: Theme.of(dialogContext).textTheme.bodyMedium
+                            ?.copyWith(
+                              color: Theme.of(
+                                dialogContext,
+                              ).textTheme.bodySmall?.color,
+                            ),
+                      ),
+                    )
+                  else
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 380),
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: pending.length,
+                        separatorBuilder: (_, _) =>
+                            const Divider(height: 1),
+                        itemBuilder: (_, index) {
+                          final conversion = pending[index];
+                          return ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.currency_exchange),
+                            title: Text(
+                              '1 ${conversion.fromCode} = '
+                              '${_formatExchangeRate(conversion.rate)} '
+                              '${conversion.toCode}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            subtitle: Text(
+                              '1 ${conversion.toCode} = '
+                              '${_formatExchangeRate(conversion.inverseRate)} '
+                              '${conversion.fromCode}',
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CashIconButton(
+                                  icon: Icons.edit_outlined,
+                                  size: 38,
+                                  iconSize: 18,
+                                  tooltip: dialogContext.t(
+                                    'edit_exchange_rate',
+                                  ),
+                                  onPressed: () => addOrEdit(conversion),
+                                ),
+                                const SizedBox(width: AppSpacing.xs),
+                                CashIconButton(
+                                  icon: Icons.delete_outline_rounded,
+                                  size: 38,
+                                  iconSize: 18,
+                                  iconColor: AppColors.error,
+                                  tooltip: dialogContext.t(
+                                    'delete_exchange_rate',
+                                  ),
+                                  onPressed: () => remove(conversion),
+                                ),
+                              ],
+                            ),
+                            onTap: () => addOrEdit(conversion),
+                          );
+                        },
+                      ),
+                    ),
+                  const SizedBox(height: AppSpacing.md),
+                  CashButton(
+                    label: context.t('add_exchange_rate'),
+                    fullWidth: true,
+                    height: 46,
+                    icon: const Icon(Icons.add_rounded, size: 20),
+                    onPressed: () => addOrEdit(),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: Text(context.t('cancel')),
+              ),
+              CashButton(
+                label: context.t('save'),
+                fullWidth: false,
+                height: 44,
+                onPressed: () async {
+                  await appProvider.replaceCurrencyConversions(pending);
+                  businessProvider.updateCurrencyConfig(
+                    appProvider.mainCurrency,
+                    appProvider.exchangeRates,
+                    appProvider.currencyConversions,
+                  );
+                  if (dialogContext.mounted) {
+                    Navigator.pop(dialogContext);
+                  }
+                  if (context.mounted) {
+                    _showSnack(context, context.t('rates_updated'));
+                  }
+                },
+              ),
+            ],
+          );
+        },
       ),
     );
+  }
+
+  Future<CurrencyConversion?> _showExchangeRateFormDialog(
+    BuildContext context, {
+    CurrencyConversion? existing,
+  }) {
+    final provider = Provider.of<AppProvider>(context, listen: false);
+
+    // Se incluyen las monedas disponibles y, por seguridad, cualquier código
+    // que ya exista en una tasa guardada.
+    final Map<String, Currency> currenciesByCode = <String, Currency>{
+      for (final Currency currency in provider.availableCurrencies)
+        currency.code.trim().toUpperCase(): currency,
+    };
+    for (final String? code in <String?>[
+      existing?.fromCode,
+      existing?.toCode,
+      provider.mainCurrency,
+    ]) {
+      final String normalized = (code ?? '').trim().toUpperCase();
+      if (normalized.isNotEmpty && !currenciesByCode.containsKey(normalized)) {
+        currenciesByCode[normalized] = Currency(
+          code: normalized,
+          symbol: normalized,
+          name: normalized,
+        );
+      }
+    }
+    final List<Currency> currencies = currenciesByCode.values
+        .map(
+          (Currency currency) => Currency(
+            code: currency.code.trim().toUpperCase(),
+            symbol: currency.symbol,
+            name: currency.name,
+          ),
+        )
+        .toList();
+
+    String selectedFrom = existing?.fromCode ?? provider.mainCurrency;
+    if (selectedFrom.toUpperCase() == provider.mainCurrency.toUpperCase()) {
+      final Currency fallback = currencies.firstWhere(
+        (currency) =>
+            currency.code.toUpperCase() != provider.mainCurrency.toUpperCase(),
+        orElse: () => currencies.first,
+      );
+      selectedFrom = fallback.code;
+    }
+    String selectedTo = existing?.toCode ?? provider.mainCurrency;
+
+    final TextEditingController rateController = TextEditingController(
+      text: existing == null ? '' : _formatExchangeRate(existing.rate),
+    );
+    String? errorText;
+
+    return showDialog<CurrencyConversion>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) {
+          return AlertDialog(
+            shape: const RoundedRectangleBorder(
+              borderRadius: AppRadius.radiusXxl,
+            ),
+            title: Text(
+              context.t(
+                existing == null
+                    ? 'add_exchange_rate'
+                    : 'edit_exchange_rate',
+              ),
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          key: ValueKey<String>('from-$selectedFrom'),
+                          initialValue: selectedFrom,
+                          isExpanded: true,
+                          decoration: InputDecoration(
+                            labelText: context.t('source_currency'),
+                          ),
+                          items: currencies
+                              .map(
+                                (Currency currency) => DropdownMenuItem<String>(
+                                  value: currency.code,
+                                  child: Text(
+                                    currency.code.toUpperCase(),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (String? value) {
+                            if (value == null) return;
+                            setDialogState(() {
+                              selectedFrom = value;
+                              errorText = null;
+                            });
+                          },
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.xs,
+                        ),
+                        child: IconButton(
+                          tooltip: context.t('exchange_rate_swap'),
+                          icon: const Icon(Icons.swap_horiz_rounded),
+                          onPressed: () {
+                            setDialogState(() {
+                              final String oldFrom = selectedFrom;
+                              selectedFrom = selectedTo;
+                              selectedTo = oldFrom;
+                              final double? currentRate = double.tryParse(
+                                rateController.text.replaceAll(',', '.'),
+                              );
+                              if (currentRate != null && currentRate > 0) {
+                                rateController.text = _formatExchangeRate(
+                                  1 / currentRate,
+                                );
+                              }
+                              errorText = null;
+                            });
+                          },
+                        ),
+                      ),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          key: ValueKey<String>('to-$selectedTo'),
+                          initialValue: selectedTo,
+                          isExpanded: true,
+                          decoration: InputDecoration(
+                            labelText: context.t('target_currency'),
+                          ),
+                          items: currencies
+                              .map(
+                                (Currency currency) => DropdownMenuItem<String>(
+                                  value: currency.code,
+                                  child: Text(
+                                    currency.code.toUpperCase(),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (String? value) {
+                            if (value == null) return;
+                            setDialogState(() {
+                              selectedTo = value;
+                              errorText = null;
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  CashInput(
+                    controller: rateController,
+                    autofocus: true,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    prefix: const Icon(Icons.currency_exchange),
+                    errorText: errorText,
+                    label: context
+                        .t('exchange_rate_for')
+                        .replaceAll('{currency}', selectedFrom)
+                        .replaceAll('{main}', selectedTo),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: Text(context.t('cancel')),
+              ),
+              CashButton(
+                label: context.t('save'),
+                fullWidth: false,
+                height: 44,
+                onPressed: () {
+                  final String from = selectedFrom.trim().toUpperCase();
+                  final String to = selectedTo.trim().toUpperCase();
+                  final double? rate = double.tryParse(
+                    rateController.text.replaceAll(',', '.'),
+                  );
+
+                  if (from == to) {
+                    setDialogState(
+                      () => errorText = context.t(
+                        'exchange_rate_same_currency',
+                      ),
+                    );
+                    return;
+                  }
+                  if (rate == null || !rate.isFinite || rate <= 0) {
+                    setDialogState(
+                      () => errorText = context.t('exchange_rate_invalid'),
+                    );
+                    return;
+                  }
+
+                  Navigator.pop(
+                    dialogContext,
+                    CurrencyConversion(
+                      fromCode: from,
+                      toCode: to,
+                      rate: rate,
+                    ),
+                  );
+                },
+              ),
+            ],
+          );
+        },
+      ),
+    ).whenComplete(rateController.dispose);
+  }
+
+  String _formatExchangeRate(double rate) {
+    if (!rate.isFinite || rate <= 0) return '-';
+    if (rate >= 1000) return rate.toStringAsFixed(2);
+    if (rate < 0.00000001) return rate.toString();
+    if (rate >= 1) {
+      return rate
+          .toStringAsFixed(4)
+          .replaceFirst(RegExp(r'0+$'), '')
+          .replaceFirst(RegExp(r'\.$'), '');
+    }
+    return rate
+        .toStringAsFixed(8)
+        .replaceFirst(RegExp(r'0+$'), '')
+        .replaceFirst(RegExp(r'\.$'), '');
   }
 
   void _showDecimalSeparatorDialog(BuildContext context) {
@@ -994,7 +1339,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Provider.of<BusinessProvider>(
       context,
       listen: false,
-    ).updateCurrencyConfig(provider.mainCurrency, provider.exchangeRates);
+    ).updateCurrencyConfig(
+      provider.mainCurrency,
+      provider.exchangeRates,
+      provider.currencyConversions,
+    );
   }
 
   void _showCurrencyDialog(BuildContext context) {

@@ -10,6 +10,8 @@ import '../models/models.dart';
 import '../models/sale.dart';
 import '../models/loan.dart';
 import '../models/closing.dart';
+import '../models/currency_conversion.dart';
+import 'currency_conversion_service.dart';
 import 'package:cashrapido/utils/number_format_utils.dart';
 
 class ExportService {
@@ -32,9 +34,23 @@ class ExportService {
     String fromCurrency,
     String toCurrency,
     Map<String, double> rates,
-    String mainCurrency,
-  ) {
+    String mainCurrency, [
+    List<CurrencyConversion>? conversions,
+  ]) {
     if (fromCurrency == toCurrency) return amount;
+
+    // Si el usuario configuró un par directo, se respeta antes de usar la
+    // moneda principal como pivote.
+    if (conversions != null && conversions.isNotEmpty) {
+      final double? directRate = CurrencyConversionService.findRate(
+        conversions,
+        fromCurrency,
+        toCurrency,
+      );
+      if (directRate != null && directRate.isFinite && directRate > 0) {
+        return amount * directRate;
+      }
+    }
 
     double amountInMain = amount;
     if (fromCurrency != mainCurrency) {
@@ -67,6 +83,7 @@ class ExportService {
     required List<AccountCard> cards,
     required Map<String, double> exchangeRates,
     required String mainCurrency,
+    List<CurrencyConversion> currencyConversions = const <CurrencyConversion>[],
     List<dynamic> businesses = const [],
     List<dynamic> products = const [],
     List<dynamic> sales = const [],
@@ -116,6 +133,7 @@ class ExportService {
           mainCurrency,
           exchangeRates,
           mainCurrency,
+          currencyConversions,
         );
         if (amtMain > 0) {
           totalIncome += amtMain;
@@ -239,6 +257,7 @@ class ExportService {
             card.currency,
             exchangeRates,
             mainCurrency,
+            currencyConversions,
           );
           if (amtConverted > 0) {
             cardIncome += amtConverted;
@@ -427,6 +446,7 @@ class ExportService {
     required List<AccountCard> cards,
     required Map<String, double> exchangeRates,
     required String mainCurrency,
+    List<CurrencyConversion> currencyConversions = const <CurrencyConversion>[],
     List<dynamic> businesses = const [],
     List<dynamic> products = const [],
     List<dynamic> sales = const [],
@@ -519,6 +539,7 @@ class ExportService {
                         mainCurrency,
                         exchangeRates,
                         mainCurrency,
+                        currencyConversions,
                       );
                       if (amtMain > 0) {
                         totalIncome += amtMain;
@@ -626,6 +647,7 @@ class ExportService {
                       cardTrans,
                       exchangeRates,
                       mainCurrency,
+                      currencyConversions,
                     ),
                     pw.SizedBox(height: 20),
                     pw.Text(
@@ -910,6 +932,7 @@ class ExportService {
     List<InternalTransaction> cardTrans,
     Map<String, double> exchangeRates,
     String mainCurrency,
+    List<CurrencyConversion> currencyConversions,
   ) {
     double income = 0.0;
     double expense = 0.0;
@@ -921,6 +944,7 @@ class ExportService {
           card.currency,
           exchangeRates,
           mainCurrency,
+          currencyConversions,
         );
         if (amt > 0) {
           income += amt;

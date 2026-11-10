@@ -59,8 +59,17 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  /// Cuenta seleccionada. `null` equivale a la primera disponible.
-  String? _selectedCardId;
+  /// Valor del selector que representa el total de todas las cuentas.
+  static const String _allAccountsId = '__all_accounts__';
+
+  /// Cuenta seleccionada. Por defecto se muestran todas las cuentas.
+  String _selectedCardId = _allAccountsId;
+
+  /// `true` cuando el resumen debe sumar todas las cuentas.
+  bool get _showingAllAccounts => _selectedCardId == _allAccountsId;
+
+  /// Id real de la tarjeta activa, o `null` si se muestran todas.
+  String? get _activeCardId => _showingAllAccounts ? null : _selectedCardId;
 
   /// Cuántos movimientos se muestran en la sección de recientes.
   static const int _recentTransactionsCount = 5;
@@ -82,14 +91,10 @@ class _HomeScreenState extends State<HomeScreen> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        // Ensure valid selection
-        if (_selectedCardId != null &&
+        // Si la tarjeta activa se eliminó, vuelve al resumen de todas.
+        if (!_showingAllAccounts &&
             !provider.cards.any((c) => c.id == _selectedCardId)) {
-          _selectedCardId = null;
-        }
-
-        if (_selectedCardId == null && provider.cards.isNotEmpty) {
-          _selectedCardId = provider.cards.first.id;
+          _selectedCardId = _allAccountsId;
         }
 
         return Scaffold(
@@ -267,8 +272,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final String subtitle = connected
         ? context.t('profile_drive_title')
         : (provider.canSyncDrive
-            ? context.t('profile_drive_connect')
-            : '${context.t('profile_drive_connect')} • ${context.t('feat_requires_license')}');
+              ? context.t('profile_drive_connect')
+              : '${context.t('profile_drive_connect')} • ${context.t('feat_requires_license')}');
 
     return Semantics(
       button: true,
@@ -282,6 +287,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               CashAccountAvatar(
                 imageUrl: user?.photoUrl,
+                imageBytes: provider.googleProfilePhotoBytes,
                 name: connected
                     ? (displayName.isNotEmpty ? displayName : email)
                     : null,
@@ -317,11 +323,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         if (!connected && !provider.canSyncDrive) ...[
                           const SizedBox(width: 4),
-                          Icon(
-                            Icons.lock_rounded,
-                            size: 13,
-                            color: secondary,
-                          ),
+                          Icon(Icons.lock_rounded, size: 13, color: secondary),
                         ],
                       ],
                     ),
@@ -366,9 +368,10 @@ class _HomeScreenState extends State<HomeScreen> {
   // ---------------------------------------------------------------------------
 
   AccountCard? _selectedCard(AppProvider provider) {
-    if (_selectedCardId == null) return null;
+    final String? cardId = _activeCardId;
+    if (cardId == null) return null;
     for (final AccountCard card in provider.cards) {
-      if (card.id == _selectedCardId) return card;
+      if (card.id == cardId) return card;
     }
     return null;
   }
@@ -377,25 +380,31 @@ class _HomeScreenState extends State<HomeScreen> {
     final ThemeData theme = Theme.of(context);
     final bool isDark = theme.brightness == Brightness.dark;
 
+    final bool allAccounts = _showingAllAccounts;
     final AccountCard? card = _selectedCard(provider);
-    final String currency = card?.currency ?? 'USD';
-    final double totalBalance = card?.balance ?? 0.00;
+    final String currency = allAccounts
+        ? provider.mainCurrency
+        : card?.currency ?? provider.mainCurrency;
+    final double totalBalance = allAccounts
+        ? provider.getTotalBalanceInMainCurrency()
+        : card?.balance ?? 0.00;
 
-    final double expense = provider.getSpentThisMonth(
-      currency,
-      cardId: _selectedCardId,
-    );
-    final double income = provider.getIncomeThisMonth(
-      currency,
-      cardId: _selectedCardId,
-    );
+    final double expense = allAccounts
+        ? provider.getSpentThisMonthInMainCurrency()
+        : provider.getSpentThisMonth(currency, cardId: _activeCardId);
+    final double income = allAccounts
+        ? provider.getIncomeThisMonthInMainCurrency()
+        : provider.getIncomeThisMonth(currency, cardId: _activeCardId);
 
-    // Sparkline: gasto de los últimos 7 días para esta cuenta.
-    final List<double> last7 = _last7DaysSpending(
-      provider.transactions,
-      currency: currency,
-      cardId: _selectedCardId,
-    );
+    // Sparkline: gasto de los últimos 7 días para esta cuenta o para todas,
+    // convirtiendo cada movimiento a la moneda principal.
+    final List<double> last7 = allAccounts
+        ? _last7DaysSpendingInMainCurrency(provider)
+        : _last7DaysSpending(
+            provider.transactions,
+            currency: currency,
+            cardId: _activeCardId,
+          );
     final double maxSpending = last7.fold(
       0.0,
       (max, value) => value > max ? value : max,
@@ -626,12 +635,11 @@ class _HomeScreenState extends State<HomeScreen> {
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.labelMedium?.copyWith(color: Colors.white),
             ),
-            items: provider.cards.map((AccountCard card) {
-              final String label = _cardDropdownLabel(context, card);
-              return DropdownMenuItem<String>(
-                value: card.id,
+            items: <DropdownMenuItem<String>>[
+              DropdownMenuItem<String>(
+                value: _allAccountsId,
                 child: Text(
-                  label,
+                  context.t('all_accounts'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelMedium?.copyWith(
@@ -640,9 +648,26 @@ class _HomeScreenState extends State<HomeScreen> {
                         : AppColors.textPrimary,
                   ),
                 ),
-              );
-            }).toList(),
+              ),
+              ...provider.cards.map((AccountCard card) {
+                final String label = _cardDropdownLabel(context, card);
+                return DropdownMenuItem<String>(
+                  value: card.id,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimary,
+                    ),
+                  ),
+                );
+              }),
+            ],
             onChanged: (String? newValue) {
+              if (newValue == null) return;
               setState(() => _selectedCardId = newValue);
             },
           ),
@@ -691,6 +716,36 @@ class _HomeScreenState extends State<HomeScreen> {
             txDate.month == dayDate.month &&
             txDate.day == dayDate.day) {
           result[i] += tx.amount.abs();
+        }
+      }
+    }
+    return result;
+  }
+
+  /// Gastos diarios de la última semana de todas las cuentas, convertidos a la
+  /// moneda principal.
+  List<double> _last7DaysSpendingInMainCurrency(AppProvider provider) {
+    final List<double> result = List.filled(7, 0);
+    final DateTime today = DateTime.now();
+
+    for (final InternalTransaction tx in provider.transactions) {
+      if (tx.amount >= 0) continue;
+
+      final DateTime txDate = tx.date;
+      for (var i = 0; i < 7; i++) {
+        final DateTime dayDate = DateTime(
+          today.year,
+          today.month,
+          today.day,
+        ).subtract(Duration(days: 6 - i));
+        if (txDate.year == dayDate.year &&
+            txDate.month == dayDate.month &&
+            txDate.day == dayDate.day) {
+          result[i] += provider.convertCurrency(
+            tx.amount.abs(),
+            tx.currency,
+            provider.mainCurrency,
+          );
         }
       }
     }
@@ -818,7 +873,7 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => AllTransactionsScreen(initialCardId: _selectedCardId),
+        builder: (_) => AllTransactionsScreen(initialCardId: _activeCardId),
       ),
     );
   }
@@ -887,7 +942,7 @@ class _HomeScreenState extends State<HomeScreen> {
     };
     final displayTitle = titleMap[actionType] ?? actionType;
 
-    if (_selectedCardId == null && provider.cards.isEmpty) {
+    if (provider.cards.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(context.t('add_card_first')),
@@ -896,7 +951,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    final cardId = _selectedCardId ?? provider.cards.first.id;
+    final cardId = _activeCardId ?? provider.cards.first.id;
     final card = provider.cards.firstWhere((c) => c.id == cardId);
     final controller = TextEditingController();
     final exchangeRateController = TextEditingController(text: "1.0");
@@ -1170,7 +1225,7 @@ class _HomeScreenState extends State<HomeScreen> {
             label: context.t('action_history'),
             onTap: () => _navigateFromMoreOptions(
               context,
-              AllTransactionsScreen(initialCardId: _selectedCardId),
+              AllTransactionsScreen(initialCardId: _activeCardId),
             ),
           ),
           CashQuickAction(
@@ -1273,17 +1328,18 @@ class _HomeScreenState extends State<HomeScreen> {
   // ---------------------------------------------------------------------------
 
   Widget _buildFinancialSummary(BuildContext context, AppProvider provider) {
+    final bool allAccounts = _showingAllAccounts;
     final AccountCard? card = _selectedCard(provider);
-    final String currency = card?.currency ?? 'USD';
+    final String currency = allAccounts
+        ? provider.mainCurrency
+        : card?.currency ?? provider.mainCurrency;
 
-    final double income = provider.getIncomeThisMonth(
-      currency,
-      cardId: _selectedCardId,
-    );
-    final double expense = provider.getSpentThisMonth(
-      currency,
-      cardId: _selectedCardId,
-    );
+    final double income = allAccounts
+        ? provider.getIncomeThisMonthInMainCurrency()
+        : provider.getIncomeThisMonth(currency, cardId: _activeCardId);
+    final double expense = allAccounts
+        ? provider.getSpentThisMonthInMainCurrency()
+        : provider.getSpentThisMonth(currency, cardId: _activeCardId);
     final double savings = income - expense;
 
     // El ahorro usa iconos además del color para no depender solo del tono.
@@ -1340,10 +1396,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final ThemeData theme = Theme.of(context);
 
     List<InternalTransaction> transactions = provider.transactions;
-    if (_selectedCardId != null) {
-      transactions = transactions
-          .where((t) => t.cardId == _selectedCardId)
-          .toList();
+    final String? cardId = _activeCardId;
+    if (cardId != null) {
+      transactions = transactions.where((t) => t.cardId == cardId).toList();
     }
 
     transactions = transactions.take(_recentTransactionsCount).toList();

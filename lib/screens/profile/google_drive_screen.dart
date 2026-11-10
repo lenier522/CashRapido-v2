@@ -131,6 +131,7 @@ class _GoogleDriveScreenState extends State<GoogleDriveScreen> {
             children: [
               CashAccountAvatar(
                 imageUrl: provider.currentUser?.photoUrl,
+                imageBytes: provider.googleProfilePhotoBytes,
                 name:
                     provider.currentUser?.displayName ??
                     provider.currentUser?.email,

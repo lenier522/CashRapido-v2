@@ -1,17 +1,20 @@
+import 'dart:typed_data';
+
 import 'package:material_ui/material_ui.dart';
 
 import '../../theme/app_colors.dart';
 
 /// Avatar circular reutilizable para la cuenta de Google.
 ///
-/// Muestra la foto real de la cuenta (`photoUrl`) cuando existe. Si no hay
-/// foto, el recurso no carga (por ejemplo sin conexión) o se está descargando,
-/// cae a la inicial del nombre y, en su defecto, a un icono. Nunca inventa una
-/// imagen.
+/// Muestra la foto de perfil cacheada localmente cuando existe, para que esté
+/// disponible sin conexión y sin parpadeos al reabrir la app. Si no hay copia
+/// local, intenta cargar la URL remota; si falla o no hay imagen, muestra la
+/// inicial del nombre o un icono. Nunca inventa una imagen.
 class CashAccountAvatar extends StatelessWidget {
   const CashAccountAvatar({
     super.key,
     this.imageUrl,
+    this.imageBytes,
     this.name,
     this.fallbackIcon,
     this.size = 40,
@@ -23,6 +26,9 @@ class CashAccountAvatar extends StatelessWidget {
 
   /// URL de la foto de perfil de Google (`null` cuando no hay sesión).
   final String? imageUrl;
+
+  /// Bytes de la foto cacheada localmente (disponible sin conexión).
+  final Uint8List? imageBytes;
 
   /// Nombre para construir la inicial de respaldo.
   final String? name;
@@ -57,6 +63,9 @@ class CashAccountAvatar extends StatelessWidget {
     final Color ring =
         borderColor ?? (isDark ? AppColors.borderDark : AppColors.borderLight);
 
+    final bool hasCached = imageBytes != null && imageBytes!.isNotEmpty;
+    final bool hasRemote = imageUrl != null && imageUrl!.isNotEmpty;
+
     return Container(
       width: size,
       height: size,
@@ -66,17 +75,34 @@ class CashAccountAvatar extends StatelessWidget {
         shape: BoxShape.circle,
         border: showRing ? Border.all(color: ring) : null,
       ),
-      child: imageUrl != null && imageUrl!.isNotEmpty
-          ? Image.network(
-              imageUrl!,
+      child: hasCached
+          ? Image.memory(
+              imageBytes!,
               width: size,
               height: size,
               fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => _fallback(foreground),
-              loadingBuilder: (context, child, progress) =>
-                  progress == null ? child : _fallback(foreground),
+              gaplessPlayback: true,
+              errorBuilder: (_, _, _) =>
+                  hasRemote ? _network(foreground) : _fallback(foreground),
             )
+          : hasRemote
+          ? _network(foreground)
           : _fallback(foreground),
+    );
+  }
+
+  Widget _network(Color foreground) {
+    return Image.network(
+      imageUrl!,
+      width: size,
+      height: size,
+      fit: BoxFit.cover,
+      gaplessPlayback: true,
+      errorBuilder: (_, _, _) => _fallback(foreground),
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return _fallback(foreground);
+      },
     );
   }
 

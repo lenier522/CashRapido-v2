@@ -73,6 +73,7 @@ class _GoogleDriveCardState extends State<GoogleDriveCard> {
             children: [
               CashAccountAvatar(
                 imageUrl: provider.currentUser?.photoUrl,
+                imageBytes: provider.googleProfilePhotoBytes,
                 name: connected
                     ? (provider.currentUser?.displayName ?? email)
                     : null,
