@@ -11,26 +11,24 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('ventana de prueba', () {
-    test('las primeras 48 horas cuentan como prueba activa', () {
+    test('los primeros 7 días cuentan como prueba activa', () {
       final DateTime start = DateTime.now().subtract(
-        const Duration(hours: 47),
+        const Duration(days: 6, hours: 23),
       );
 
       expect(TrialService.isWithinWindow(start), isTrue);
       expect(TrialService.remaining(start), greaterThan(Duration.zero));
+      expect(TrialService.duration, const Duration(days: 7));
     });
 
-    test('al pasar las 48 horas la prueba termina', () {
+    test('al pasar los 7 días la prueba termina', () {
       final DateTime start = DateTime.now().subtract(
-        const Duration(hours: 49),
+        const Duration(days: 7, hours: 1),
       );
 
       expect(TrialService.isWithinWindow(start), isFalse);
       expect(TrialService.remaining(start), Duration.zero);
-      expect(
-        TrialService.endsAt(start),
-        start.add(const Duration(hours: 48)),
-      );
+      expect(TrialService.endsAt(start), start.add(TrialService.duration));
     });
   });
 
@@ -39,10 +37,10 @@ void main() {
       SharedPreferences.setMockInitialValues({
         'license_type': LicenseType.free.index,
       });
-      final SharedPreferences prefs =
-          await SharedPreferences.getInstance();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
 
       expect(TrialService.hasPaidPlan(prefs), isFalse);
+      expect(TrialService.hasActivePlan(prefs), isFalse);
     });
 
     test('un plan vigente cuenta como pago', () async {
@@ -51,27 +49,26 @@ void main() {
         'license_type': LicenseType.monthlyPro.index,
         'license_expiration_date': expires.toIso8601String(),
       });
-      final SharedPreferences prefs =
-          await SharedPreferences.getInstance();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
 
       expect(TrialService.hasPaidPlan(prefs), isTrue);
+      expect(TrialService.hasActivePlan(prefs), isTrue);
     });
 
     test('un plan caducado no cuenta como pago', () async {
-      final DateTime expires = DateTime.now().subtract(
-        const Duration(days: 1),
-      );
+      final DateTime expires = DateTime.now().subtract(const Duration(days: 1));
       SharedPreferences.setMockInitialValues({
         'license_type': LicenseType.monthlyPro.index,
         'license_expiration_date': expires.toIso8601String(),
       });
-      final SharedPreferences prefs =
-          await SharedPreferences.getInstance();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
 
       expect(TrialService.hasPaidPlan(prefs), isFalse);
+      expect(TrialService.hasActivePlan(prefs), isFalse);
     });
 
-    test('convertir durante la prueba conserva los datos para siempre', () async {
+    test('convertir durante la prueba conserva los datos, pero no desbloquea '
+        'cuentas si el plan caducó', () async {
       SharedPreferences.setMockInitialValues({
         'license_type': LicenseType.weeklyPersonal.index,
         'license_expiration_date': DateTime.now()
@@ -79,14 +76,53 @@ void main() {
             .toIso8601String(),
         TrialService.convertedKey: true,
       });
-      final SharedPreferences prefs =
-          await SharedPreferences.getInstance();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
 
       expect(TrialService.hasPaidPlan(prefs), isTrue);
+      expect(TrialService.hasActivePlan(prefs), isFalse);
     });
   });
 
-  group('borrado de datos al terminar la prueba', () {
+  group('estado de vencimiento', () {
+    test('una prueba vencida sin plan requiere bloqueo', () async {
+      SharedPreferences.setMockInitialValues({
+        'trial_start_date': DateTime.now()
+            .subtract(const Duration(days: 8))
+            .toIso8601String(),
+        'license_type': LicenseType.free.index,
+      });
+
+      expect(await TrialService.isExpiredWithoutPlan(), isTrue);
+    });
+
+    test('una prueba vencida con plan vigente no requiere bloqueo', () async {
+      SharedPreferences.setMockInitialValues({
+        'trial_start_date': DateTime.now()
+            .subtract(const Duration(days: 8))
+            .toIso8601String(),
+        'license_type': LicenseType.monthlyPro.index,
+        'license_expiration_date': DateTime.now()
+            .add(const Duration(days: 10))
+            .toIso8601String(),
+      });
+
+      expect(await TrialService.isExpiredWithoutPlan(), isFalse);
+    });
+
+    test('una instalación exenta no requiere bloqueo', () async {
+      SharedPreferences.setMockInitialValues({
+        'trial_start_date': DateTime.now()
+            .subtract(const Duration(days: 8))
+            .toIso8601String(),
+        'license_type': LicenseType.free.index,
+        TrialService.exemptKey: true,
+      });
+
+      expect(await TrialService.isExpiredWithoutPlan(), isFalse);
+    });
+  });
+
+  group('fin de prueba sin borrado', () {
     late Directory tempDir;
 
     setUpAll(() async {
@@ -96,9 +132,10 @@ void main() {
 
     tearDown(() async {
       await Hive.deleteFromDisk();
+      await tempDir.delete(recursive: true).catchError((_) => tempDir);
     });
 
-    test('dentro de las 48 horas no se borra nada', () async {
+    test('dentro de los 7 días no se bloquea ni se borra nada', () async {
       await _seedTransactionBox();
       SharedPreferences.setMockInitialValues({
         'trial_start_date': DateTime.now()
@@ -109,13 +146,14 @@ void main() {
 
       expect(await TrialService.enforceAtStartup(), isFalse);
       expect(await Hive.boxExists('transactions'), isTrue);
+      await _expectSeedStillThere();
     });
 
-    test('con plan adquirido tampoco se borra aunque pasen 48 horas', () async {
+    test('con plan vigente tampoco se bloquea aunque pasen 7 días', () async {
       await _seedTransactionBox();
       SharedPreferences.setMockInitialValues({
         'trial_start_date': DateTime.now()
-            .subtract(const Duration(hours: 72))
+            .subtract(const Duration(days: 8))
             .toIso8601String(),
         'license_type': LicenseType.monthlyEnterprise.index,
         'license_expiration_date': DateTime.now()
@@ -125,13 +163,14 @@ void main() {
 
       expect(await TrialService.enforceAtStartup(), isFalse);
       expect(await Hive.boxExists('transactions'), isTrue);
+      await _expectSeedStillThere();
     });
 
-    test('sin plan se borran cajas y preferencias una sola vez', () async {
+    test('sin plan se avisa y los datos siguen intactos', () async {
       await _seedTransactionBox();
       SharedPreferences.setMockInitialValues({
         'trial_start_date': DateTime.now()
-            .subtract(const Duration(hours: 49))
+            .subtract(const Duration(days: 8))
             .toIso8601String(),
         'license_type': LicenseType.free.index,
         'custom_banks': <String>['BPA'],
@@ -139,16 +178,30 @@ void main() {
       });
 
       expect(await TrialService.enforceAtStartup(), isTrue);
-      expect(await Hive.boxExists('transactions'), isFalse);
+      expect(await Hive.boxExists('transactions'), isTrue);
+      await _expectSeedStillThere();
 
-      final SharedPreferences prefs =
-          await SharedPreferences.getInstance();
-      expect(prefs.getBool(TrialService.wipedKey), isTrue);
-      expect(prefs.getStringList('custom_banks'), isNull);
-      expect(prefs.getInt('streak_days'), isNull);
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool(TrialService.lockedNoticeKey), isTrue);
+      expect(prefs.getStringList('custom_banks'), <String>['BPA']);
+      expect(prefs.getInt('streak_days'), 12);
 
-      // El borrado no se repite en el siguiente arranque.
+      // El aviso no se repite en el siguiente arranque.
       expect(await TrialService.enforceAtStartup(), isFalse);
+      expect(await Hive.boxExists('transactions'), isTrue);
+      await _expectSeedStillThere();
+    });
+
+    test('el vencimiento en caliente solo avisa una vez', () async {
+      SharedPreferences.setMockInitialValues({
+        'trial_start_date': DateTime.now()
+            .subtract(const Duration(days: 8))
+            .toIso8601String(),
+        'license_type': LicenseType.free.index,
+      });
+
+      expect(await TrialService.lockIfExpired(), isTrue);
+      expect(await TrialService.lockIfExpired(), isFalse);
     });
 
     test('las instalaciones anteriores quedan exentas', () async {
@@ -161,8 +214,7 @@ void main() {
       expect(await TrialService.enforceAtStartup(), isFalse);
       expect(await Hive.boxExists('transactions'), isTrue);
 
-      final SharedPreferences prefs =
-          await SharedPreferences.getInstance();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
       expect(prefs.getBool(TrialService.exemptKey), isTrue);
     });
   });
@@ -171,5 +223,11 @@ void main() {
 Future<void> _seedTransactionBox() async {
   final Box<dynamic> box = await Hive.openBox<dynamic>('transactions');
   await box.put('tx1', 'dato');
+  await box.close();
+}
+
+Future<void> _expectSeedStillThere() async {
+  final Box<dynamic> box = await Hive.openBox<dynamic>('transactions');
+  expect(box.get('tx1'), 'dato');
   await box.close();
 }

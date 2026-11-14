@@ -100,8 +100,19 @@ class AppProvider with ChangeNotifier {
   List<RecurringTransaction> _recurringTransactions = [];
   List<NotificationItem> _notifications = [];
 
-  List<RecurringTransaction> get recurringTransactions =>
-      _recurringTransactions;
+  /// Recurrentes visibles. Los de cuentas bloqueadas se conservan en Hive,
+  /// pero no se muestran hasta activar una licencia.
+  List<RecurringTransaction> get recurringTransactions {
+    final Set<String> blockedIds = _blockedCardIds;
+    if (blockedIds.isEmpty) return _recurringTransactions;
+    return _recurringTransactions
+        .where(
+          (RecurringTransaction recurring) =>
+              !blockedIds.contains(recurring.accountId),
+        )
+        .toList(growable: false);
+  }
+
   List<NotificationItem> get notifications =>
       _notifications..sort((a, b) => b.date.compareTo(a.date));
   int get unreadNotificationsCount =>
@@ -215,13 +226,12 @@ class AppProvider with ChangeNotifier {
   DateTime? _licenseActivationDate;
   DateTime? get licenseActivationDate => _licenseActivationDate;
 
-  // --- Prueba gratuita de 48 h ---
+  // --- Prueba gratuita de 7 días ---
   //
-  // La ventana y el borrado viven en [TrialService]; aquí solo se expone el
+  // La ventana y el bloqueo viven en [TrialService]; aquí solo se expone el
   // estado para la UI y para el gating de capacidades.
   DateTime? _trialStart;
   bool _trialExempt = false;
-  bool _trialWiped = false;
 
   /// Momento en que empezó la prueba gratuita.
   DateTime? get trialStartDate => _trialStart;
@@ -232,20 +242,20 @@ class AppProvider with ChangeNotifier {
     return start == null ? null : TrialService.endsAt(start);
   }
 
-  /// Instalaciones anteriores a la prueba: nunca se les borran los datos.
+  /// Instalaciones anteriores a la prueba: se mantienen sin bloqueo.
   bool get isTrialExempt => _trialExempt;
 
-  /// `true` mientras la prueba de 48 h siga vigente.
+  /// `true` mientras la prueba de 7 días siga vigente.
   bool get isTrialActive {
     if (_trialExempt) return false;
     final DateTime? start = _trialStart;
     return start != null && TrialService.isWithinWindow(start);
   }
 
-  /// `true` si toca avisar de la prueba de 48 h.
+  /// `true` si toca avisar de la prueba de 7 días.
   ///
   /// Con una licencia de pago vigente el aviso sobra: el usuario ya tiene plan
-  /// y sus datos no se borran al terminar la prueba.
+  /// y sus cuentas no se bloquean al terminar la prueba.
   bool get showsTrialBanner => isTrialActive && licenseType == LicenseType.free;
 
   /// Tiempo restante de prueba (cero si ya terminó).
@@ -258,13 +268,43 @@ class AppProvider with ChangeNotifier {
   /// `true` cuando la ventana de prueba ya pasó (haya o no plan).
   bool get isTrialExpired => !_trialExempt && !isTrialActive;
 
-  /// `true` si los datos ya se borraron al terminar la prueba.
-  bool get trialDataWiped => _trialWiped;
+  /// `true` cuando la prueba terminó sin un plan de pago vigente.
+  ///
+  /// En ese estado los datos no se borran, pero las cuentas adicionales quedan
+  /// bloqueadas hasta que el usuario active una licencia.
+  bool get isTrialExpiredWithoutPlan =>
+      isTrialExpired && licenseType == LicenseType.free;
 
-  /// Registra en memoria que el borrado por fin de prueba ya ocurrió.
-  void markTrialDataWiped() {
-    _trialWiped = true;
-    notifyListeners();
+  /// Las instalaciones exentas y los usuarios con plan vigente pueden usar
+  /// todas sus cuentas sin bloqueo.
+  bool get _allAccountsUnlocked =>
+      isPromoActive ||
+      _trialExempt ||
+      isTrialActive ||
+      licenseType.level != LicenseLevel.free;
+
+  /// `true` si la cuenta está bloqueada por el fin de la prueba.
+  ///
+  /// La primera cuenta (la principal) siempre queda disponible; las demás
+  /// necesitan una licencia activa. El bloqueo manual de la tarjeta se maneja
+  /// aparte con [AccountCard.isLocked].
+  bool isAccountBlockedByTrial(AccountCard card) {
+    if (_allAccountsUnlocked) return false;
+    if (_cards.isEmpty) return false;
+    return card.id != _cards.first.id;
+  }
+
+  /// `true` si la cuenta no puede usarse por bloqueo manual o de licencia.
+  bool isAccountUsable(AccountCard card) =>
+      !card.isLocked && !isAccountBlockedByTrial(card);
+
+  /// `true` si el identificador corresponde a una cuenta bloqueada por prueba.
+  bool isCardIdBlockedByTrial(String cardId) {
+    final int index = _cards.indexWhere(
+      (AccountCard card) => card.id == cardId,
+    );
+    if (index == -1) return false;
+    return isAccountBlockedByTrial(_cards[index]);
   }
 
   /// Indica si hay una licencia **Empresarial vigente** (no vencida).
@@ -283,8 +323,9 @@ class AppProvider with ChangeNotifier {
   /// guardada del usuario (vuelve al icono por defecto al vencer el plan).
   Future<void> _syncAppIcon() async {
     final String? selected = await AppIconService.selectedKey();
-    if (!kIsWeb && Platform.isWindows)
+    if (!kIsWeb && Platform.isWindows) {
       return; // Sin alias nativo en escritorio.
+    }
     await AppIconService.applyForLicense(
       isEnterpriseActive: isEnterpriseActive,
       selectedKey: selected,
@@ -311,9 +352,11 @@ class AppProvider with ChangeNotifier {
     SharedPreferences.getInstance().then((prefs) {
       prefs.setInt('license_type', type.index);
       if (type != LicenseType.free) {
-        // Plan adquirido durante la prueba: sus datos ya no se borran por
-        // fin de prueba, aunque el plan caduque más adelante.
+        // Plan adquirido: las cuentas adicionales vuelven a estar disponibles.
+        // Se conserva la marca histórica de conversión, pero el bloqueo real
+        // depende de que el plan siga vigente.
         prefs.setBool(TrialService.convertedKey, true);
+        prefs.remove(TrialService.lockedNoticeKey);
       }
       if (expirationDate != null) {
         prefs.setString(
@@ -332,9 +375,58 @@ class AppProvider with ChangeNotifier {
         prefs.remove('license_expiration_date');
       }
     });
+    _invalidateCaches();
     // El nivel/caducidad de la licencia dicta qué icono debe verse: si el
     // plan venció, aquí se vuelve al icono por defecto.
     unawaited(_syncAppIcon());
+    notifyListeners();
+  }
+
+  /// Vuelve a leer licencia y prueba desde disco.
+  ///
+  /// Se usa al reanudar la app para que un plan vencido o una prueba terminada
+  /// bloqueen las cuentas adicionales sin necesidad de reiniciar.
+  Future<void> refreshAccessState() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    final int licenseIndex =
+        prefs.getInt('license_type') ?? LicenseType.free.index;
+    if (licenseIndex >= 0 && licenseIndex < LicenseType.values.length) {
+      _licenseType = LicenseType.values[licenseIndex];
+    }
+
+    final String? exactExpirationString = prefs.getString(
+      'license_expiration_date',
+    );
+    if (exactExpirationString != null) {
+      _licenseActivationDate = DateTime.tryParse(exactExpirationString);
+    } else {
+      final String? activationString = prefs.getString(
+        'license_activation_date',
+      );
+      final DateTime? parsedActivation = activationString == null
+          ? null
+          : DateTime.tryParse(activationString);
+      if (parsedActivation != null) {
+        final int durationDays = _licenseType.durationDays > 0
+            ? _licenseType.durationDays
+            : 30;
+        _licenseActivationDate = parsedActivation.add(
+          Duration(days: durationDays),
+        );
+      } else {
+        _licenseActivationDate = null;
+      }
+    }
+    _checkLicenseExpiration();
+
+    final String? trialStartRaw = prefs.getString(TrialService.startKey);
+    _trialStart = trialStartRaw == null
+        ? DateTime.now()
+        : DateTime.tryParse(trialStartRaw) ?? DateTime.now();
+    _trialExempt = prefs.getBool(TrialService.exemptKey) ?? false;
+
+    _invalidateCaches();
     notifyListeners();
   }
 
@@ -357,7 +449,7 @@ class AppProvider with ChangeNotifier {
 
   // Payment System
   // Change this variable to build for different regions
-  final bool _isCuba = false;
+  final bool _isCuba = true;
   bool get isCuba => _isCuba;
 
   List<PaymentMethod> get paymentMethods {
@@ -580,7 +672,7 @@ class AppProvider with ChangeNotifier {
 
   // Capability Getters
 
-  /// Durante la prueba gratuita de 48 h todo está desbloqueado **excepto**
+  /// Durante la prueba gratuita de 7 días todo está desbloqueado **excepto**
   /// IA, copias en Google Drive y copias de seguridad locales, que siguen
   /// requiriendo un plan de pago.
   bool get _trialUnlocked => isTrialActive;
@@ -989,7 +1081,22 @@ class AppProvider with ChangeNotifier {
     return [...defaults, ..._customCurrencies];
   }
 
-  List<InternalTransaction> get transactions => _transactions;
+  /// Movimientos visibles para el usuario.
+  ///
+  /// Las transacciones de cuentas bloqueadas por fin de prueba se conservan en
+  /// Hive y en las copias de seguridad, pero no se muestran ni cuentan hasta
+  /// que se active una licencia.
+  List<InternalTransaction> get transactions {
+    final Set<String> blockedIds = _blockedCardIds;
+    if (blockedIds.isEmpty) return _transactions;
+    return _transactions
+        .where(
+          (InternalTransaction tx) =>
+              tx.cardId == null || !blockedIds.contains(tx.cardId),
+        )
+        .toList(growable: false);
+  }
+
   List<Category> get categories => _categories;
 
   /// Categorías visibles para un flujo concreto según su clasificación.
@@ -999,7 +1106,33 @@ class AppProvider with ChangeNotifier {
   List<Category> categoriesFor(bool isExpense) => _categories
       .where((c) => CategoryTypes.allows(c.type, isExpense: isExpense))
       .toList();
-  List<AccountCard> get cards => _cards;
+
+  /// Todas las cuentas almacenadas, incluidas las bloqueadas.
+  ///
+  /// Se usa en pantallas que deben informar de las cuentas bloqueadas. La
+  /// mayoría de la app debe seguir usando [cards].
+  List<AccountCard> get allCards => List<AccountCard>.unmodifiable(_cards);
+
+  /// Cuentas disponibles para operar.
+  ///
+  /// Si la prueba gratuita terminó sin licencia, solo se devuelve la principal.
+  List<AccountCard> get cards => _cards
+      .where((AccountCard card) => !isAccountBlockedByTrial(card))
+      .toList(growable: false);
+
+  /// Cuentas conservadas pero bloqueadas hasta activar una licencia.
+  List<AccountCard> get lockedCards => _cards
+      .where((AccountCard card) => isAccountBlockedByTrial(card))
+      .toList(growable: false);
+
+  bool get hasLockedAccounts => lockedCards.isNotEmpty;
+
+  int get lockedAccountsCount => lockedCards.length;
+
+  Set<String> get _blockedCardIds => _cards
+      .where((AccountCard card) => isAccountBlockedByTrial(card))
+      .map((AccountCard card) => card.id)
+      .toSet();
 
   final Uuid _uuid = const Uuid();
 
@@ -1163,14 +1296,12 @@ class AppProvider with ChangeNotifier {
       // Check Expiration
       _checkLicenseExpiration();
 
-      // Estado de la prueba gratuita (la ventana y el posible borrado se
-      // resolvieron en `TrialService.enforceAtStartup` antes de abrir Hive).
+      // Estado de la prueba gratuita.
       final String? trialStartRaw = prefs.getString(TrialService.startKey);
       _trialStart = trialStartRaw == null
           ? DateTime.now()
           : DateTime.tryParse(trialStartRaw) ?? DateTime.now();
       _trialExempt = prefs.getBool(TrialService.exemptKey) ?? false;
-      _trialWiped = prefs.getBool(TrialService.wipedKey) ?? false;
 
       // Aplica el icono de la app según la licencia vigente y la elección
       // guardada (el estacional y el restablecimiento por vencimiento viven
@@ -1331,6 +1462,9 @@ class AppProvider with ChangeNotifier {
 
     for (var r in _recurringTransactions) {
       if (r.autoRegister && now.isAfter(r.nextExecutionDate)) {
+        // No ejecutar movimientos automáticos sobre cuentas bloqueadas.
+        if (isCardIdBlockedByTrial(r.accountId)) continue;
+
         // Find currency
         final card = _cards.firstWhere(
           (c) => c.id == r.accountId,
@@ -1528,6 +1662,11 @@ class AppProvider with ChangeNotifier {
     if (cardIndex == -1) return false;
 
     final card = _cards[cardIndex];
+    if (isAccountBlockedByTrial(card)) {
+      throw Exception(
+        "La cuenta está bloqueada hasta que actives una licencia.",
+      );
+    }
     if (card.isLocked) {
       throw Exception("La tarjeta está bloqueada.");
     }
@@ -1550,6 +1689,12 @@ class AppProvider with ChangeNotifier {
     bool bypassBalanceCheck =
         false, // Set true for business-linked transactions
   }) async {
+    // Las cuentas adicionales quedan bloqueadas al terminar la prueba. El
+    // filtro de UI no es suficiente: la operación también se rechaza aquí.
+    if (cardId != null && isCardIdBlockedByTrial(cardId)) {
+      return "cuenta_bloqueada";
+    }
+
     // Validate balance before adding expense (skip for business transactions)
     if (!bypassBalanceCheck && cardId != null && amount < 0) {
       final cardIndex = _cards.indexWhere((c) => c.id == cardId);
@@ -1606,22 +1751,24 @@ class AppProvider with ChangeNotifier {
   /// Update widgets with current main card balance and stats
   Future<void> _updateWidgetsIfNeeded() async {
     try {
-      if (_cards.isEmpty) {
-        // Sin cuentas (por ejemplo, tras el borrado de fin de prueba) el
-        // widget no debe seguir mostrando saldos que ya no existen.
+      final List<AccountCard> availableCards = cards;
+      if (availableCards.isEmpty) {
+        // Sin cuentas disponibles el widget no debe seguir mostrando saldos.
         await WidgetService.updateAllWidgets(0, _mainCurrency);
         return;
       }
 
-      // Find main card (first card or explicitly marked main)
-      final mainCard = _cards.first;
+      // Find main card (first available card)
+      final mainCard = availableCards.first;
       await WidgetService.updateAllWidgets(mainCard.balance, mainCard.currency);
 
-      // Update stats widget with this month's transactions
+      // Update stats widget with this month's transactions of available cards.
       final now = DateTime.now();
       final thisMonthTxs = _transactions
           .where((t) {
-            return t.date.year == now.year && t.date.month == now.month;
+            return _isAccessibleTransaction(t) &&
+                t.date.year == now.year &&
+                t.date.month == now.month;
           })
           .map((t) => (amount: t.amount, date: t.date))
           .toList();
@@ -1646,6 +1793,11 @@ class AppProvider with ChangeNotifier {
     if (index == -1) return;
 
     final transaction = _transactions[index];
+
+    if (transaction.cardId != null &&
+        isCardIdBlockedByTrial(transaction.cardId!)) {
+      return;
+    }
 
     // Revert Balance
     if (transaction.cardId != null) {
@@ -1686,6 +1838,13 @@ class AppProvider with ChangeNotifier {
     if (index == -1) return;
 
     final oldTransaction = _transactions[index];
+
+    if (oldTransaction.cardId != null &&
+        isCardIdBlockedByTrial(oldTransaction.cardId!)) {
+      throw Exception(
+        "Esta cuenta está bloqueada hasta que actives una licencia.",
+      );
+    }
 
     // Update Card Balance if linked
     if (oldTransaction.cardId != null) {
@@ -1768,6 +1927,11 @@ class AppProvider with ChangeNotifier {
 
     final fromCard = _cards[fromCardIndex];
     final toCard = _cards[toCardIndex];
+    if (isAccountBlockedByTrial(fromCard) || isAccountBlockedByTrial(toCard)) {
+      throw Exception(
+        "Una de las cuentas está bloqueada hasta que actives una licencia.",
+      );
+    }
 
     final destinationAmount = amount * exchangeRate;
 
@@ -1933,7 +2097,16 @@ class AppProvider with ChangeNotifier {
     }
   }
 
+  /// Evita que al eliminar la principal se desbloquee otra cuenta sin pagar.
+  bool canDeleteCard(String cardId) {
+    if (_allAccountsUnlocked || _cards.length <= 1) return true;
+    if (_cards.isEmpty) return true;
+    return cardId != _cards.first.id;
+  }
+
   Future<void> deleteCard(String cardId) async {
+    if (!canDeleteCard(cardId)) return;
+
     final index = _cardBox.values.toList().indexWhere((c) => c.id == cardId);
     if (index != -1) {
       await _cardBox.deleteAt(index);
@@ -2173,26 +2346,33 @@ class AppProvider with ChangeNotifier {
   // --- Getters ---
 
   double getTotalBalance(String currency) {
-    // Sum of all cards of that currency
-    return _cards
+    // Sum of all available cards of that currency. Locked accounts keep their
+    // data but do not participate in totals until the license is active.
+    return cards
         .where((c) => c.currency == currency)
         .fold(0.0, (sum, item) => sum + item.balance);
   }
 
-  /// Suma el saldo de todas las tarjetas en la moneda principal.
+  /// Suma el saldo de todas las tarjetas disponibles en la moneda principal.
   ///
   /// Cada saldo se convierte con las tasas configuradas por el usuario. Si una
   /// moneda no tiene un camino de conversión, se conserva su valor tal cual,
   /// igual que en [convertCurrency].
   double getTotalBalanceInMainCurrency() {
-    return _cards.fold(
+    return cards.fold(
       0.0,
       (sum, card) =>
           sum + convertCurrency(card.balance, card.currency, _mainCurrency),
     );
   }
 
-  /// Gastos del mes de todas las tarjetas, convertidos a la moneda principal.
+  bool _isAccessibleTransaction(InternalTransaction transaction) {
+    final String? cardId = transaction.cardId;
+    return cardId == null || !_blockedCardIds.contains(cardId);
+  }
+
+  /// Gastos del mes de las cuentas disponibles, convertidos a la moneda
+  /// principal.
   ///
   /// [cardId] permite limitar la suma a una sola cuenta sin cambiar la moneda
   /// de destino.
@@ -2201,6 +2381,7 @@ class AppProvider with ChangeNotifier {
     return _transactions
         .where(
           (t) =>
+              _isAccessibleTransaction(t) &&
               (cardId == null || t.cardId == cardId) &&
               t.amount < 0 &&
               t.date.month == now.month &&
@@ -2214,7 +2395,8 @@ class AppProvider with ChangeNotifier {
         );
   }
 
-  /// Ingresos del mes de todas las tarjetas, convertidos a la moneda principal.
+  /// Ingresos del mes de las cuentas disponibles, convertidos a la moneda
+  /// principal.
   ///
   /// [cardId] permite limitar la suma a una sola cuenta sin cambiar la moneda
   /// de destino.
@@ -2223,6 +2405,7 @@ class AppProvider with ChangeNotifier {
     return _transactions
         .where(
           (t) =>
+              _isAccessibleTransaction(t) &&
               (cardId == null || t.cardId == cardId) &&
               t.amount > 0 &&
               t.date.month == now.month &&
@@ -2236,7 +2419,7 @@ class AppProvider with ChangeNotifier {
   }
 
   double getSpentThisMonth(String currency, {String? cardId}) {
-    final cacheKey = "\${currency}_\${cardId ?? 'all'}";
+    final cacheKey = "${currency}_${cardId ?? 'all'}";
     if (_spentCache.containsKey(cacheKey)) {
       return _spentCache[cacheKey]!;
     }
@@ -2245,6 +2428,7 @@ class AppProvider with ChangeNotifier {
     final spent = _transactions
         .where(
           (t) =>
+              _isAccessibleTransaction(t) &&
               t.currency == currency &&
               (cardId == null ||
                   t.cardId == cardId) && // Filter by card if provided
@@ -2270,6 +2454,7 @@ class AppProvider with ChangeNotifier {
     return _transactions
         .where(
           (t) =>
+              _isAccessibleTransaction(t) &&
               t.categoryId == categoryId &&
               t.amount < 0 &&
               t.date.month == now.month &&
@@ -2279,7 +2464,7 @@ class AppProvider with ChangeNotifier {
   }
 
   double getIncomeThisMonth(String currency, {String? cardId}) {
-    final cacheKey = "\${currency}_\${cardId ?? 'all'}";
+    final cacheKey = "${currency}_${cardId ?? 'all'}";
     if (_incomeCache.containsKey(cacheKey)) {
       return _incomeCache[cacheKey]!;
     }
@@ -2288,6 +2473,7 @@ class AppProvider with ChangeNotifier {
     final income = _transactions
         .where(
           (t) =>
+              _isAccessibleTransaction(t) &&
               t.currency == currency &&
               (cardId == null ||
                   t.cardId == cardId) && // Filter by card if provided

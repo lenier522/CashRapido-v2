@@ -100,6 +100,10 @@ class _WalletScreenState extends State<WalletScreen> {
                   ],
                   const SizedBox(height: AppSpacing.xxl),
                   _buildAccountsSection(context, provider, activeIndex),
+                  if (provider.hasLockedAccounts) ...[
+                    const SizedBox(height: AppSpacing.xxl),
+                    _buildLockedAccountsSection(context, provider),
+                  ],
                   const SizedBox(height: AppSpacing.xxl),
                   _buildSelectedAccount(context, provider, activeCard),
                   const SizedBox(height: AppSpacing.xxl),
@@ -380,6 +384,53 @@ class _WalletScreenState extends State<WalletScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  /// Cuentas conservadas por el fin de la prueba pero no utilizables hasta
+  /// activar una licencia. No se muestra su saldo ni se permite seleccionarlas.
+  Widget _buildLockedAccountsSection(
+    BuildContext context,
+    AppProvider provider,
+  ) {
+    final ThemeData theme = Theme.of(context);
+    final List<AccountCard> locked = provider.lockedCards;
+
+    return CashSection(
+      title: context.t('locked_accounts_title'),
+      subtitle: context
+          .t('locked_accounts_desc')
+          .replaceAll('{count}', '${locked.length}'),
+      child: CashCard(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+        child: Column(
+          children: [
+            for (int i = 0; i < locked.length; i++) ...[
+              if (i > 0)
+                Divider(height: 1, thickness: 1, color: theme.dividerColor),
+              ListTile(
+                leading: const Icon(
+                  Icons.lock_rounded,
+                  color: AppColors.warning,
+                ),
+                title: Text(
+                  _displayName(context, locked[i]),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                subtitle: Text(
+                  '${locked[i].currency} · ${context.t('locked_badge')}',
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => _showFeatureLockedDialog(context),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -894,6 +945,19 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   void _confirmDelete(BuildContext context, String cardId) {
+    final AppProvider provider = Provider.of<AppProvider>(
+      context,
+      listen: false,
+    );
+    if (!provider.canDeleteCard(cardId)) {
+      _showLicenseDialog(
+        context,
+        title: context.t('locked_accounts_title'),
+        message: context.t('primary_account_delete_locked'),
+      );
+      return;
+    }
+
     showDialog<void>(
       context: context,
       builder: (BuildContext ctx) => AlertDialog(

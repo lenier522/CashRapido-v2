@@ -117,6 +117,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: AppSpacing.md),
                     _buildTrialBanner(context, provider),
                   ],
+                  if (provider.isTrialExpiredWithoutPlan) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    _buildTrialEndedBanner(context, provider),
+                  ],
                   const SizedBox(height: AppSpacing.xxl),
                   _buildBalanceCard(context, provider),
                   const SizedBox(height: AppSpacing.xxl),
@@ -195,10 +199,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Recordatorio de la prueba gratuita de 48 h.
+  /// Recordatorio de la prueba gratuita de 7 días.
   ///
   /// Mientras la prueba siga activa se muestra el tiempo restante y se avisa
-  /// de que, al terminar sin un plan, los datos se eliminarán.
+  /// de que, al terminar sin un plan, las cuentas adicionales se bloquearán.
   Widget _buildTrialBanner(BuildContext context, AppProvider provider) {
     final ThemeData theme = Theme.of(context);
     final bool isDark = theme.brightness == Brightness.dark;
@@ -228,6 +232,77 @@ class _HomeScreenState extends State<HomeScreen> {
                     ? AppColors.textPrimaryDark
                     : AppColors.textPrimary,
               ),
+            ),
+          ),
+          Icon(
+            Icons.chevron_right_rounded,
+            size: 20,
+            color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiary,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Aviso tras el fin de la prueba: los datos se conservan y las cuentas
+  /// adicionales quedan bloqueadas.
+  Widget _buildTrialEndedBanner(BuildContext context, AppProvider provider) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+    final bool hasLocked = provider.hasLockedAccounts;
+    final String message = hasLocked
+        ? context
+              .t('locked_accounts_desc')
+              .replaceAll('{count}', '${provider.lockedAccountsCount}')
+        : context.t('trial_ended_banner_desc');
+
+    return CashCard(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const LicensesScreen()),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.lock_clock_rounded,
+            size: 20,
+            color: AppColors.warning,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  context.t(
+                    hasLocked
+                        ? 'locked_accounts_title'
+                        : 'trial_ended_title',
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: isDark
+                        ? AppColors.textPrimaryDark
+                        : AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xxs),
+                Text(
+                  message,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondary,
+                  ),
+                ),
+              ],
             ),
           ),
           Icon(

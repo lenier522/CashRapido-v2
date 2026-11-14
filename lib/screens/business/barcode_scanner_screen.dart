@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -5,7 +7,10 @@ import 'package:google_fonts/google_fonts.dart';
 
 class BarcodeScannerScreen extends StatefulWidget {
   final bool continuous;
-  final Function(String)? onScan;
+
+  /// Devuelve `true` si el código fue procesado correctamente. Así la pantalla
+  /// puede avisar cuando el código no corresponde a ningún producto.
+  final bool Function(String)? onScan;
 
   const BarcodeScannerScreen({super.key, this.continuous = false, this.onScan});
 
@@ -23,12 +28,16 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
   String? _lastScannedCode;
   DateTime? _lastScanTime;
   String? _notificationText;
+  bool _notificationIsError = false;
 
   @override
   void initState() {
     super.initState();
     _controller = MobileScannerController(
-      detectionSpeed: DetectionSpeed.noDuplicates,
+      // `normal` respeta el timeout entre lecturas y permite volver a escanear
+      // el mismo código. La pantalla ya aplica su propio throttle de 1.5 s.
+      detectionSpeed: DetectionSpeed.normal,
+      detectionTimeoutMs: 250,
       facing: CameraFacing.back,
       torchEnabled: false,
     );
@@ -45,9 +54,36 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
 
   @override
   void dispose() {
-    _controller.dispose();
     _animationController.dispose();
+    // En mobile_scanner 6.x `dispose` es asíncrono y detiene la cámara de
+    // forma segura aunque el controlador no haya llegado a inicializarse.
+    unawaited(_controller.dispose());
     super.dispose();
+  }
+
+  void _onDetectError(Object error, StackTrace stackTrace) {
+    debugPrint('Error del escáner: $error');
+    if (!mounted) return;
+    setState(() {
+      _notificationIsError = true;
+      _notificationText = 'No se pudo leer el código. Intenta de nuevo.';
+    });
+  }
+
+  Future<void> _toggleTorch() async {
+    final state = _controller.value;
+    if (!state.isInitialized || !state.isRunning) return;
+
+    try {
+      await _controller.toggleTorch();
+      if (mounted) {
+        setState(() {
+          _isFlashOn = !_isFlashOn;
+        });
+      }
+    } on MobileScannerException catch (e) {
+      debugPrint('No se pudo cambiar la linterna: $e');
+    }
   }
 
   void _onDetect(BarcodeCapture capture) {
@@ -72,18 +108,20 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
 
       HapticFeedback.mediumImpact();
 
-      // Trigger callback
-      if (widget.onScan != null) {
-        widget.onScan!(code);
-      }
+      // Trigger callback. Si el código no corresponde a un producto, se avisa
+      // en esta misma pantalla (el POS queda detrás del escáner).
+      final handled = widget.onScan?.call(code) ?? true;
 
       // Show temporary screen notification
       setState(() {
-        _notificationText = "Escaneado: $code";
+        _notificationIsError = !handled;
+        _notificationText = handled
+            ? "Escaneado: $code"
+            : "Código no encontrado: $code";
       });
 
       Future.delayed(const Duration(seconds: 2), () {
-        if (mounted && _notificationText == "Escaneado: $code") {
+        if (mounted && _notificationText?.contains(code) == true) {
           setState(() {
             _notificationText = null;
           });
@@ -105,7 +143,19 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
       body: Stack(
         children: [
           // 1. Mobile Scanner View
-          MobileScanner(controller: _controller, onDetect: _onDetect),
+          MobileScanner(
+            controller: _controller,
+            onDetect: _onDetect,
+            onDetectError: _onDetectError,
+            fit: BoxFit.cover,
+            placeholderBuilder: (context, child) => const ColoredBox(
+              color: Colors.black,
+              child: Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
+            ),
+            errorBuilder: (context, error, child) => _buildCameraError(error),
+          ),
 
           // 2. Dark Overlay with Cutout Scan Window
           _buildScannerOverlay(context, scanWindowSize),
@@ -146,12 +196,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                         _isFlashOn ? Icons.flash_on : Icons.flash_off,
                         color: Colors.white,
                       ),
-                      onPressed: () {
-                        _controller.toggleTorch();
-                        setState(() {
-                          _isFlashOn = !_isFlashOn;
-                        });
-                      },
+                      onPressed: _toggleTorch,
                     ),
                   ),
                 ],
@@ -174,7 +219,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                     vertical: 14,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.9),
+                    color: (_notificationIsError ? Colors.red : Colors.green)
+                        .withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(30),
                     boxShadow: [
                       BoxShadow(
@@ -188,8 +234,10 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(
-                        Icons.check_circle_outline,
+                      Icon(
+                        _notificationIsError
+                            ? Icons.error_outline
+                            : Icons.check_circle_outline,
                         color: Colors.white,
                       ),
                       const SizedBox(width: 10),
@@ -236,6 +284,54 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCameraError(MobileScannerException error) {
+    final isPermission =
+        error.errorCode == MobileScannerErrorCode.permissionDenied;
+
+    return ColoredBox(
+      color: Colors.black,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.no_photography_outlined,
+                color: Colors.white70,
+                size: 52,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                isPermission
+                    ? 'La cámara no tiene permiso.\nActívalo en los ajustes del teléfono.'
+                    : 'No se pudo iniciar la cámara.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: () async {
+                  try {
+                    await _controller.start();
+                  } on MobileScannerException catch (e) {
+                    debugPrint('No se pudo reintentar la cámara: $e');
+                  }
+                },
+                icon: const Icon(Icons.refresh),
+                label: const Text('Reintentar'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

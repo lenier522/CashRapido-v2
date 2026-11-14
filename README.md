@@ -4,7 +4,7 @@ Aplicación de finanzas personales **local-first** desarrollada en **Flutter/Dar
 
 > **Alcance de este documento:** describe únicamente la aplicación Flutter (`lib/`). No documenta el sitio web, su panel administrativo ni su despliegue.
 
-**Versión de la app:** `1.26.61+34070187` (definida en `pubspec.yaml`)
+**Versión de la app:** `2.8.45+40000000` (definida en `pubspec.yaml`)
 
 **Paquete:** `cu.lenier.cashrapido`
 
@@ -61,7 +61,7 @@ Módulos principales:
 | Préstamos | Deudores, préstamos, cuotas, intereses, mora, pagos, refinanciación, reportes |
 | IA | Chat financiero con Gemini, historial persistente |
 | Respaldo | ZIP local, Google Drive, snapshot completo en Supabase |
-| Licencias | Free, Personal, Pro y Enterprise, con pagos y prueba de 48 h |
+| Licencias | Free, Personal, Pro y Enterprise, con pagos y prueba de 7 días |
 | Extras | Notificaciones, rachas, widgets, escáner, TransferMóvil, iconos, soporte |
 
 ---
@@ -115,7 +115,7 @@ main()
  ├─ dotenv.load()
  ├─ SupabaseService.initialize()          // no bloqueante si falla
  ├─ Registro de adaptadores Hive
- ├─ TrialService.enforceAtStartup()       // borrado previo si venció la prueba
+ ├─ TrialService.enforceAtStartup()       // marca vencimiento; no borra datos
  ├─ Apertura de cajas Hive
  ├─ MultiProvider
  │   ├─ AppProvider
@@ -254,7 +254,7 @@ cashrapido/
 │   └── migrations/                  # Esquema de nube, soporte y licencias
 ├── test/                            # Pruebas unitarias y de widget
 ├── CHANGELOG.md
-├── PRUEBA_GRATUITA_48H.md           # Detalle de la prueba y el borrado
+├── PRUEBA_GRATUITA_7_DIAS.md        # Detalle de la prueba y el bloqueo de cuentas
 ├── pubspec.yaml
 └── README.md
 ```
@@ -273,7 +273,8 @@ cashrapido/
    - Cartera, negocio, préstamos, chat, recurrentes y notificaciones.
 6. `TrialService.enforceAtStartup()`:
    - Se ejecuta **antes** de abrir las cajas de datos.
-   - Si la prueba de 48 h terminó sin plan, borra los datos una sola vez.
+   - Si la prueba de 7 días terminó sin plan, marca el aviso de fin de prueba.
+   - **No borra datos**: solo bloquea las cuentas adicionales hasta que se active una licencia.
 7. Se abre la caja `ai_chats` y se registra para la sincronización.
 8. Se lee `seenOnboarding` de `SharedPreferences`.
 9. Se crean los tres providers con `MultiProvider`.
@@ -298,7 +299,7 @@ El onboarding usa cuatro imágenes a pantalla completa (`assets/onboarding/onb1.
 - Escucha los cambios de sesión de Supabase.
 - Al iniciar sesión con Google, sincroniza el perfil visible.
 - Conecta la sincronización automática con Supabase.
-- Al reanudar la app, comprueba si la prueba gratuita venció mientras estaba en segundo plano.
+- Al reanudar la app, y cada minuto mientras permanece abierta, comprueba si la prueba gratuita venció.
 
 ### Servicios en segundo plano
 
@@ -354,7 +355,7 @@ Las preferencias se agrupan en:
 | Grupo | Claves representativas |
 |---|---|
 | Licencia | `license_type`, `license_expiration_date`, `license_activation_date` |
-| Prueba | `trial_start_date`, `trial_data_wiped`, `trial_exempt`, `trial_converted` |
+| Prueba | `trial_start_date`, `trial_lock_notice_shown`, `trial_exempt`, `trial_converted` |
 | Seguridad | `app_pin_hash`, `app_password_hash`, `biometrics_enabled` |
 | Apariencia | `theme_mode`, `app_language`, `decimal_separator`, `chart_type` |
 | Monedas | `main_currency`, `custom_currencies`, `exchange_rate_pairs`, `exchange_rates`, `exchange_rate` (legacy) |
@@ -566,7 +567,7 @@ Módulo disponible desde **Enterprise** o durante la prueba (`LoansGatekeeper`):
 - **PIN de tarjeta** (Pro+).
 - **Bloqueo de tarjeta** (Personal+).
 - **Hardware lock en Windows**: lista de MACs autorizadas y códigos de activación; la versión Windows se considera Enterprise tras la activación.
-- La prueba gratuita no elimina la configuración de seguridad al borrar datos.
+- La configuración de seguridad se conserva aunque la prueba gratuita termine.
 
 ### Notificaciones
 
@@ -620,26 +621,29 @@ La app obtiene los precios de `ArtPayService`:
 
 La compilación actual está configurada con `_isCuba = false`, por lo que la interfaz muestra los precios en **USD**. La variante Cuba muestra precios en CUP. Los precios efectivos del cobro deben coincidir con el plan configurado en el backend de pagos.
 
-### Prueba gratuita de 48 horas
+### Prueba gratuita de 7 días
 
 Reglas implementadas por `TrialService`:
 
 | Situación | Comportamiento |
 |---|---|
-| Primeras 48 h desde la instalación | Casi todo desbloqueado |
+| Primeros 7 días desde la instalación | Casi todo desbloqueado |
 | IA, Google Drive y respaldo local | Siguen bloqueados durante la prueba |
 | Compra dentro de la prueba | Los datos se conservan y se activa el plan |
-| Fin de la prueba sin plan | Los datos se borran **una sola vez** |
-| Después del borrado | La app sigue usable con el plan gratuito y datos nuevos |
-| Instalaciones anteriores | Se marcan como exentas y no se borran |
+| Fin de la prueba sin plan | **No se borra nada**; la cuenta principal sigue disponible |
+| Cuentas adicionales al vencer | Quedan bloqueadas hasta activar una licencia |
+| Datos de cuentas bloqueadas | Permanecen en Hive y en las copias de seguridad |
+| Licencia activada después | Las cuentas adicionales y sus movimientos vuelven a estar disponibles |
+| Instalaciones anteriores | Se marcan como exentas y conservan todas sus cuentas |
 | Windows | No aplica la prueba; se considera desbloqueado tras la activación del equipo |
 
-El borrado se ejecuta en dos momentos:
+La comprobación del vencimiento se ejecuta en tres momentos:
 
-1. En `main()`, antes de abrir Hive, si la prueba ya venció.
+1. En `main()`, antes de abrir Hive, para marcar el aviso de fin de prueba.
 2. Al reanudar la app, si venció mientras estaba en segundo plano.
+3. Cada minuto mientras la app permanece abierta, para bloquear las cuentas adicionales en cuanto termina la ventana de 7 días.
 
-Se eliminan las 18 cajas de datos y las preferencias de datos del usuario. Se conservan tema, idioma, licencia, PIN/seguridad, configuración de notificaciones, onboarding y la propia prueba.
+El bloqueo es dinámico: no modifica ni elimina las tarjetas. `AppProvider.cards` devuelve solo las cuentas utilizables, mientras que `allCards` y `lockedCards` permiten mostrar el estado en la interfaz. Los movimientos, totales, gráficas, recurrentes y transferencias de cuentas bloqueadas se excluyen hasta que haya una licencia vigente.
 
 ### Matriz de capacidades
 
@@ -672,7 +676,7 @@ Se eliminan las 18 cajas de datos y las preferencias de datos del usuario. Se co
 | Widgets | — | — | — | ✓ |
 | Préstamos | — | — | — | ✓ |
 
-Durante la prueba de 48 h se desbloquean las capacidades de los niveles superiores **excepto** IA, Google Drive/nube y respaldo local.
+Durante la prueba de 7 días se desbloquean las capacidades de los niveles superiores **excepto** IA, Google Drive/nube y respaldo local.
 
 Nota de implementación: la entrada al módulo de Negocio se resuelve en `BusinessGatekeeper`, que permite **Pro/Enterprise** (o prueba). El getter `canUseBusinessModule` está fijado a Enterprise y no es la puerta usada por esa pantalla; si se unifica el criterio, conviene actualizar ambos.
 
@@ -852,7 +856,7 @@ Los tres proveedores se registran como fuentes de cambio para la sincronización
 | `SupabaseService` | Inicialización, sesión y autenticación con Google |
 | `SupportChatService` | Chat y tickets de soporte sobre Supabase |
 | `TourService` | Tour guiado de la interfaz |
-| `TrialService` | Prueba de 48 h y borrado único de datos |
+| `TrialService` | Prueba de 7 días, detección de vencimiento y bloqueo de cuentas |
 | `WidgetService` | Actualización de widgets Android |
 
 ---
@@ -937,7 +941,7 @@ Características:
 - Formato de fechas y números con `intl`.
 - Separador decimal configurable (`.` o `,`).
 - Si el idioma del sistema no es es/en/fr, se usa español.
-- El tema, el idioma y el formato numérico se conservan al borrar datos por fin de prueba.
+- El tema, el idioma, el formato numérico y los datos se conservan aunque la prueba termine.
 
 Uso típico:
 
@@ -1153,7 +1157,7 @@ Archivos de prueba actuales:
 | `test/cloud_codec_test.dart` | Serialización para Supabase |
 | `test/cloud_sync_boxes_test.dart` | Cajas y snapshot de nube |
 | `test/qvapay_service_test.dart` | Planes, parseo de fechas y errores de QvaPay |
-| `test/trial_service_test.dart` | Ventana de prueba, plan y borrado |
+| `test/trial_service_test.dart` | Ventana de 7 días, plan y bloqueo sin borrado |
 | `test/widget_test.dart` | Prueba básica de widget/onboarding |
 
 Recomendación antes de publicar:
@@ -1173,8 +1177,8 @@ Recomendación antes de publicar:
 
 ## Limitaciones y estado actual
 
-- **La prueba de 48 h es local.** Reinstalar la app puede reiniciarla; cambiar la hora del dispositivo puede alterar el vencimiento. No sustituye una validación de servidor.
-- **El borrado por fin de prueba es irreversible.** No hay papelera ni respaldo automático previo.
+- **La prueba de 7 días es local.** Reinstalar la app puede reiniciarla; cambiar la hora del dispositivo puede alterar el vencimiento. No sustituye una validación de servidor.
+- **Al vencer la prueba no se borran datos.** La cuenta principal sigue usable y las cuentas adicionales se bloquean; al activar una licencia vuelven a estar disponibles. El límite es local y no impide acceder a Hive mediante herramientas externas.
 - **La sincronización con Supabase es de pago (Enterprise)** y depende de que las migraciones estén aplicadas.
 - **Las migraciones no se aplican automáticamente desde la app.** Deben ejecutarse en el proyecto de Supabase; la migración de licencias está versionada pero requiere aplicación manual.
 - **Google Drive y la IA no se desbloquean durante la prueba.**

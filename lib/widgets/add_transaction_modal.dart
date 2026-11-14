@@ -277,7 +277,12 @@ class _AddTransactionModalState extends State<AddTransactionModal> {
         _isSaving = false;
         _hasAccountError = true;
       });
-      _showFeedback(context.t('insufficient_funds'), isError: true);
+      _showFeedback(
+        error == 'cuenta_bloqueada'
+            ? context.t('account_locked_license')
+            : context.t('insufficient_funds'),
+        isError: true,
+      );
       return;
     }
 

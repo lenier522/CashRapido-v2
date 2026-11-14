@@ -8,8 +8,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 abstract final class AppInfo {
   static String _name = 'CashRapido';
   static String _packageId = 'cu.lenier.cashrapido';
-  static String _version = '1.26.62';
-  static String _buildNumber = '34070187';
+  static String _version = '2.8.45';
+  static String _buildNumber = '40000000';
 
   /// Autor de la aplicación.
   static const String developer = 'Lenier Cruz Perez';

@@ -1,6 +1,14 @@
 # Flutter plugins (seguridad extra)
 -keep class io.flutter.plugins.** { *; }
 
+# Escáner de códigos (mobile_scanner / ML Kit / CameraX)
+-keep class com.google.mlkit.** { *; }
+-keep class com.google.android.gms.internal.mlkit_vision_barcode.** { *; }
+-keep class com.google.android.gms.internal.mlkit_vision_common.** { *; }
+-keep class com.google.android.libraries.barhopper.** { *; }
+-dontwarn com.google.mlkit.**
+-dontwarn com.google.android.gms.internal.mlkit_vision_barcode.**
+
 # AndroidX WorkManager (utilizado por home_widget / tareas en segundo plano)
 -keep class androidx.work.** { *; }
 -keep class * extends androidx.work.Worker { *; }

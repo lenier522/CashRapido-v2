@@ -12,7 +12,7 @@ class LoansGatekeeper extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = Provider.of<AppProvider>(context);
 
-    // Check license (Enterprise level required, or the 48 h free trial)
+    // Check license (Enterprise level required, or the 7-day free trial)
     if (provider.licenseType.level != LicenseLevel.enterprise &&
         !provider.isPromoActive &&
         !provider.isTrialActive) {

@@ -469,7 +469,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
                         fontSize: 13,
                       ),
                     ),
-                  ] else if (provider.trialDataWiped) ...[
+                  ] else if (provider.isTrialExpiredWithoutPlan) ...[
                     Text(
                       context.t('trial_ended_title'),
                       style: GoogleFonts.outfit(

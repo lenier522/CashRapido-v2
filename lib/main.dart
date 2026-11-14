@@ -12,6 +12,7 @@ import 'package:supabase_flutter/supabase_flutter.dart'
 
 import 'screens/onboarding_screen.dart';
 import 'screens/main_screen.dart';
+import 'screens/licenses_screen.dart';
 import 'models/models.dart';
 import 'models/product.dart';
 import 'models/product_category.dart';
@@ -87,9 +88,9 @@ void main() async {
   Hive.registerAdapter(RecurringTransactionAdapter());
   Hive.registerAdapter(NotificationItemAdapter());
 
-  // Prueba gratuita de 48 h: si ya terminó sin un plan activo, los datos se
-  // borran aquí, antes de que los providers abran Hive.
-  final bool trialDataWiped = await TrialService.enforceAtStartup();
+  // Prueba gratuita de 7 días: al terminar no se borra nada. Se marca el
+  // vencimiento para avisar y las cuentas adicionales quedan bloqueadas.
+  final bool trialJustExpired = await TrialService.enforceAtStartup();
 
   // Open Boxes
   final Box<ChatConversation> chatBox = await Hive.openBox<ChatConversation>(
@@ -127,7 +128,7 @@ void main() async {
       ],
       child: MyApp(
         seenOnboarding: seenOnboarding,
-        trialDataWiped: trialDataWiped,
+        trialJustExpired: trialJustExpired,
       ),
     ),
   );
@@ -136,13 +137,14 @@ void main() async {
 class MyApp extends StatelessWidget {
   final bool seenOnboarding;
 
-  /// `true` si la prueba gratuita acaba de terminar y se borraron los datos.
-  final bool trialDataWiped;
+  /// `true` si la prueba gratuita acaba de terminar y las cuentas adicionales
+  /// quedaron bloqueadas.
+  final bool trialJustExpired;
 
   const MyApp({
     super.key,
     required this.seenOnboarding,
-    this.trialDataWiped = false,
+    this.trialJustExpired = false,
   });
 
   @override
@@ -175,7 +177,7 @@ class MyApp extends StatelessWidget {
 
           home: AuthWrapper(
             seenOnboarding: seenOnboarding,
-            trialDataWiped: trialDataWiped,
+            trialJustExpired: trialJustExpired,
           ),
         );
       },
@@ -186,13 +188,14 @@ class MyApp extends StatelessWidget {
 class AuthWrapper extends StatefulWidget {
   final bool seenOnboarding;
 
-  /// `true` si la prueba gratuita acaba de terminar y se borraron los datos.
-  final bool trialDataWiped;
+  /// `true` si la prueba gratuita acaba de terminar y las cuentas adicionales
+  /// quedaron bloqueadas.
+  final bool trialJustExpired;
 
   const AuthWrapper({
     super.key,
     required this.seenOnboarding,
-    this.trialDataWiped = false,
+    this.trialJustExpired = false,
   });
 
   @override
@@ -235,13 +238,30 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
     // Add more codes here...
   ];
 
-  /// Evita que dos reanudaciones seguidas ejecuten el borrado a la vez.
+  /// Evita que dos comprobaciones seguidas apliquen el bloqueo a la vez.
   bool _trialEnforcing = false;
+
+  /// Evita repetir el aviso de fin de prueba en la misma sesión.
+  bool _trialExpiryHandled = false;
+
+  /// Comprueba el vencimiento aunque la app permanezca abierta más de 7 días.
+  Timer? _trialTimer;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _trialExpiryHandled = widget.trialJustExpired;
+    _trialTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (!mounted) return;
+      final AppProvider app = context.read<AppProvider>();
+      if (!app.isTrialExpiredWithoutPlan) {
+        _trialExpiryHandled = false;
+        return;
+      }
+      if (_trialExpiryHandled) return;
+      _enforceTrialExpiry();
+    });
     _listenToAuthChanges();
     _checkAuthentication();
     // Copia en la nube: escucha los cambios de los tres proveedores para
@@ -259,7 +279,7 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
         context.read<LoanProvider>(),
       ]);
     });
-    if (widget.trialDataWiped) {
+    if (widget.trialJustExpired) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showTrialEndedNotice();
       });
@@ -293,8 +313,9 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
     }
   }
 
-  /// Si la prueba terminó mientras la app estaba en segundo plano, borra los
-  /// datos y avisa al usuario.
+  /// Si la prueba terminó mientras la app estaba en segundo plano, actualiza
+  /// el estado y avisa al usuario. Los datos no se borran: solo se bloquean
+  /// las cuentas adicionales.
   Future<void> _enforceTrialExpiry() async {
     if (!mounted || _trialEnforcing) return;
 
@@ -312,15 +333,13 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
     try {
       // Si los providers aún están cargando, el arranque ya aplicó la prueba.
       if (app.isLoading || business.isLoading || loans.isLoading) return;
-      if (!await TrialService.shouldWipe()) return;
+      if (!await TrialService.isExpiredWithoutPlan()) return;
 
-      await app.resetAllData();
-      await business.clearAllData();
-      await loans.clearAllData();
-      await TrialService.markWiped();
-      app.markTrialDataWiped();
+      await app.refreshAccessState();
+      _trialExpiryHandled = true;
+      final bool justExpired = await TrialService.lockIfExpired();
 
-      if (!mounted) return;
+      if (!mounted || !justExpired) return;
       await _showTrialEndedNotice();
     } finally {
       _trialEnforcing = false;
@@ -333,13 +352,23 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext ctx) => AlertDialog(
-        icon: const Icon(Icons.hourglass_disabled_rounded),
+        icon: const Icon(Icons.lock_clock_rounded),
         title: Text(ctx.t('trial_ended_title')),
         content: Text(ctx.t('trial_ended_body')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text(ctx.t('close')),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const LicensesScreen()),
+              );
+            },
+            child: Text(ctx.t('upgrade_btn')),
           ),
         ],
       ),
@@ -723,6 +752,7 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _trialTimer?.cancel();
     _authSubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _pinController.dispose();

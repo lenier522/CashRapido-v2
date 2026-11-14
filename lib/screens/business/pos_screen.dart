@@ -981,21 +981,10 @@ class _PosScreenState extends State<PosScreen> {
           continuous: true,
           onScan: (code) {
             final product = _findProductBySku(provider, code);
-            if (product != null) {
-              _addProductToCart(product);
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    context
-                        .t('pos_product_not_found')
-                        .replaceAll('{code}', code),
-                  ),
-                  backgroundColor: AppColors.warning,
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            }
+            if (product == null) return false;
+
+            _addProductToCart(product);
+            return true;
           },
         ),
       ),
